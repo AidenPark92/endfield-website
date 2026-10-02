@@ -12,8 +12,8 @@ const CATEGORY_DOT = { base: "bg-stat-base", extra: "bg-stat-extra", skill: "bg-
 
 interface Props {
   weapons: Weapon[];
-  selectedIds: string[];
-  onToggle: (id: string) => void;
+  selectedId: string | null;
+  onSelect: (id: string) => void;
   query: string;
   onQuery: (q: string) => void;
   typeFilter: WeaponType | "전체";
@@ -25,7 +25,7 @@ interface Props {
 
 /** 무기 선택 그리드 — 이미지는 비워 두고, 무기마다 고정된 3가지 기질 속성을 보여준다 */
 export function WeaponPicker(props: Props) {
-  const { weapons, selectedIds, onToggle, query, onQuery, typeFilter, onTypeFilter, showLow, onShowLow, label } = props;
+  const { weapons, selectedId, onSelect, query, onQuery, typeFilter, onTypeFilter, showLow, onShowLow, label } = props;
   const q = query.trim();
   const list = weapons.filter(
     (w) => (showLow || w.rarity >= 5) && (typeFilter === "전체" || w.type === typeFilter) && (!q || w.name.includes(q)),
@@ -66,12 +66,11 @@ export function WeaponPicker(props: Props) {
 
       <ul className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
         {list.map((w) => {
-          const order = selectedIds.indexOf(w.id);
-          const active = order >= 0;
+          const active = w.id === selectedId;
           return (
             <li key={w.id}>
               <button
-                onClick={() => onToggle(w.id)}
+                onClick={() => onSelect(w.id)}
                 aria-pressed={active}
                 data-active={active}
                 className={cn(
@@ -86,14 +85,13 @@ export function WeaponPicker(props: Props) {
                     {w.rarity}★ · {w.type}
                   </span>
                   {active && (
-                    <span className="absolute top-2 right-2 grid size-6 place-items-center bg-accent font-mono text-xs font-bold text-accent-foreground animate-in zoom-in-50">
-                      {order + 1}
+                    <span className="absolute top-2 right-2 grid size-6 place-items-center bg-accent text-accent-foreground animate-in zoom-in-50">
+                      <Check className="size-4" />
                     </span>
                   )}
                 </span>
                 <span className="flex items-center gap-1 px-2 pt-2">
                   <span className="flex-1 truncate text-sm font-semibold">{w.name}</span>
-                  {active && <Check className="size-4 shrink-0" />}
                 </span>
                 {/* 고정 3속성 + 목표 기질 */}
                 <span className="flex items-end gap-2 px-2 pt-1 pb-2">

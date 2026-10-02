@@ -69,7 +69,7 @@ export function BestZoneCard({ ev, region, rank, weaponById, label, showWeak }: 
         {/* 우선 무기 */}
         <div>
           <p className="mb-1.5 flex items-center gap-1 text-[11px] font-bold text-rarity-5">
-            <Star className="size-3.5 fill-current" /> 우선 무기 일치
+            <Star className="size-3.5 fill-current" /> 선택 무기 일치
           </p>
           <ul className="space-y-1.5">
             {ev.priority.map((m) => (
