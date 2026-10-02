@@ -37,19 +37,19 @@ export function BestZoneCard({ ev, region, rank, weaponById, baseIds, label }: C
   return (
     <div className="ef-scan relative overflow-hidden border bg-card shadow-sm">
       {/* 헤더 */}
-      <div className="flex items-center gap-3 bg-panel p-3 text-panel-foreground">
+      <div className="flex items-center gap-3 border-b bg-muted/50 p-3">
         <span className="grid size-10 shrink-0 place-items-center bg-accent text-accent-foreground">
           <Trophy className="size-5" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-[11px] font-semibold text-accent">{rank === 0 ? "최적의 파밍 존" : `후보 ${rank + 1}`}</span>
+          <span className="block text-[11px] font-semibold text-accent-strong">{rank === 0 ? "최적의 파밍 존" : `후보 ${rank + 1}`}</span>
           <span className="block truncate text-base font-bold">
             {region.area} · {region.name}
           </span>
         </span>
         <span className="shrink-0 text-right">
-          <span className="block bg-accent/15 px-2 py-1 font-mono text-sm font-bold text-accent">{ev.score} 점</span>
-          <span className="mt-0.5 block text-[10px] opacity-60">함께 얻는 무기 {ev.others.length}개</span>
+          <span className="block bg-accent px-2 py-1 font-mono text-sm font-bold text-accent-foreground">{ev.score} 점</span>
+          <span className="mt-0.5 block text-[10px] text-muted-foreground">함께 얻는 무기 {ev.others.length}개</span>
         </span>
       </div>
 
@@ -139,7 +139,7 @@ function EngravePanel({
   const baseWant = target.lines.base?.want;
 
   return (
-    <div className="overflow-hidden border-2 border-accent bg-panel text-panel-foreground">
+    <div className="overflow-hidden border-2 border-accent bg-card text-card-foreground">
       {/* 제목 */}
       <div className="flex flex-wrap items-center justify-between gap-2 bg-accent px-3 py-2 text-accent-foreground">
         <p className="flex items-center gap-1.5 text-sm font-bold">
@@ -151,32 +151,32 @@ function EngravePanel({
       </div>
 
       {/* 한 줄 요약 */}
-      <div className="border-b border-panel-foreground/15 px-3 py-3">
-        <p className="mb-2 text-[11px] font-semibold opacity-60">한눈에 보기</p>
+      <div className="border-b border-border px-3 py-3">
+        <p className="mb-2 text-[11px] font-semibold text-muted-foreground">한눈에 보기</p>
         <div className="flex flex-wrap items-center gap-1.5">
           {bases.map((b) => (
             <span
               key={b}
               className={cn(
-                "inline-flex h-9 items-center gap-1 bg-panel-foreground/10 px-3 text-sm font-semibold",
-                b === baseWant && "ring-2 ring-accent",
+                "inline-flex h-9 items-center gap-1 bg-muted px-3 text-sm font-semibold",
+                b === baseWant && "ring-2 ring-accent-strong",
               )}
             >
-              {b === baseWant && <Star className="size-3.5 fill-accent text-accent" />}
+              {b === baseWant && <Star className="size-3.5 fill-accent-strong text-accent-strong" />}
               {label("base", b)}
             </span>
           ))}
-          <span className="px-1 text-lg font-bold opacity-50">+</span>
+          <span className="px-1 text-lg font-bold text-muted-foreground">+</span>
           <span className="inline-flex h-9 items-center gap-1.5 bg-accent px-3 text-sm font-bold text-accent-foreground">
             <Lock className="size-3.5" />
             {label(lock.category, lock.stat)}
           </span>
           {randomWant && (
             <>
-              <span className="px-1 text-lg font-bold opacity-50">→</span>
-              <span className="inline-flex h-9 items-center gap-1.5 border border-dashed border-accent px-3 text-sm">
-                <Dices className="size-3.5 text-accent" />
-                <b className="text-accent">{label(randomCat, randomWant)}</b> 나오면 완성
+              <span className="px-1 text-lg font-bold text-muted-foreground">→</span>
+              <span className="inline-flex h-9 items-center gap-1.5 border border-dashed border-accent-strong px-3 text-sm">
+                <Dices className="size-3.5 text-accent-strong" />
+                <b className="text-accent-strong">{label(randomCat, randomWant)}</b> 나오면 완성
               </span>
             </>
           )}
@@ -198,7 +198,7 @@ function EngravePanel({
         <PickGroup title="추가 속성 또는 스킬 속성 1개를 선택해 주세요" count="1/1">
           {(["extra", "skill"] as const).map((cat) => (
             <div key={cat} className="mt-2 first:mt-0">
-              <p className="mb-1 text-[10px] font-semibold tracking-wider opacity-50">
+              <p className="mb-1 text-[10px] font-semibold tracking-wider text-muted-foreground">
                 {CAT_NAME[cat]} 속성 {cat === lock.category ? "· 여기서 1개 고정" : "· 이 중 1개 무작위"}
               </p>
               <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
@@ -215,24 +215,24 @@ function EngravePanel({
           ))}
         </PickGroup>
 
-        <p className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] opacity-60">
+        <p className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground">
           <span className="inline-flex items-center gap-1">
             <span className="size-2.5 bg-accent" /> 눌러야 할 칸
           </span>
           <span className="inline-flex items-center gap-1">
-            <Star className="size-3 fill-accent text-accent" /> 선택 무기에 필요한 기초 속성
+            <Star className="size-3 fill-accent-strong text-accent-strong" /> 선택 무기에 필요한 기초 속성
           </span>
           <span className="inline-flex items-center gap-1">
-            <span className="size-2.5 border border-dashed border-accent" /> 무작위로 나와야 할 속성
+            <span className="size-2.5 border border-dashed border-accent-strong" /> 무작위로 나와야 할 속성
           </span>
         </p>
       </div>
 
-      <div className="flex flex-wrap items-baseline justify-between gap-2 border-t border-panel-foreground/15 bg-black/20 px-3 py-2.5">
-        <span className="text-xs opacity-70">선택 무기 완벽 기질 확률 (기초 1/3 × 무작위 1/{region[randomCat].length})</span>
+      <div className="flex flex-wrap items-baseline justify-between gap-2 border-t border-border bg-muted/60 px-3 py-2.5">
+        <span className="text-xs text-muted-foreground">선택 무기 완벽 기질 확률 (기초 1/3 × 무작위 1/{region[randomCat].length})</span>
         <span>
-          <b className="font-mono text-xl text-accent">{formatPercent(target.pPerfect)}</b>
-          <span className="ml-1.5 text-[11px] opacity-60">약 {Math.round(expectedDrops(target.pPerfect))}개당 1개</span>
+          <b className="font-mono text-xl text-accent-strong">{formatPercent(target.pPerfect)}</b>
+          <span className="ml-1.5 text-[11px] text-muted-foreground">약 {Math.round(expectedDrops(target.pPerfect))}개당 1개</span>
         </span>
       </div>
     </div>
@@ -243,7 +243,7 @@ function PickGroup({ title, count, children }: { title: string; count: string; c
   return (
     <div>
       <p className="mb-2 text-xs font-semibold">
-        {title} <span className="font-mono text-accent">({count})</span>
+        {title} <span className="font-mono text-accent-strong">({count})</span>
       </p>
       {children}
     </div>
@@ -258,16 +258,16 @@ function PickCell({ state, star = false, children }: { state: "pick" | "lock" | 
         "relative flex h-9 items-center gap-1.5 border px-2.5 text-xs",
         state === "pick" && "border-accent bg-accent font-bold text-accent-foreground",
         state === "lock" && "border-accent bg-accent font-bold text-accent-foreground",
-        state === "goal" && "border-dashed border-accent text-accent",
-        state === "off" && "border-panel-foreground/10 opacity-35",
+        state === "goal" && "border-2 border-dashed border-accent-strong font-semibold text-accent-strong",
+        state === "off" && "border-border bg-muted/40 text-muted-foreground/60",
       )}
     >
       {state === "pick" && <Check className="size-3.5 shrink-0" />}
       {state === "lock" && <Lock className="size-3.5 shrink-0" />}
       {state === "goal" && <Dices className="size-3.5 shrink-0" />}
       <span className="truncate">{children}</span>
-      {star && <Star className="absolute -top-1.5 -right-1.5 size-4 fill-panel stroke-[2.5] text-panel" />}
-      {star && <Star className="absolute -top-1 -right-1 size-3 fill-accent text-accent" />}
+      {star && <Star className="absolute -top-1.5 -right-1.5 size-4 fill-card stroke-[2.5] text-card" />}
+      {star && <Star className="absolute -top-1 -right-1 size-3 fill-accent-strong text-accent-strong" />}
     </span>
   );
 }

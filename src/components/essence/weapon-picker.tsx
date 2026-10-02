@@ -1,10 +1,7 @@
-"use client";
-
-import { useState } from "react";
 import { Check, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EssenceOrb } from "./essence-orb";
-import { WeaponMedia } from "./weapon-media";
+import { WeaponThumb } from "./weapon-thumb";
 import type { StatLabelFn } from "./stat-chip";
 import type { Weapon, WeaponType } from "@/types/game";
 
@@ -98,17 +95,12 @@ export function WeaponPicker(props: Props) {
   );
 }
 
-/** 무기 카드 — 대표 프레임 위에 마우스를 올리면 회전 연출 재생 */
+/** 무기 카드 — 무기 아이콘(PNG) 사용, 영상은 쓰지 않음 */
 function WeaponCard({ w, active, onSelect, label }: { w: Weapon; active: boolean; onSelect: (id: string) => void; label: StatLabelFn }) {
-  const [hover, setHover] = useState(false);
   return (
     <li>
       <button
         onClick={() => onSelect(w.id)}
-        onMouseEnter={() => setHover(true)}
-        onMouseLeave={() => setHover(false)}
-        onFocus={() => setHover(true)}
-        onBlur={() => setHover(false)}
         aria-pressed={active}
         data-active={active}
         className={cn(
@@ -116,7 +108,12 @@ function WeaponCard({ w, active, onSelect, label }: { w: Weapon; active: boolean
           active && "border-foreground",
         )}
       >
-        <WeaponMedia weapon={w} mode="hover" active={hover} className="aspect-video w-full">
+        <WeaponThumb
+          weapon={w}
+          size={256}
+          bar="top"
+          className="aspect-video w-full border-0 border-b bg-gradient-to-b from-muted/40 to-muted [&_img]:transition-transform [&_img]:duration-300 group-hover:[&_img]:scale-110"
+        >
           <span className="absolute bottom-1.5 left-2 bg-black/55 px-1.5 py-0.5 font-mono text-[10px] text-white">
             {w.rarity}★ · {w.type}
           </span>
@@ -125,7 +122,7 @@ function WeaponCard({ w, active, onSelect, label }: { w: Weapon; active: boolean
               <Check className="size-4" />
             </span>
           )}
-        </WeaponMedia>
+        </WeaponThumb>
         <span className="flex items-start gap-2 px-2.5 pt-2 pb-2.5">
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-bold">{w.name}</span>

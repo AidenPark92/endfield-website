@@ -21,6 +21,8 @@
   --primary-foreground: #fafaf8;
   --accent: #ffe100;
   --accent-foreground: #141414;
+  /* 흰 배경 위에서 읽히는 진한 노랑 (글자·테두리용) */
+  --accent-strong: #a67c00;
   --panel: #1b1c1e;
   --panel-foreground: #f3f3f0;
   --grid-line: rgba(27, 28, 30, 0.05);
@@ -53,6 +55,7 @@
   --primary-foreground: #1e1f22;
   --accent: #ffe100;
   --accent-foreground: #141414;
+  --accent-strong: #ffe100;
   --panel: #141517;
   --panel-foreground: #e9e9e6;
   --grid-line: rgba(233, 233, 230, 0.04);
@@ -76,6 +79,7 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-accent-strong: var(--accent-strong);
   --color-panel: var(--panel);
   --color-panel-foreground: var(--panel-foreground);
   --color-stat-base: var(--stat-base);
