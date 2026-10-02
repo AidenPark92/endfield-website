@@ -64,7 +64,7 @@ export function WeaponPicker(props: Props) {
         뉴비용 3~4성 무기도 보기
       </label>
 
-      <ul className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
+      <ul className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
         {list.map((w) => {
           const active = w.id === selectedId;
           return (

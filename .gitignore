@@ -41,3 +41,6 @@ yarn-error.log*
 next-env.d.ts
 
 !.env.example
+
+# 브라우저 다운로드 중인 임시 파일
+*.crdownload

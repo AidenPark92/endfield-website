@@ -1,17 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { ArrowDown, RotateCcw } from "lucide-react";
+import { Repeat, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { FarmTarget } from "@/lib/calc/essence";
 import { SCORE_WEIGHTS, rankConfigs, uniqueByZoneLock } from "@/lib/calc/essence-score";
 import { LOW_TIER_ESSENCES } from "@/lib/essence-images";
-import { makeStatLabel } from "./stat-chip";
+import { StatChip, makeStatLabel, type StatLabelFn } from "./stat-chip";
+import { EssenceOrb } from "./essence-orb";
 import { WeaponPicker } from "./weapon-picker";
 import { BestZoneCard, CandidateList } from "./farm-result";
 import type { EssenceRegion, EssenceStats, Weapon, WeaponType } from "@/types/game";
+
+const RARITY_BAR: Record<number, string> = { 6: "bg-rarity-6", 5: "bg-rarity-5", 4: "bg-rarity-4", 3: "bg-rarity-3" };
 
 const STORAGE_KEY = "ef:essence:v3";
 
@@ -36,6 +39,9 @@ export function EssenceFarm({ weapons, regions, stats }: Props) {
   const [typeFilter, setTypeFilter] = useState<WeaponType | "전체">("전체");
   const [showLow, setShowLow] = useState(false);
   const [pick, setPick] = useState(0); // 후보 index
+  const [pickerOpen, setPickerOpen] = useState(true);
+  const [scrollTick, setScrollTick] = useState(0);
+  const topRef = useRef<HTMLDivElement>(null);
   const [showWeak, setShowWeak] = useState(false); // 1/3 일치도 표시
   const [loaded, setLoaded] = useState(false);
 
@@ -43,7 +49,10 @@ export function EssenceFarm({ weapons, regions, stats }: Props) {
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved && weaponById.has(saved)) setSelectedId(saved);
+      if (saved && weaponById.has(saved)) {
+        setSelectedId(saved);
+        setPickerOpen(false);
+      }
     } catch {}
     setLoaded(true);
   }, [weaponById]);
@@ -77,129 +86,164 @@ export function EssenceFarm({ weapons, regions, stats }: Props) {
   const active = candidates[Math.min(pick, candidates.length - 1)];
 
   const select = (id: string) => {
-    setSelectedId((cur) => (cur === id ? null : id));
+    setSelectedId(id);
     setPick(0);
+    setPickerOpen(false);
+    setScrollTick((n) => n + 1);
+  };
+  const openPicker = () => {
+    setPickerOpen(true);
+    setScrollTick((n) => n + 1);
   };
 
+  // 무기를 고르거나 바꾸기를 누르면 화면 맨 위(작업 영역)로 부드럽게 이동
+  useEffect(() => {
+    if (scrollTick === 0) return;
+    requestAnimationFrame(() => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }, [scrollTick]);
+
+  const weapon = selectedId ? weaponById.get(selectedId)! : null;
+  const showPicker = pickerOpen || !weapon;
+
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_440px]">
-      {/* STEP 01 */}
-      <section>
-        <StepHeader no="01" title="무기 선택" hint="기질을 맞출 무기 하나를 고르세요. 무기마다 필요한 속성 3개가 정해져 있어요." />
-        <WeaponPicker
-          weapons={weapons}
-          selectedId={selectedId}
-          onSelect={select}
-          query={query}
-          onQuery={setQuery}
-          typeFilter={typeFilter}
-          onTypeFilter={setTypeFilter}
-          showLow={showLow}
-          onShowLow={setShowLow}
-          label={label}
-        />
-      </section>
-
-      <aside id="result" className="scroll-mt-20 space-y-8 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:self-start lg:overflow-y-auto lg:pr-1">
-        {/* 선택한 무기 */}
-        {selectedId && (
-          <div className="flex items-center gap-2 border bg-card px-3 py-2 text-sm">
-            <span className="ef-label">TARGET</span>
-            <b className="flex-1 truncate">{weaponById.get(selectedId)!.name}</b>
-            <Button variant="ghost" size="sm" onClick={() => select(selectedId)}>
-              <RotateCcw /> 선택 해제
-            </Button>
-          </div>
-        )}
-
-        {/* STEP 02 — 최적 파밍 존 */}
+    <div ref={topRef} className="scroll-mt-20">
+      {showPicker ? (
+        /* STEP 01 — 무기 선택 (전체 폭) */
         <section>
           <StepHeader
-            no="02"
-            title="최적 파밍 존"
-            hint="이 무기를 노리면서, 같이 나오는 기질로 다른 무기까지 챙기는 설정을 찾아요."
+            no="01"
+            title="무기 선택"
+            hint="기질을 맞출 무기 하나를 고르세요. 무기마다 필요한 속성 3개가 정해져 있어요."
             action={
-              <label className="flex shrink-0 cursor-pointer items-center gap-1.5 text-[11px] text-muted-foreground">
-                <input type="checkbox" checked={showWeak} onChange={(e) => setShowWeak(e.target.checked)} className="size-3.5 accent-foreground" />
-                1/3 일치도 표시
-              </label>
+              weapon && (
+                <Button variant="outline" size="sm" onClick={() => setPickerOpen(false)}>
+                  <X /> 닫기
+                </Button>
+              )
             }
           />
-          {active ? (
-            <BestZoneCard
-              key={`${active.config.regionId}-${active.config.lock.stat}`}
-              ev={active}
-              region={regionById.get(active.config.regionId)!}
-              rank={Math.min(pick, candidates.length - 1)}
-              weaponById={weaponById}
-              label={label}
-              showWeak={showWeak}
-            />
-          ) : (
-            <Placeholder
-              text={selectedId ? "이 무기를 완벽하게 얻을 수 있는 구역이 없어요." : "왼쪽에서 노릴 무기를 고르면 가장 효율적인 파밍 존이 표시됩니다."}
-            />
-          )}
+          <WeaponPicker
+            weapons={weapons}
+            selectedId={selectedId}
+            onSelect={select}
+            query={query}
+            onQuery={setQuery}
+            typeFilter={typeFilter}
+            onTypeFilter={setTypeFilter}
+            showLow={showLow}
+            onShowLow={setShowLow}
+            label={label}
+          />
         </section>
+      ) : (
+        <div className="space-y-6">
+          {/* 선택한 무기 — 접힌 상태 */}
+          <TargetBar weapon={weapon} label={label} onChange={openPicker} />
 
-        {/* STEP 03 — 다른 후보 */}
-        {candidates.length > 1 && (
-          <section>
-            <StepHeader no="03" title="다른 후보" hint="점수순이에요. 눌러서 비교해 보세요." />
-            <CandidateList candidates={candidates} activeIndex={pick} onPick={setPick} regionById={regionById} label={label} />
-          </section>
-        )}
+          {/* 결과: 왼쪽 최적 존 / 오른쪽 후보·설명 (한 페이지 스크롤) */}
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+            <section className="min-w-0">
+              <StepHeader
+                no="02"
+                title="최적 파밍 존"
+                hint="이 무기를 노리면서, 같이 나오는 기질로 다른 무기까지 챙기는 설정이에요."
+                action={
+                  <label className="flex shrink-0 cursor-pointer items-center gap-1.5 text-[11px] text-muted-foreground">
+                    <input type="checkbox" checked={showWeak} onChange={(e) => setShowWeak(e.target.checked)} className="size-3.5 accent-foreground" />
+                    1/3 일치도 표시
+                  </label>
+                }
+              />
+              {active ? (
+                <BestZoneCard
+                  key={`${active.config.regionId}-${active.config.lock.stat}`}
+                  ev={active}
+                  region={regionById.get(active.config.regionId)!}
+                  rank={Math.min(pick, candidates.length - 1)}
+                  weaponById={weaponById}
+                  label={label}
+                  showWeak={showWeak}
+                />
+              ) : (
+                <Placeholder text="이 무기를 완벽하게 얻을 수 있는 구역이 없어요." />
+              )}
+            </section>
 
-        {/* 점수 계산 방식 */}
-        <details className="group border p-3 text-xs">
-          <summary className="cursor-pointer list-none font-semibold">
-            <span className="mr-1 inline-block transition-transform group-open:rotate-90">▸</span>
-            점수는 어떻게 계산하나요?
-          </summary>
-          <div className="mt-2 space-y-1.5 leading-relaxed text-muted-foreground">
-            <p>기질 1개를 얻을 때 줄마다 따로 정해져요: 기초는 고른 3개 중 1개(1/3), 고정한 속성은 그대로, 나머지 하나는 구역 풀 8개 중 1개(1/8).</p>
-            <p className="space-y-0.5 bg-muted px-2 py-1.5 font-mono text-[11px] text-foreground">
-              <span className="block">점수 = {SCORE_WEIGHTS.priority} × 선택 무기 완벽 확률 ÷ 1/24</span>
-              <span className="block">{"    "}+ {SCORE_WEIGHTS.otherPerfect} × 다른 무기 완벽 확률 ÷ 1/24</span>
-              <span className="block">{"    "}+ {SCORE_WEIGHTS.otherPartial} × 다른 무기 2/3 확률 ÷ 9/24</span>
-            </p>
-            <p>
-              선택한 무기를 최대 확률(1/24)로 노리면 100점이에요. 같은 기질이 다른 무기에도 맞으면 무기마다 완벽 최대 +{SCORE_WEIGHTS.otherPerfect}점, 2/3 최대 +{SCORE_WEIGHTS.otherPartial}점이 더해져요. 순위는 선택 무기 점수를 먼저 비교하고, 같으면 보너스가 큰 쪽이 위로 와요.
-            </p>
-            <p>12개 구역 × 고정 16가지 × 기초 조합 10가지 = 1,920가지 설정을 모두 계산해서 고릅니다.</p>
-          </div>
-        </details>
+            <div className="space-y-6">
+              {candidates.length > 1 && (
+                <section>
+                  <StepHeader no="03" title="다른 후보" hint="점수순이에요. 눌러서 비교해 보세요." />
+                  <CandidateList candidates={candidates} activeIndex={pick} onPick={setPick} regionById={regionById} label={label} />
+                </section>
+              )}
 
-        {/* 뉴비용 4성 기질 안내 */}
-        <section className="border border-dashed p-3">
-          <div className="flex items-center gap-3">
-            <div className="flex -space-x-2">
-              {LOW_TIER_ESSENCES.map((e) => (
-                <Image key={e.id} src={e.image} alt={e.name} width={32} height={32} unoptimized className="opacity-70 grayscale" />
-              ))}
+              {/* 점수 계산 방식 */}
+              <details className="group border bg-card p-3 text-xs">
+                <summary className="cursor-pointer list-none font-semibold">
+                  <span className="mr-1 inline-block transition-transform group-open:rotate-90">▸</span>
+                  점수는 어떻게 계산하나요?
+                </summary>
+                <div className="mt-2 space-y-1.5 leading-relaxed text-muted-foreground">
+                  <p>기질 1개를 얻을 때 줄마다 따로 정해져요: 기초는 고른 3개 중 1개(1/3), 고정한 속성은 그대로, 나머지 하나는 구역 풀 8개 중 1개(1/8).</p>
+                  <p className="space-y-0.5 bg-muted px-2 py-1.5 font-mono text-[11px] text-foreground">
+                    <span className="block">점수 = {SCORE_WEIGHTS.priority} × 선택 무기 완벽 확률 ÷ 1/24</span>
+                    <span className="block">{"    "}+ {SCORE_WEIGHTS.otherPerfect} × 다른 무기 완벽 확률 ÷ 1/24</span>
+                    <span className="block">{"    "}+ {SCORE_WEIGHTS.otherPartial} × 다른 무기 2/3 확률 ÷ 9/24</span>
+                  </p>
+                  <p>
+                    선택한 무기를 최대 확률(1/24)로 노리면 100점이에요. 같은 기질이 다른 무기에도 맞으면 무기마다 완벽 최대 +{SCORE_WEIGHTS.otherPerfect}점, 2/3 최대 +
+                    {SCORE_WEIGHTS.otherPartial}점이 더해져요. 순위는 선택 무기 점수를 먼저 비교하고, 같으면 보너스가 큰 쪽이 위로 와요.
+                  </p>
+                  <p>12개 구역 × 고정 16가지 × 기초 조합 10가지 = 1,920가지 설정을 모두 계산해서 고릅니다.</p>
+                </div>
+              </details>
+
+              {/* 뉴비용 4성 기질 안내 */}
+              <section className="border border-dashed p-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex shrink-0 -space-x-2">
+                    {LOW_TIER_ESSENCES.map((e) => (
+                      <Image key={e.id} src={e.image} alt={e.name} width={32} height={32} unoptimized className="opacity-70 grayscale" />
+                    ))}
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    <b className="text-foreground">4성 기질(안정·세련·순수)</b>은 최대 속성까지 올릴 수 없어 초반에만 써요. 위 계산은 5성 무결 기질 기준입니다.
+                  </p>
+                </div>
+                {/* TODO: 4성 기질의 속성 규칙은 자료 확인 후 추가 */}
+              </section>
             </div>
-            <p className="text-[11px] leading-relaxed text-muted-foreground">
-              <b className="text-foreground">4성 기질(안정·세련·순수)</b>은 최대 속성까지 올릴 수 없어 초반에만 써요. 위 계산은 5성 무결 기질 기준입니다.
-            </p>
           </div>
-          {/* TODO: 4성 기질의 속성 규칙은 자료 확인 후 추가 */}
-        </section>
-      </aside>
-
-      {/* 모바일: 결과로 이동 */}
-      {selectedId && (
-        <a
-          href="#result"
-          className="fixed inset-x-4 bottom-4 z-30 flex items-center justify-between bg-panel px-4 py-3 text-sm text-panel-foreground shadow-lg animate-in slide-in-from-bottom-4 lg:hidden"
-        >
-          <span>
-            <b className="text-accent">{weaponById.get(selectedId)!.name}</b>{active && <> · {active.score}점</>}
-          </span>
-          <span className="flex items-center gap-1 font-medium">
-            결과 보기 <ArrowDown className="size-4" />
-          </span>
-        </a>
+        </div>
       )}
+    </div>
+  );
+}
+
+/** 선택한 무기 요약 바 — 무기 목록 대신 접혀서 표시 */
+function TargetBar({ weapon, label, onChange }: { weapon: Weapon; label: StatLabelFn; onChange: () => void }) {
+  return (
+    <div className="ef-cut flex flex-wrap items-center gap-3 border bg-card p-3 animate-in fade-in slide-in-from-top-1">
+      {/* 무기 이미지 자리 (공백) */}
+      <span className="relative size-14 shrink-0 border bg-muted/60">
+        <span className={cn("absolute inset-x-0 bottom-0 h-1", RARITY_BAR[weapon.rarity])} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="ef-label whitespace-nowrap">01 // 선택한 무기</p>
+        <p className="truncate text-lg leading-tight font-bold">{weapon.name}</p>
+        <p className="mt-1 flex flex-wrap items-center gap-1">
+          <span className="mr-1 text-[11px] text-muted-foreground">
+            {weapon.rarity}★ · {weapon.type}
+          </span>
+          {(["base", "extra", "skill"] as const).map((c) =>
+            weapon.essence[c] ? <StatChip key={c} category={c} id={weapon.essence[c]!} label={label} showCategory /> : null,
+          )}
+        </p>
+      </div>
+      <EssenceOrb skill={weapon.essence.skill} size={48} alt="목표 기질" className="hidden sm:block" />
+      <Button variant="outline" onClick={onChange} className="w-full sm:w-auto">
+        <Repeat /> 무기 변경
+      </Button>
     </div>
   );
 }
