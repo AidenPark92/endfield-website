@@ -27,7 +27,8 @@ src/
   components/
     essence/              기질 파밍 UI ('use client')
     ui/                   shadcn/ui 컴포넌트
-  lib/calc/essence.ts     기질 최적화 계산 (순수 함수 + 테스트)
+  lib/calc/essence.ts     기질 확률 계산 (순수 함수 + 테스트)
+  lib/calc/essence-score.ts  파밍 효율 점수 (우선 무기 + 다른 무기 보너스, 전수 탐색)
   lib/data.ts             data JSON 타입 래퍼
   db/                     Drizzle + Neon (아직 미사용)
 ```

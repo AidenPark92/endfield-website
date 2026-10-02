@@ -5,11 +5,12 @@ import Image from "next/image";
 import { ArrowDown, RotateCcw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { planFarming, rankLocks, type FarmTarget } from "@/lib/calc/essence";
+import type { FarmTarget } from "@/lib/calc/essence";
+import { SCORE_WEIGHTS, planRoute, rankConfigs, uniqueByZoneLock } from "@/lib/calc/essence-score";
 import { LOW_TIER_ESSENCES } from "@/lib/essence-images";
 import { makeStatLabel } from "./stat-chip";
 import { WeaponPicker } from "./weapon-picker";
-import { RouteList, ZoneDetail, ZoneMap, type ZoneSummary } from "./zone-board";
+import { BestZoneCard, CandidateList } from "./farm-result";
 import type { EssenceRegion, EssenceStats, Weapon, WeaponType } from "@/types/game";
 
 const STORAGE_KEY = "ef:essence:v2";
@@ -34,7 +35,8 @@ export function EssenceFarm({ weapons, regions, stats }: Props) {
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<WeaponType | "전체">("전체");
   const [showLow, setShowLow] = useState(false);
-  const [focus, setFocus] = useState<{ regionId: string; lock: string | null } | null>(null);
+  const [pick, setPick] = useState(0); // 후보 index
+  const [showWeak, setShowWeak] = useState(false); // 1/3 일치도 표시
   const [loaded, setLoaded] = useState(false);
 
   // 선택 복원/저장 (브라우저별 편의 기능 — 실패해도 무시)
@@ -57,39 +59,38 @@ export function EssenceFarm({ weapons, regions, stats }: Props) {
     [selectedIds, weaponById],
   );
 
-  // 구역별 고정 속성 후보 + 전체 루트
-  const optionsByRegion = useMemo(
-    () => new Map(regions.map((r) => [r.id, targets.length ? rankLocks(targets, r, baseIds) : []])),
-    [regions, targets, baseIds],
+  // 함께 챙길 "다른 무기" = 우선 무기를 뺀 나머지 (목록 필터의 등급 기준과 같게)
+  const others: FarmTarget[] = useMemo(
+    () =>
+      weapons
+        .filter((w) => !selectedIds.includes(w.id) && (showLow || w.rarity >= 5))
+        .map((w) => ({ key: w.id, essence: w.essence })),
+    [weapons, selectedIds, showLow],
   );
-  const plan = useMemo(() => planFarming(targets, regions, baseIds), [targets, regions, baseIds]);
 
-  const zones: ZoneSummary[] = regions.map((r) => {
-    const opts = optionsByRegion.get(r.id)!;
-    return {
-      region: r,
-      best: opts[0]?.score ?? 0,
-      reachable: new Set(opts.flatMap((o) => o.covered.map((c) => c.key))).size,
-      routeIndex: plan.steps.findIndex((s) => s.config.regionId === r.id),
-    };
-  });
-
-  // 지금 보고 있는 구역 (기본: 루트 1번 구역)
-  const focusRegionId =
-    focus && optionsByRegion.get(focus.regionId)?.length ? focus.regionId : (plan.steps[0]?.config.regionId ?? null);
-  const focusOptions = focusRegionId ? optionsByRegion.get(focusRegionId)! : [];
-  // 고정 속성: 직접 고른 값 > 루트에서 이 구역에 쓰는 값 > 구역 최고 설정
-  const stepLock = plan.steps.find((s) => s.config.regionId === focusRegionId)?.config.lock.stat;
-  const wantLock = focus?.regionId === focusRegionId && focus.lock ? focus.lock : stepLock;
-  const chosen = focusOptions.find((o) => o.config.lock.stat === wantLock) ?? focusOptions[0];
+  // 전수 탐색 → 구역+고정 속성별 최고 설정만 후보로
+  const candidates = useMemo(
+    () => uniqueByZoneLock(rankConfigs(targets, others, regions, baseIds)).slice(0, 8),
+    [targets, others, regions, baseIds],
+  );
+  const route = useMemo(
+    () => (targets.length > 1 ? planRoute(targets, others, regions, baseIds) : { steps: [], unreachable: [] }),
+    [targets, others, regions, baseIds],
+  );
+  const missing = useMemo(() => {
+    const best = candidates[Math.min(pick, candidates.length - 1)];
+    if (!best) return targets.map((t) => t.key);
+    return best.priority.filter((m) => m.pPerfect === 0).map((m) => m.key);
+  }, [candidates, pick, targets]);
+  const active = candidates[Math.min(pick, candidates.length - 1)];
 
   const toggle = (id: string) => {
     setSelectedIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
-    setFocus(null);
+    setPick(0);
   };
   const clear = () => {
     setSelectedIds([]);
-    setFocus(null);
+    setPick(0);
   };
 
   return (
@@ -130,56 +131,101 @@ export function EssenceFarm({ weapons, regions, stats }: Props) {
           </div>
         )}
 
-        {/* STEP 02 */}
+        {/* STEP 02 — 최적 파밍 존 */}
         <section>
           <StepHeader
             no="02"
-            title="파밍 구역"
-            hint={
-              selectedIds.length
-                ? "숫자는 추천 순서예요. 구역을 누르면 기질 선택권 설정을 볼 수 있어요."
-                : "무기를 고르면 구역별 효율이 표시돼요."
+            title="최적 파밍 존"
+            hint="우선 무기를 노리면서, 같이 나오는 기질로 다른 무기까지 챙기는 설정을 찾아요."
+            action={
+              <label className="flex shrink-0 cursor-pointer items-center gap-1.5 text-[11px] text-muted-foreground">
+                <input type="checkbox" checked={showWeak} onChange={(e) => setShowWeak(e.target.checked)} className="size-3.5 accent-foreground" />
+                1/3 일치도 표시
+              </label>
             }
           />
-          <ZoneMap zones={zones} total={selectedIds.length} focusId={focusRegionId} onFocus={(id) => setFocus({ regionId: id, lock: null })} />
-        </section>
-
-        {/* STEP 03 */}
-        <section>
-          <StepHeader no="03" title="기질 선택권 설정" hint="기초 3개 + 추가/스킬 중 1개를 고정해서 파밍해요." />
-          {focusRegionId && chosen ? (
-            <ZoneDetail
-              region={regionById.get(focusRegionId)!}
-              options={focusOptions}
-              chosen={chosen}
-              onLock={(stat) => setFocus({ regionId: focusRegionId, lock: stat })}
+          {active ? (
+            <BestZoneCard
+              key={`${active.config.regionId}-${active.config.lock.stat}`}
+              ev={active}
+              region={regionById.get(active.config.regionId)!}
+              rank={Math.min(pick, candidates.length - 1)}
               weaponById={weaponById}
-              selectedIds={selectedIds}
-              stats={stats}
               label={label}
+              showWeak={showWeak}
             />
           ) : (
-            <Placeholder text="무기를 고르면 가장 효율적인 구역의 설정이 여기에 표시됩니다." />
+            <Placeholder
+              text={selectedIds.length ? "선택한 무기를 완벽하게 얻을 수 있는 구역이 없어요." : "왼쪽에서 노릴 무기를 고르면 가장 효율적인 파밍 존이 표시됩니다."}
+            />
+          )}
+          {missing.length > 0 && active && (
+            <p className="mt-2 border border-dashed p-2 text-[11px] text-muted-foreground">
+              <b className="text-foreground">이 설정으로 완벽하게 못 얻는 우선 무기:</b>{" "}
+              {missing.map((id) => weaponById.get(id)!.name).join(", ")}
+              {route.steps.length > 1 && " — 아래 ‘전부 모으는 순서’를 참고하세요."}
+            </p>
           )}
         </section>
 
-        {/* 전체 루트 */}
-        {plan.steps.length > 1 && (
+        {/* STEP 03 — 다른 후보 */}
+        {candidates.length > 1 && (
           <section>
-            <StepHeader no="04" title="전부 모으는 순서" hint={`구역 ${plan.steps.length}곳을 돌면 선택한 무기 기질을 모두 노릴 수 있어요.`} />
-            <RouteList
-              plan={plan}
-              regionById={regionById}
-              weaponById={weaponById}
-              label={label}
-              focus={focusRegionId && chosen ? { regionId: focusRegionId, lock: chosen.config.lock.stat } : null}
-              onPick={(regionId, lock) => setFocus({ regionId, lock })}
-            />
+            <StepHeader no="03" title="다른 후보" hint="점수순이에요. 눌러서 비교해 보세요." />
+            <CandidateList candidates={candidates} activeIndex={pick} onPick={setPick} regionById={regionById} label={label} />
           </section>
         )}
-        {plan.steps.length <= 1 && plan.unreachable.length > 0 && (
-          <RouteList plan={{ steps: [], unreachable: plan.unreachable }} regionById={regionById} weaponById={weaponById} label={label} focus={null} onPick={() => {}} />
+
+        {/* 우선 무기가 여러 개일 때 */}
+        {route.steps.length > 1 && (
+          <section>
+            <StepHeader no="04" title="전부 모으는 순서" hint={`구역 ${route.steps.length}곳을 돌면 우선 무기를 모두 노릴 수 있어요.`} />
+            <ol className="space-y-1">
+              {route.steps.map((s, i) => {
+                const r = regionById.get(s.config.regionId)!;
+                return (
+                  <li key={i} className="flex items-center gap-2 border bg-card px-2.5 py-2 text-sm">
+                    <span className="grid size-6 shrink-0 place-items-center bg-muted font-mono text-[11px] font-bold">{i + 1}</span>
+                    <span className="min-w-0 flex-1">
+                      <b className="block truncate">{r.name}</b>
+                      <span className="block truncate text-[11px] text-muted-foreground">
+                        {s.priority.filter((m) => m.pPerfect > 0).map((m) => weaponById.get(m.key)!.name).join(", ")}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-[11px]">
+                      {s.config.bases.map((b) => label("base", b)).join("·")} + <b>{label(s.config.lock.category, s.config.lock.stat)}</b>
+                    </span>
+                  </li>
+                );
+              })}
+            </ol>
+            {route.unreachable.length > 0 && (
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                파밍 불가: {route.unreachable.map((id) => weaponById.get(id)!.name).join(", ")}
+              </p>
+            )}
+          </section>
         )}
+
+        {/* 점수 계산 방식 */}
+        <details className="group border p-3 text-xs">
+          <summary className="cursor-pointer list-none font-semibold">
+            <span className="mr-1 inline-block transition-transform group-open:rotate-90">▸</span>
+            점수는 어떻게 계산하나요?
+          </summary>
+          <div className="mt-2 space-y-1.5 leading-relaxed text-muted-foreground">
+            <p>기질 1개를 얻을 때 줄마다 따로 정해져요: 기초는 고른 3개 중 1개(1/3), 고정한 속성은 그대로, 나머지 하나는 구역 풀 8개 중 1개(1/8).</p>
+            <p className="space-y-0.5 bg-muted px-2 py-1.5 font-mono text-[11px] text-foreground">
+              <span className="block">점수 = {SCORE_WEIGHTS.priority} × 우선 무기 완벽 확률 ÷ 1/24</span>
+              <span className="block">{"    "}+ {SCORE_WEIGHTS.otherPerfect} × 다른 무기 완벽 확률 ÷ 1/24</span>
+              <span className="block">{"    "}+ {SCORE_WEIGHTS.otherPartial} × 다른 무기 2/3 확률 ÷ 9/24</span>
+            </p>
+            <p>
+              우선 무기 1개를 최대 확률(1/24)로 노리면 100점이에요. 같은 기질이 다른 무기에도 맞으면 무기마다 완벽 최대 +{SCORE_WEIGHTS.otherPerfect}점, 2/3 최대 +{SCORE_WEIGHTS.otherPartial}점이 더해져요. 순위는 우선 무기 점수를 먼저 비교하고, 같으면 보너스가 큰 쪽이 위로 와요.
+            </p>
+            <p>12개 구역 × 고정 16가지 × 기초 조합 10가지 = 1,920가지 설정을 모두 계산해서 고릅니다.</p>
+          </div>
+        </details>
 
         {/* 뉴비용 4성 기질 안내 */}
         <section className="border border-dashed p-3">
@@ -204,7 +250,7 @@ export function EssenceFarm({ weapons, regions, stats }: Props) {
           className="fixed inset-x-4 bottom-4 z-30 flex items-center justify-between bg-panel px-4 py-3 text-sm text-panel-foreground shadow-lg animate-in slide-in-from-bottom-4 lg:hidden"
         >
           <span>
-            무기 <b className="text-accent">{selectedIds.length}개</b> · 구역 {plan.steps.length}곳
+            무기 <b className="text-accent">{selectedIds.length}개</b>{active && <> · {active.score}점</>}
           </span>
           <span className="flex items-center gap-1 font-medium">
             결과 보기 <ArrowDown className="size-4" />
@@ -215,7 +261,7 @@ export function EssenceFarm({ weapons, regions, stats }: Props) {
   );
 }
 
-function StepHeader({ no, title, hint }: { no: string; title: string; hint?: string }) {
+function StepHeader({ no, title, hint, action }: { no: string; title: string; hint?: string; action?: React.ReactNode }) {
   return (
     <div className="mb-3 flex items-end gap-3">
       <span className="font-mono text-3xl leading-none font-bold text-foreground/15">{no}</span>
@@ -223,6 +269,7 @@ function StepHeader({ no, title, hint }: { no: string; title: string; hint?: str
         <h2 className="text-base leading-tight font-bold">{title}</h2>
         {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
       </div>
+      {action}
     </div>
   );
 }
