@@ -5,6 +5,7 @@ import {
   lockedPartChance,
   perfectChance,
   planFarming,
+  rankLocks,
   recommendFarming,
   type FarmConfig,
 } from "./essence";
@@ -186,5 +187,23 @@ describe("explainLines", () => {
   it("요구하지 않는 줄은 free", () => {
     const l = explainLines({ base: "main", extra: "atk", skill: null }, region, cfg({ category: "extra", stat: "atk" }, ["main", "str", "agi"]));
     expect(l.skill).toEqual({ status: "free", chance: 1 });
+  });
+});
+
+describe("rankLocks", () => {
+  it("구역 안의 고정 속성 후보를 점수순으로, 0점은 빼고 반환한다", () => {
+    const recs = rankLocks([{ key: "a", essence: sword }], region, BASES);
+    // sword 는 추가(atk) 고정 또는 스킬(flow) 고정 두 가지만 가능
+    expect(recs.map((r) => r.config.lock.stat).sort()).toEqual(["atk", "flow"]);
+    recs.forEach((r) => expect(r.score).toBeCloseTo(1 / 24));
+  });
+
+  it("recommendFarming 의 구역 최고 점수와 같다", () => {
+    const targets = [
+      { key: "a", essence: sword },
+      { key: "b", essence: { base: "str", extra: "atk", skill: "burst" } },
+    ];
+    const best = recommendFarming(targets, [region], BASES)[0];
+    expect(rankLocks(targets, region, BASES)[0].score).toBeCloseTo(best.score);
   });
 });

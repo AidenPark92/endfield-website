@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import type { EssenceStats, EssenceTarget, StatCategory } from "@/types/game";
 
-const CATEGORY_LABEL: Record<StatCategory, string> = { base: "기초", extra: "부가", skill: "스킬" };
+const CATEGORY_LABEL: Record<StatCategory, string> = { base: "기초", extra: "추가", skill: "스킬" };
 
 /** 기질 속성 id → 표시 이름 조회기 */
 export function makeStatLabel(stats: EssenceStats) {

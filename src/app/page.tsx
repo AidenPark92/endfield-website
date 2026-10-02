@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils";
 const FEATURES = [
   {
     code: "01",
-    title: "기질 파밍 플래너",
-    desc: "키우는 오퍼레이터를 고르면, 무기 기질을 한 번에 노릴 수 있는 지역과 각인 설정을 알려줍니다.",
+    title: "기질 파밍",
+    desc: "무기를 고르면 필요한 기질 3속성을 가장 효율적으로 모을 수 있는 구역과 기질 선택권 설정을 알려줍니다.",
     href: "/essence",
     ready: true,
   },

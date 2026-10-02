@@ -125,6 +125,21 @@ function bestForLock(
 }
 
 /**
+ * 한 구역에서 고를 수 있는 모든 고정 속성(추가 8 + 스킬 8)별 최적 설정을 점수순으로 반환한다.
+ * 점수가 0 인 설정(선택한 무기를 하나도 못 얻는 설정)은 제외한다.
+ */
+export function rankLocks(targets: FarmTarget[], region: EssenceRegion, allBases: string[]): FarmRecommendation[] {
+  const recs: FarmRecommendation[] = [];
+  for (const category of ["extra", "skill"] as const) {
+    for (const stat of region[category]) {
+      const rec = bestForLock(targets, region, { category, stat }, allBases);
+      if (rec.score > 0) recs.push(rec);
+    }
+  }
+  return recs.sort((a, b) => b.score - a.score || b.covered.length - a.covered.length);
+}
+
+/**
  * 선택한 대상(무기 기질 목표)들에 대해 가장 효율적인 파밍 설정을 찾는다.
  * 지역마다 최고 설정 1개씩 뽑아 점수 내림차순으로 반환한다.
  */

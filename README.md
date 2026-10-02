@@ -23,9 +23,9 @@ data/                     게임 데이터 (JSON) — 계산은 여기 값만 �
 scripts/build-data.mjs    raw → data/*.json 정규화
 src/
   app/                    페이지 (서버 컴포넌트 기본)
-    essence/              기질 파밍 (무기 매처 + 오퍼레이터 플래너)
+    essence/              기질 파밍 (무기 선택 → 구역 효율 → 기질 선택권 설정)
   components/
-    essence/              플래너 UI ('use client')
+    essence/              기질 파밍 UI ('use client')
     ui/                   shadcn/ui 컴포넌트
   lib/calc/essence.ts     기질 최적화 계산 (순수 함수 + 테스트)
   lib/data.ts             data JSON 타입 래퍼
