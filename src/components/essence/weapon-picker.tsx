@@ -2,6 +2,7 @@ import { Check, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EssenceOrb } from "./essence-orb";
 import { WeaponThumb } from "./weapon-thumb";
+import { EssenceSlots } from "./essence-slots";
 import { WeaponUsersInline, type WeaponUserInfo } from "./weapon-users";
 import type { StatLabelFn } from "./stat-chip";
 import type { Weapon, WeaponType } from "@/types/game";
@@ -16,7 +17,6 @@ export const matchRarity = (r: number, f: RarityFilter) => (f === "전체" ? r >
 const WEAPON_TYPES: (WeaponType | "전체")[] = ["전체", "한손검", "양손검", "장병기", "권총", "아츠 유닛"];
 
 export const CATEGORY_NAME = { base: "기초", extra: "추가", skill: "스킬" } as const;
-const CATEGORY_DOT = { base: "bg-stat-base", extra: "bg-stat-extra", skill: "bg-stat-skill" } as const;
 
 interface Props {
   weapons: Weapon[];
@@ -141,22 +141,13 @@ function WeaponCard({
             </span>
           )}
         </WeaponThumb>
-        <span className="flex items-start gap-2 px-2.5 pt-2 pb-2.5">
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-bold">{w.name}</span>
-            <span className="mt-1 block space-y-0.5">
-              {(["base", "extra", "skill"] as const).map((c) =>
-                w.essence[c] ? (
-                  <span key={c} className="flex items-center gap-1.5 text-[11px]">
-                    <span className={cn("size-1.5 shrink-0", CATEGORY_DOT[c])} />
-                    <span className="w-6 shrink-0 text-muted-foreground">{CATEGORY_NAME[c]}</span>
-                    <span className="truncate">{label(c, w.essence[c]!)}</span>
-                  </span>
-                ) : null,
-              )}
-            </span>
+        <span className="block px-2.5 pt-2 pb-2.5">
+          <span className="flex items-center gap-2">
+            <span className="min-w-0 flex-1 truncate text-sm font-bold">{w.name}</span>
+            <EssenceOrb skill={w.essence.skill} size={26} alt="목표 기질" />
           </span>
-          <EssenceOrb skill={w.essence.skill} size={34} alt="목표 기질" className="mt-0.5" />
+          {/* 필요한 기질 속성 3가지 */}
+          <EssenceSlots essence={w.essence} label={label} className="mt-1.5" />
         </span>
         {/* 이 무기를 쓰는 오퍼레이터 */}
         <WeaponUsersInline users={users} className="border-t px-2.5 py-1.5" />

@@ -31,6 +31,18 @@ def norm(s: str) -> str:
     return " ".join(s.split())
 
 
+def is_valid_image(path: Path) -> bool:
+    """파일이 있고, 실제로 열리는 이미지인지 (0바이트·깨진 파일이면 다시 만든다)"""
+    if not path.exists() or path.stat().st_size == 0:
+        return False
+    try:
+        with Image.open(path) as im:
+            im.verify()
+        return True
+    except Exception:
+        return False
+
+
 weapons = json.loads((ROOT / "data" / "weapons.json").read_text(encoding="utf-8"))["weapons"]
 by_name = {norm(w["name"]): w for w in weapons}
 
@@ -45,10 +57,12 @@ for f in sorted(SRC.iterdir()):
         unmatched_files.append(f.name)
         continue
     dst = OUT / f"{w['id']}.webp"
-    if not dst.exists() or dst.stat().st_mtime < f.stat().st_mtime:
+    if not is_valid_image(dst) or dst.stat().st_mtime < f.stat().st_mtime:
         im = Image.open(f).convert("RGBA")
         im.thumbnail((SIZE, SIZE), Image.LANCZOS)
-        im.save(dst, "WEBP", quality=88, method=6)
+        tmp = dst.with_suffix(".tmp.webp")  # 중간에 끊겨도 깨진 파일이 남지 않게 임시 파일 → 이름 변경
+        im.save(tmp, "WEBP", quality=88, method=6)
+        tmp.replace(dst)
     images[w["id"]] = f"/weapons/{w['id']}.webp"
 
 # GIF → mp4 + 포스터
@@ -85,7 +99,7 @@ for f in sorted(SRC.iterdir()):
             check=True,
         )
         os.replace(tmp, webm)
-    if not poster.exists() or poster.stat().st_mtime < mp4.stat().st_mtime:
+    if not is_valid_image(poster) or poster.stat().st_mtime < mp4.stat().st_mtime:
         subprocess.run(
             ["ffmpeg", "-v", "error", "-y", "-i", str(mp4), "-frames:v", "1",
              "-vf", "scale=480:-2:flags=lanczos", "-c:v", "libwebp", "-quality", "82", str(poster)],

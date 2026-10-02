@@ -9,9 +9,10 @@ import { cn } from "@/lib/utils";
 import type { FarmTarget } from "@/lib/calc/essence";
 import { SCORE_WEIGHTS, rankConfigs, uniqueByZoneLock } from "@/lib/calc/essence-score";
 import { LOW_TIER_ESSENCES } from "@/lib/essence-images";
-import { StatChip, makeStatLabel, type StatLabelFn } from "./stat-chip";
+import { makeStatLabel, type StatLabelFn } from "./stat-chip";
 import { EssenceOrb } from "./essence-orb";
 import { WeaponMedia } from "./weapon-media";
+import { EssenceSlots } from "./essence-slots";
 import { NAV_RESET_EVENT } from "@/components/nav-link";
 import { MIN_RARITY, WeaponPicker, type RarityFilter } from "./weapon-picker";
 import { BestZoneCard, CandidateList } from "./farm-result";
@@ -274,16 +275,14 @@ function TargetBar({
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <EssenceOrb skill={weapon.essence.skill} size={56} alt="목표 기질" />
-          <div className="min-w-0">
-            <p className="mb-1 text-[11px] font-semibold text-muted-foreground">맞춰야 할 기질 3줄</p>
-            <p className="flex flex-wrap gap-1">
-              {(["base", "extra", "skill"] as const).map((c) =>
-                weapon.essence[c] ? <StatChip key={c} category={c} id={weapon.essence[c]!} label={label} showCategory /> : null,
-              )}
-            </p>
-          </div>
+        {/* 필요한 기질 속성 3가지 */}
+        <div>
+          <p className="mb-1.5 flex items-center gap-2 text-xs font-bold">
+            <EssenceOrb skill={weapon.essence.skill} size={28} alt="목표 기질" />
+            이 무기에 필요한 기질 속성 3가지
+            <span className="font-normal text-muted-foreground">· 3줄이 전부 맞아야 써요</span>
+          </p>
+          <EssenceSlots essence={weapon.essence} label={label} size="lg" />
         </div>
 
         {/* 이 무기를 쓰는 오퍼레이터 */}

@@ -7,7 +7,8 @@ import { cn } from "@/lib/utils";
 import { essenceStats, operators, weapons } from "@/lib/data";
 import { ELEMENT_BG, ELEMENT_TEXT, RARITY_BG } from "@/lib/operator-meta";
 import { essenceImage } from "@/lib/essence-images";
-import type { Weapon } from "@/types/game";
+import type { StatCategory, Weapon } from "@/types/game";
+import { EssenceSlots } from "@/components/essence/essence-slots";
 
 export function generateStaticParams() {
   return operators.map((o) => ({ id: o.id }));
@@ -24,6 +25,7 @@ const weaponById = new Map(weapons.map((w) => [w.id, w]));
 const statLabel = new Map(
   (["base", "extra", "skill"] as const).flatMap((c) => essenceStats[c].map((s) => [`${c}:${s.id}`, s.label] as const)),
 );
+const labelOf = (c: StatCategory, id: string) => statLabel.get(`${c}:${id}`) ?? id;
 const SKILL_ORDER = ["일반 공격", "배틀 스킬", "연계 스킬", "궁극기"];
 
 export default async function OperatorPage({ params }: { params: Promise<{ id: string }> }) {
@@ -197,12 +199,7 @@ function WeaponRow({ title, ids }: { title: string; ids: string[] }) {
                   {w.name}
                   {title === "스킬 조합" && i === 0 && <span className="ml-1 text-[10px] font-semibold text-accent-strong">1순위</span>}
                 </span>
-                <span className="block truncate text-[10px] text-muted-foreground">
-                  {(["base", "extra", "skill"] as const)
-                    .filter((c) => w.essence[c])
-                    .map((c) => statLabel.get(`${c}:${w.essence[c]}`))
-                    .join(" · ")}
-                </span>
+                <EssenceSlots essence={w.essence} label={labelOf} className="mt-1" />
                 <span className="mt-0.5 inline-flex items-center gap-0.5 text-[10px] font-semibold group-hover:underline">
                   <Sparkles className="size-3" /> 기질 파밍
                 </span>

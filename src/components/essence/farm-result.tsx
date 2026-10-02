@@ -8,6 +8,7 @@ import type { ConfigEval, WeaponMatch } from "@/lib/calc/essence-score";
 import { EssenceOrb } from "./essence-orb";
 import type { StatLabelFn } from "./stat-chip";
 import { WeaponThumb } from "./weapon-thumb";
+import { EssenceSlots } from "./essence-slots";
 import { WeaponUsersInline, type WeaponUserInfo } from "./weapon-users";
 import type { EssenceRegion, StatCategory, Weapon } from "@/types/game";
 
@@ -298,15 +299,11 @@ function BonusTile({ m, w, users, label }: { m: WeaponMatch; w: Weapon; users: W
     <li className="flex items-center gap-2 border bg-card p-2 animate-in fade-in">
       <WeaponThumb weapon={w} size={96} className="size-12" />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold">{w.name}</p>
-        <p className="truncate text-[10px] text-muted-foreground">
-          {CATS.filter((c) => m.lines[c])
-            .map((c) => label(c, m.lines[c]!.want))
-            .join(" · ")}
+        <p className="flex items-baseline justify-between gap-1">
+          <span className="truncate text-sm font-semibold">{w.name}</span>
+          <span className="shrink-0 font-mono text-[10px] font-bold">{formatPercent(m.pPerfect)}</span>
         </p>
-        <p className="flex items-center justify-between gap-1">
-          <span className="font-mono text-[10px] font-bold">{formatPercent(m.pPerfect)}</span>
-        </p>
+        <EssenceSlots essence={w.essence} label={label} className="mt-1" />
         <WeaponUsersInline users={users} max={3} className="mt-1" />
       </div>
       <EssenceOrb skill={w.essence.skill} size={30} />
