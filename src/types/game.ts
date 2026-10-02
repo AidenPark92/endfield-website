@@ -32,6 +32,8 @@ export interface Weapon {
   /** 무기 고유 스킬 이름 (예: "어둠 · 울부짖는 불길") */
   trait: string;
   cover: string;
+  /** 사이트 내 무기 이미지 (public/weapons, 없으면 undefined) */
+  image?: string;
   note?: string;
 }
 

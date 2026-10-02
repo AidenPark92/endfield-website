@@ -5,9 +5,8 @@ import { useState } from "react";
 import { cn, formatPercent } from "@/lib/utils";
 import type { ConfigEval, WeaponMatch } from "@/lib/calc/essence-score";
 import type { StatLabelFn } from "./stat-chip";
+import { WeaponThumb } from "./weapon-thumb";
 import type { EssenceRegion, StatCategory, Weapon } from "@/types/game";
-
-const RARITY_BAR: Record<number, string> = { 6: "bg-rarity-6", 5: "bg-rarity-5", 4: "bg-rarity-4", 3: "bg-rarity-3" };
 
 /** 일치 등급 */
 function grade(m: WeaponMatch): { text: string; tone: "perfect" | "good" | "weak" } {
@@ -133,9 +132,8 @@ function WeaponRow({ m, w, label, priority = false }: { m: WeaponMatch; w: Weapo
   const g = grade(m);
   return (
     <li className={cn("flex items-center gap-2.5 border p-2", TONE_BOX[g.tone])}>
-      {/* 무기 이미지 자리 (공백) */}
-      <span className="relative size-10 shrink-0 border bg-muted/60">
-        <span className={cn("absolute inset-x-0 bottom-0 h-1", RARITY_BAR[w.rarity])} />
+      <span className="relative shrink-0">
+        <WeaponThumb weapon={w} size={96} className="size-12" />
         {priority && <Star className="absolute -top-1.5 -right-1.5 size-3.5 fill-rarity-5 text-rarity-5" />}
       </span>
       <span className="min-w-0 flex-1">

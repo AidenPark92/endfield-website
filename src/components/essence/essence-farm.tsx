@@ -10,11 +10,10 @@ import { SCORE_WEIGHTS, rankConfigs, uniqueByZoneLock } from "@/lib/calc/essence
 import { LOW_TIER_ESSENCES } from "@/lib/essence-images";
 import { StatChip, makeStatLabel, type StatLabelFn } from "./stat-chip";
 import { EssenceOrb } from "./essence-orb";
+import { WeaponThumb } from "./weapon-thumb";
 import { WeaponPicker } from "./weapon-picker";
 import { BestZoneCard, CandidateList } from "./farm-result";
 import type { EssenceRegion, EssenceStats, Weapon, WeaponType } from "@/types/game";
-
-const RARITY_BAR: Record<number, string> = { 6: "bg-rarity-6", 5: "bg-rarity-5", 4: "bg-rarity-4", 3: "bg-rarity-3" };
 
 const STORAGE_KEY = "ef:essence:v3";
 
@@ -224,10 +223,7 @@ export function EssenceFarm({ weapons, regions, stats }: Props) {
 function TargetBar({ weapon, label, onChange }: { weapon: Weapon; label: StatLabelFn; onChange: () => void }) {
   return (
     <div className="ef-cut flex flex-wrap items-center gap-3 border bg-card p-3 animate-in fade-in slide-in-from-top-1">
-      {/* 무기 이미지 자리 (공백) */}
-      <span className="relative size-14 shrink-0 border bg-muted/60">
-        <span className={cn("absolute inset-x-0 bottom-0 h-1", RARITY_BAR[weapon.rarity])} />
-      </span>
+      <WeaponThumb weapon={weapon} size={160} className="size-20" />
       <div className="min-w-0 flex-1">
         <p className="ef-label whitespace-nowrap">01 // 선택한 무기</p>
         <p className="truncate text-lg leading-tight font-bold">{weapon.name}</p>

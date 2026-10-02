@@ -2,11 +2,13 @@
 import statsJson from "@data/essence-stats.json";
 import regionsJson from "@data/essence-regions.json";
 import weaponsJson from "@data/weapons.json";
+import weaponImagesJson from "@data/weapon-images.json";
 import operatorsJson from "@data/operators.json";
 import type { EssenceRegion, EssenceStats, Operator, Weapon } from "@/types/game";
 
 export const essenceStats: EssenceStats = statsJson;
 export const essenceRegions: EssenceRegion[] = regionsJson.regions;
 export const essenceRegionsMeta = regionsJson._meta;
-export const weapons = weaponsJson.weapons as Weapon[];
+const weaponImages: Record<string, string> = weaponImagesJson.images;
+export const weapons: Weapon[] = (weaponsJson.weapons as Weapon[]).map((w) => ({ ...w, image: weaponImages[w.id] }));
 export const operators = operatorsJson.operators as Operator[];

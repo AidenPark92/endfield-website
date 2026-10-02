@@ -44,3 +44,6 @@ next-env.d.ts
 
 # 브라우저 다운로드 중인 임시 파일
 *.crdownload
+
+# 무기 연출 GIF (수십 MB) — 저장소에 올리지 않음
+src/images/무기/*.gif

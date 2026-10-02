@@ -14,6 +14,7 @@ import statsJson from "@data/essence-stats.json";
 import regionsJson from "@data/essence-regions.json";
 import weaponsJson from "@data/weapons.json";
 import operatorsJson from "@data/operators.json";
+import weaponImagesJson from "@data/weapon-images.json";
 
 const BASES = ["str", "agi", "int", "wil", "main"];
 
@@ -153,6 +154,14 @@ describe("data 무결성", () => {
   it("지역은 12곳이고 id가 겹치지 않는다", () => {
     expect(regionsJson.regions).toHaveLength(12);
     expect(new Set(regionsJson.regions.map((r) => r.id)).size).toBe(12);
+  });
+
+  it("무기 이미지 매핑은 존재하는 무기만 가리킨다", () => {
+    const wIds = new Set(weaponsJson.weapons.map((w) => w.id));
+    for (const [id, path] of Object.entries(weaponImagesJson.images)) {
+      expect(wIds.has(id), id).toBe(true);
+      expect(path).toBe(`/weapons/${id}.webp`);
+    }
   });
 
   it("오퍼레이터 추천 무기는 모두 존재한다", () => {

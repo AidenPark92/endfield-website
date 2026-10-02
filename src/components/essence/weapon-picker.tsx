@@ -1,11 +1,11 @@
 import { Check, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EssenceOrb } from "./essence-orb";
+import { WeaponThumb } from "./weapon-thumb";
 import type { StatLabelFn } from "./stat-chip";
 import type { Weapon, WeaponType } from "@/types/game";
 
 const WEAPON_TYPES: (WeaponType | "전체")[] = ["전체", "한손검", "양손검", "장병기", "권총", "아츠 유닛"];
-const RARITY_BG: Record<number, string> = { 6: "bg-rarity-6", 5: "bg-rarity-5", 4: "bg-rarity-4", 3: "bg-rarity-3" };
 
 export const CATEGORY_NAME = { base: "기초", extra: "추가", skill: "스킬" } as const;
 const CATEGORY_DOT = { base: "bg-stat-base", extra: "bg-stat-extra", skill: "bg-stat-skill" } as const;
@@ -78,9 +78,7 @@ export function WeaponPicker(props: Props) {
                   active && "border-foreground",
                 )}
               >
-                {/* 무기 이미지 자리 (공백) */}
-                <span className="relative block h-16 border-b bg-muted/60">
-                  <span className={cn("absolute top-0 left-0 h-1 w-full", RARITY_BG[w.rarity])} />
+                <WeaponThumb weapon={w} size={192} bar="top" className="aspect-[3/2] w-full border-0 border-b">
                   <span className="absolute bottom-1.5 left-2 font-mono text-[10px] text-muted-foreground">
                     {w.rarity}★ · {w.type}
                   </span>
@@ -89,7 +87,7 @@ export function WeaponPicker(props: Props) {
                       <Check className="size-4" />
                     </span>
                   )}
-                </span>
+                </WeaponThumb>
                 <span className="flex items-center gap-1 px-2 pt-2">
                   <span className="flex-1 truncate text-sm font-semibold">{w.name}</span>
                 </span>
