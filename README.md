@@ -19,12 +19,16 @@ data/                     게임 데이터 (JSON) — 계산은 여기 값만 �
   essence-regions.json    지역별 기질 풀 12곳 (인게임 캡처 기준)
   weapons.json            무기 80종 + 추천 주입 기질
   operators.json          오퍼레이터 33명 + 게임 내 추천 무기
+  operator-profiles.json  직업·기본 정보·특기/취미·스킬 이름 + 사이트에서 쓴 스토리 요약 (원문은 위키 링크)
+  operator-images.json    캐릭터 이미지 매핑 (전신 / 얼굴)
   raw/                    위키에서 수집한 원본
 scripts/build-data.mjs    raw → data/*.json 정규화
+scripts/build-operator-images.py  src/images/캐릭터 → public/operators (전신 720px, 얼굴 200px) + data/operator-images.json
 scripts/build-weapon-images.py  src/images/무기 → public/weapons (아이콘 webp, 회전 영상 webm/mp4, 포스터) + data/weapon-images.json
 src/
   app/                    페이지 (서버 컴포넌트 기본)
     essence/              기질 파밍 (무기 선택 → 구역 효율 → 기질 선택권 설정)
+    operators/            캐릭터 목록(필터) · 상세(스토리·기본 정보·추천 무기)
   components/
     essence/              기질 파밍 UI ('use client')
     ui/                   shadcn/ui 컴포넌트

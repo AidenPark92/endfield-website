@@ -11,7 +11,13 @@ const FEATURES = [
     href: "/essence",
     ready: true,
   },
-  { code: "02", title: "오퍼레이터 DB · 육성 재료", desc: "레벨·스킬·돌파 재료 계산", ready: false },
+  {
+    code: "02",
+    title: "캐릭터",
+    desc: "속성 · 직업 · 무기로 찾아보는 오퍼레이터 목록과 캐릭터 소개 · 스토리.",
+    href: "/operators",
+    ready: true,
+  },
   { code: "03", title: "데미지 계산기", desc: "파티·장비를 반영한 전투력 계산", ready: false },
   { code: "04", title: "공장 청사진", desc: "2D 청사진 에디터와 공유 게시판", ready: false },
 ];

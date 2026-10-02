@@ -4,7 +4,10 @@ import regionsJson from "@data/essence-regions.json";
 import weaponsJson from "@data/weapons.json";
 import weaponImagesJson from "@data/weapon-images.json";
 import operatorsJson from "@data/operators.json";
-import type { EssenceRegion, EssenceStats, Operator, Weapon } from "@/types/game";
+import operatorImagesJson from "@data/operator-images.json";
+import operatorProfilesJson from "@data/operator-profiles.json";
+import type { EssenceRegion, EssenceStats, Operator, OperatorProfile, Weapon } from "@/types/game";
+import { buildWeaponUsers } from "@/lib/weapon-users";
 
 export const essenceStats: EssenceStats = statsJson;
 export const essenceRegions: EssenceRegion[] = regionsJson.regions;
@@ -20,4 +23,14 @@ export const weapons: Weapon[] = (weaponsJson.weapons as Weapon[]).map((w) => ({
   video: media.videos?.[w.id],
   poster: media.posters?.[w.id],
 }));
-export const operators = operatorsJson.operators as Operator[];
+const opImages = operatorImagesJson as { full: Record<string, string>; face: Record<string, string> };
+const opProfiles = operatorProfilesJson.profiles as Record<string, OperatorProfile>;
+export const operators: Operator[] = (operatorsJson.operators as Operator[]).map((o) => ({
+  ...o,
+  image: opImages.full[o.id],
+  face: opImages.face[o.id],
+  profile: opProfiles[o.id],
+}));
+
+/** 무기 id → 그 무기를 추천받는 오퍼레이터 (위키 '게임 내 추천' 기준) */
+export const weaponUsers = buildWeaponUsers(operators);

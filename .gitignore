@@ -47,3 +47,6 @@ next-env.d.ts
 
 # 무기 연출 GIF (수십 MB) — 저장소에 올리지 않음
 src/images/무기/*.gif
+
+# 캐릭터 원본 일러스트 (약 100MB) — 변환본(public/operators)만 저장소에 올림
+src/images/캐릭터/

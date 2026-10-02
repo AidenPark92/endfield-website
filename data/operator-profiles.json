@@ -1,0 +1,1689 @@
+{
+  "_meta": {
+    "source": "https://wiki.skport.com/endfield (오퍼레이터 상세: 기본 정보·특기·취미·스킬 이름, 직업은 목록 필터 기준)",
+    "collectedAt": "2026-10-02",
+    "note": "summary 는 위키 소개를 바탕으로 사이트에서 직접 쓴 요약 — 원문 스토리는 wiki 링크로 연결"
+  },
+  "profiles": {
+    "1173": {
+      "class": "스트라이커",
+      "gender": "여",
+      "birthday": "1월 13일",
+      "race": "살카즈",
+      "cv": {
+        "ko": "채림",
+        "ja": "大空直美",
+        "en": "Hanna Johansson",
+        "zh": "皛四白"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "황무지의 사냥꾼"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "바람을 가르는 화살"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "가시덤불 쇄도"
+        },
+        {
+          "type": "궁극기",
+          "name": "설산의 포효"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "자연 상식",
+          "title": "자연의 인도"
+        },
+        {
+          "name": "야외 생존",
+          "title": "설원의 질서"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "생활",
+          "title": "사미식 스튜"
+        },
+        {
+          "name": "자연",
+          "title": "황무지로 스며드는 자"
+        }
+      ],
+      "summary": "로도스 아일랜드에서 온 살카즈 사냥꾼. 탈로스 II에 흩어진 사미의 옛 전설을 직접 찾아다니며 노트에 기록하고 있다. 관리자와의 우연한 만남을 계기로 엔드필드에 합류했고, 어른스러운 침착함과 아이다운 호기심을 함께 지녔다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=1173"
+    },
+    "1041": {
+      "class": "서포터",
+      "gender": "여",
+      "birthday": "7월 27일",
+      "race": "살카즈",
+      "cv": {
+        "ko": "김진아",
+        "ja": "佐々木李子",
+        "en": "Maddie Matsumoto",
+        "zh": "多多poi"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "반짝이는 하트"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "스포트라이트"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "기쁨의 멜로디"
+        },
+        {
+          "type": "궁극기",
+          "name": "샛별의 협주곡"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "창의적인 생각",
+          "title": "즉흥 공연"
+        },
+        {
+          "name": "교섭",
+          "title": "아이돌의 교섭술"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "창의",
+          "title": "드라마 감상"
+        },
+        {
+          "name": "예술",
+          "title": "옛 음반 수집"
+        }
+      ],
+      "summary": "탈로스 II 상업연합회 출신의 신예 아이돌로 '라반도르마의 샛별'이라 불린다. 파격적인 무대 연출로 인기를 끌고 있으며, 개인적인 사정으로 엔드필드에 합류해 대외 교류와 홍보를 맡고 있다. 어린 시절 사고로 부모를 잃은 아픔이 있다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=1041"
+    },
+    "1040": {
+      "class": "캐스터",
+      "gender": "여",
+      "birthday": "7월 7일",
+      "race": "리베리",
+      "cv": {
+        "ko": "김순미",
+        "ja": "Lynn",
+        "en": "Julia Gu",
+        "zh": "唐雅菁"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "중화력 요격"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "결정 파쇄 그리드(진결 · 지혜)"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "응룡 4식(진결 · 지혜)"
+        },
+        {
+          "type": "궁극기",
+          "name": "어스름 파훼(진결 · 지혜)"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "작전 기술",
+          "title": "응룡 작전 진영"
+        },
+        {
+          "name": "체력 단련",
+          "title": "예리함"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "자연",
+          "title": "천연 조각"
+        },
+        {
+          "name": "공익",
+          "title": "수많은 맛"
+        }
+      ],
+      "summary": "홍산 과학원 응룡 특수부대의 행동 대장(본명 이지연). 북쪽 금지 구역의 재앙으로 모든 것을 잃은 뒤 무릉 대균열을 막는 일에 삶을 바쳐 왔다. 오랜 최전선 근무로 몸이 상해 요양 겸 협력 형태로 엔드필드에 머문다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=1040"
+    },
+    "996": {
+      "class": "뱅가드",
+      "gender": "남",
+      "birthday": "11월 20일",
+      "race": "살카즈",
+      "cv": {
+        "ko": "이주승",
+        "ja": "松岡禎丞",
+        "en": "Aleks Le",
+        "zh": "马洋"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "피의 속죄"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "사르는 불꽃"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "영혼의 가시"
+        },
+        {
+          "type": "궁극기",
+          "name": "선혈의 비"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "전황 분석",
+          "title": "수호자의 통찰"
+        },
+        {
+          "name": "민첩",
+          "title": "혈흔 추적"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "창의",
+          "title": "주술 퍼즐"
+        },
+        {
+          "name": "과학기술",
+          "title": "장비 감정"
+        }
+      ],
+      "summary": "세쉬카의 '수호자'로, 살카즈가 얽힌 중범죄를 전문으로 다룬다. 혈액 계열 오리지늄 아츠를 쓰며 저주 같은 주술에 맞서는 데 능하다. 죄를 지은 혈육을 오랫동안 쫓고 있으며, 과거의 배신 탓에 쉽게 마음을 열지 않는다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=996"
+    },
+    "995": {
+      "class": "가드",
+      "gender": "여",
+      "birthday": "7월 9일",
+      "race": "살카즈",
+      "cv": {
+        "ko": "민아",
+        "ja": "渡辺明乃",
+        "en": "Rao Zijun",
+        "zh": "张若瑜"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "검권 합일"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "청파 삼형"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "후회 없는 주먹"
+        },
+        {
+          "type": "궁극기",
+          "name": "절심"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "체력 단련",
+          "title": "근육 강화"
+        },
+        {
+          "name": "작전 기술",
+          "title": "무릉 살성"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "생활",
+          "title": "염국 스타일 디저트"
+        },
+        {
+          "name": "운동",
+          "title": "무예 교류"
+        }
+      ],
+      "summary": "무릉성 순찰대 대장이자 장방이의 든든한 오른팔. 청파 무술을 잇는 실력자로, 강한 상대와 겨루는 것을 즐기고 동료를 위해서라면 목숨도 건다. 오랜 친구들을 만나러 엔드필드를 찾았다가 훈련실에 반해 머무는 기간을 늘렸다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=995"
+    },
+    "838": {
+      "class": "스트라이커",
+      "gender": "여",
+      "birthday": "8월 7일",
+      "race": "키린",
+      "cv": {
+        "ko": "송하림",
+        "ja": "桑島法子",
+        "en": "Molly Zhang",
+        "zh": "秦紫翼"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "전격술"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "뇌정의 부름"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "변화의 숨결"
+        },
+        {
+          "type": "궁극기",
+          "name": "심판의 폭풍"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "박학다식",
+          "title": ""
+        },
+        {
+          "name": "조직 관리",
+          "title": ""
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "공익",
+          "title": ""
+        },
+        {
+          "name": "문화",
+          "title": ""
+        }
+      ],
+      "summary": "무릉 과학 발전 구역의 책임자이자 식양 신재료 프로젝트를 이끄는 천사. 10년 전 재앙으로 연구 기지가 무너지자 가장 어린 연구원이던 그녀가 무릉을 떠맡아 도시를 다시 일으켰다. 홍산 과학원의 추천으로 엔드필드와 균열 연구를 함께한다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=838"
+    },
+    "615": {
+      "class": "가드",
+      "gender": "여",
+      "birthday": "3월 10일",
+      "race": "루포",
+      "cv": {
+        "ko": "이주은",
+        "ja": "日高里菜",
+        "en": "Giada Sabellico",
+        "zh": "吳哲茹"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "끓어오르는 늑대의 피"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "붉은색의 그림자"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "그림자가 타오르는 순간"
+        },
+        {
+          "type": "궁극기",
+          "name": "기습 '날카로운 발톱'"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "전황 분석",
+          "title": "외교"
+        },
+        {
+          "name": "교섭",
+          "title": "분쟁 조정"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "자연",
+          "title": "꿈속 영웅"
+        },
+        {
+          "name": "운동",
+          "title": "사냥 경기"
+        }
+      ],
+      "summary": "랜드브레이커 '울프팀'의 일원이자 울프가드의 여동생(본명 로시나 울프펄 루피노). 집단의 기대를 한 몸에 받으며 리더 역할을 맡고 있고, 엔드필드와 울프팀 사이의 협력 창구다. 평소엔 싹싹하지만 전투에선 날카롭게 돌변한다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=615"
+    },
+    "25": {
+      "class": "캐스터",
+      "gender": "여",
+      "birthday": "11월 29일",
+      "race": "필라인",
+      "cv": {
+        "ko": "김채린",
+        "ja": "ファイルーズあい",
+        "en": "Jing Chen",
+        "zh": "靜宸"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "정신 똑바로 차려!"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "우당탕탕 파도!"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "야, 강물! 도와줘!"
+        },
+        {
+          "type": "궁극기",
+          "name": "대당가께서 지켜보고 계신다!"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "작전 기술",
+          "title": "신속 장전"
+        },
+        {
+          "name": "민첩",
+          "title": "날렵한 몸놀림"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "자연",
+          "title": "물놀이"
+        },
+        {
+          "name": "창의",
+          "title": "마을 부흥"
+        }
+      ],
+      "summary": "청파채의 대당가. 갓난아기 때 강물에 떠내려와 청파채 사람들 손에 자랐고, 청파채의 미래를 책임지겠다는 꿈을 품고 있다. 시원시원하고 의리를 중시하며, 문제의 답을 찾기 위해 엔드필드에 합류했다. 미브와는 친구이자 앙숙.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=25"
+    },
+    "20": {
+      "class": "뱅가드",
+      "gender": "남",
+      "birthday": "7월 23일",
+      "race": "리베리",
+      "cv": {
+        "ko": "권성혁",
+        "ja": "速水 奨",
+        "en": "Sergey Ponomaryov",
+        "zh": "刘若班"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "전면 공세"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "전선 분쇄"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "보름달 참격"
+        },
+        {
+          "type": "궁극기",
+          "name": "방패병 부대, 전진"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "전략 수립",
+          "title": "군사 이론"
+        },
+        {
+          "name": "조직 관리",
+          "title": "지도"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "문화",
+          "title": "살아있는 역사책"
+        },
+        {
+          "name": "지능 훈련",
+          "title": "대국"
+        }
+      ],
+      "summary": "로도스 아일랜드에서 파견된 군사 고문(본명 헤르손). 철의 서약군 방패병 부대 지휘관으로 북극권 전선에서 아겔로스와 싸워 왔다. 결단력 있는 전형적인 군인이지만 사람들의 사기를 북돋는 데에도 능하다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=20"
+    },
+    "19": {
+      "class": "서포터",
+      "gender": "여",
+      "birthday": "10월 18일",
+      "race": "카프리니",
+      "cv": {
+        "ko": "김하루",
+        "ja": "金元寿子",
+        "en": "Lindsay Sheppard",
+        "zh": "降溫"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "바위의 속삭임"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "질주하는 돌리"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "화산 분화"
+        },
+        {
+          "type": "궁극기",
+          "name": "복슬복슬 파티"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "자연 상식",
+          "title": "지질 탐사"
+        },
+        {
+          "name": "모험",
+          "title": "등반"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "생활",
+          "title": "디저트 만들기"
+        },
+        {
+          "name": "자연",
+          "title": "자연 친화"
+        }
+      ],
+      "summary": "로도스 아일랜드 소속의 지질 연구 전문가. 화산 연구에서 시작해 지금은 초자연·지질 재해 연구에 몰두하며, 그녀의 현장 조사 결과는 엔드필드의 침식 대응책에 큰 밑거름이 되었다. 늘 겸손하며 반려 '돌리'와 함께 다닌다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=19"
+    },
+    "17": {
+      "class": "스트라이커",
+      "gender": "여",
+      "birthday": "11월 12일",
+      "race": "살카즈",
+      "cv": {
+        "ko": "이이로",
+        "ja": "白石晴香",
+        "en": "Amber Hood",
+        "zh": "闲踏梧桐"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "혹한의 춤"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "세쉬카의 비전"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "겨울 포식자"
+        },
+        {
+          "type": "궁극기",
+          "name": "마지막 인사"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "작전 기술",
+          "title": "파괴"
+        },
+        {
+          "name": "체력 단련",
+          "title": "신체 능력"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "지능 훈련",
+          "title": "미니게임"
+        },
+        {
+          "name": "공익",
+          "title": "봉사 활동"
+        }
+      ],
+      "summary": "세쉬카에서 파견된 브랜드 홍보 대사(본명 아델하이드). 묘지기 부부에게 입양되어 자란 나흐체러르로, 본능적인 '식사'조차 거부할 만큼 선량하다. 낯을 많이 가리지만, 디저트를 건네면 금방 마음을 연다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=17"
+    },
+    "15": {
+      "class": "디펜더",
+      "gender": "여",
+      "birthday": "4월 10일",
+      "race": "산크타",
+      "cv": {
+        "ko": "이새아",
+        "ja": "小松 未可子",
+        "en": "Rhiannon Moushall",
+        "zh": "徐慧"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "돌진 검술"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "진군"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "전선에서의 지원"
+        },
+        {
+          "type": "궁극기",
+          "name": "다시 불타오르는 맹세"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "작전 기술",
+          "title": "무장 방어"
+        },
+        {
+          "name": "체력 단련",
+          "title": "신체 능력"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "운동",
+          "title": "군사 훈련"
+        },
+        {
+          "name": "과학기술",
+          "title": "자가 정비"
+        }
+      ],
+      "summary": "북쪽을 지켜 온 철의 서약군 특수 부대의 정예 전사. 전사한 전우들의 뒤를 이을 인원을 모으기 위해 문명 밴드로 돌아와 엔드필드와 협력하게 되었다. 최전선에서 동료를 지키는 방벽 같은 존재다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=15"
+    },
+    "14": {
+      "class": "스트라이커",
+      "gender": "여",
+      "birthday": "5월 9일",
+      "race": "와이번",
+      "cv": {
+        "ko": "여윤미",
+        "ja": "雨宮天",
+        "en": "Clare Louise Connolly",
+        "zh": "侯小菲"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "점프 트리거"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "얼음 폭탄 · β형"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "꽁꽁이 · υ37"
+        },
+        {
+          "type": "궁극기",
+          "name": "아이스 슈터"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "창의적인 생각",
+          "title": "디자인 영감"
+        },
+        {
+          "name": "조직 관리",
+          "title": "효율"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "패션",
+          "title": "기계의 미학"
+        },
+        {
+          "name": "과학기술",
+          "title": "초자연 분석"
+        }
+      ],
+      "summary": "엔드필드 특수 기술부의 공학자로 초자연·침식 장치를 연구한다. 화려한 차림의 자유분방한 천재로, 모두가 대형 연구소행을 예상했지만 스스로 엔드필드를 택했다. 자신만의 스타일을 굽히지 않는다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=14"
+    },
+    "12": {
+      "class": "가드",
+      "gender": "남",
+      "birthday": "7월 16일",
+      "race": "아나사",
+      "cv": {
+        "ko": "김윤기",
+        "ja": "石橋陽彩",
+        "en": "Yung-I Chang",
+        "zh": "郭鸿博"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "업보 파괴"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "신체 정화"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "분노의 형상"
+        },
+        {
+          "type": "궁극기",
+          "name": "움직이지 않는 마음"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "민첩",
+          "title": "식양"
+        },
+        {
+          "name": "자연 상식",
+          "title": "재배"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "운동",
+          "title": "심신 단련"
+        },
+        {
+          "name": "자연",
+          "title": "떠돌이"
+        }
+      ],
+      "summary": "무릉성 출신으로 엔드필드 특수 기술부에서 인턴으로 배우는 중인 소년. 판에게 창술을 배웠고, 사고로 가족과 한쪽 팔을 잃었지만 밝은 기상을 잃지 않았다. 언젠가 고향 사람들을 지킬 수 있는 사람이 되기를 꿈꾼다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=12"
+    },
+    "11": {
+      "class": "스트라이커",
+      "gender": "여",
+      "birthday": "관리자와 동일함",
+      "race": "살카즈",
+      "cv": {
+        "ko": "김유림",
+        "ja": "堀江 由衣",
+        "en": "Kira Buckland",
+        "zh": "阎么么"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "재"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "불타오르는 화염"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "열화"
+        },
+        {
+          "type": "궁극기",
+          "name": "황혼"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "오리지늄 아츠",
+          "title": "작열의 칼날"
+        },
+        {
+          "name": "전황 분석",
+          "title": "직감"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "창의",
+          "title": "기묘한 소장품"
+        },
+        {
+          "name": "생활",
+          "title": "여행의 삶"
+        }
+      ],
+      "summary": "관리자의 직접 추천으로 합류한 관리자 직속 오퍼레이터. 홀로 여행하며 강한 단독 전투력을 키워 왔고, 직설적인 말투 탓에 오해를 사기도 한다. '기억'에 대해 묘한 말을 하곤 하며, 불꽃을 다루면서도 아이스크림을 좋아한다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=11"
+    },
+    "9": {
+      "class": "서포터",
+      "gender": "여",
+      "birthday": "11월 28일",
+      "race": "불포",
+      "cv": {
+        "ko": "방시우",
+        "ja": "大橋彩香",
+        "en": "Anna Devlin",
+        "zh": "王晓彤"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "아케인스태프 · 에너지 제어 기술"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "아케인스태프 · 중력 모드"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "아케인스태프 · 매트릭스 이동"
+        },
+        {
+          "type": "궁극기",
+          "name": "아케인스태프 · 중력장"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "모험",
+          "title": "전달자의 여행"
+        },
+        {
+          "name": "오리지늄 아츠",
+          "title": "중력 멀미"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "패션",
+          "title": "다채로운 색채"
+        },
+        {
+          "name": "문화",
+          "title": "낭만의 주석"
+        }
+      ],
+      "summary": "로도스 아일랜드 소속으로 엔드필드의 거점 간 편지와 정보를 나르는 전달자. 주변의 중력을 다루는 희귀한 오리지늄 아츠를 쓴다. 밝고 낙천적이며, 최근에는 더 위험한 지역 임무에도 자원하고 있다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=9"
+    },
+    "3": {
+      "class": "가드",
+      "gender": "여",
+      "birthday": "■■",
+      "race": "■■",
+      "cv": {
+        "ko": "강새봄",
+        "ja": "橘杏咲",
+        "en": "Chloe Eves",
+        "zh": "木雅瑞林"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "훼손 시퀀스"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "구성 시퀀스"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "봉인 시퀀스"
+        },
+        {
+          "type": "궁극기",
+          "name": "폭격 시퀀스"
+        }
+      ],
+      "specialties": [],
+      "hobbies": [],
+      "summary": "엔드필드 공업의 '관리자'. 탈로스 II의 역사 속에서 큰 재난 때마다 나타났던 문명의 수호자로 수많은 이야기가 전해지지만, 정체는 여전히 베일에 싸여 있다. (여성 관리자)",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=3"
+    },
+    "2": {
+      "class": "가드",
+      "gender": "남",
+      "birthday": "■■",
+      "race": "■■",
+      "cv": {
+        "ko": "이상준",
+        "ja": "津田拓也",
+        "en": "Hyoie O'Grady",
+        "zh": "楊超然"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "훼손 시퀀스"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "구성 시퀀스"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "봉인 시퀀스"
+        },
+        {
+          "type": "궁극기",
+          "name": "폭격 시퀀스"
+        }
+      ],
+      "specialties": [],
+      "hobbies": [],
+      "summary": "엔드필드 공업의 '관리자'. 탈로스 II의 역사 속에서 큰 재난 때마다 나타났던 문명의 수호자로 수많은 이야기가 전해지지만, 정체는 여전히 베일에 싸여 있다. (남성 관리자)",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=2"
+    },
+    "1174": {
+      "class": "디펜더",
+      "gender": "여",
+      "birthday": "11월 26일",
+      "race": "필라인",
+      "cv": {
+        "ko": "박이서",
+        "ja": "井澤詩織",
+        "en": "Christine Marie Cabanos",
+        "zh": "韩娇娇"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "디저트, 먹어 봐!"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "나 안 잤어!"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "디저트인가, 아니면 '선물'인가"
+        },
+        {
+          "type": "궁극기",
+          "name": "말썽 피우면 안 돼!"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "야외 생존",
+          "title": "인형 탈"
+        },
+        {
+          "name": "자연 상식",
+          "title": "잠든 우등생"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "예술",
+          "title": "디저트의 미학"
+        },
+        {
+          "name": "공익",
+          "title": "최고의 홍보대사"
+        }
+      ],
+      "summary": "초자연 환경 영향 증후군 구호 기금회의 홍보대사. 본인도 불쑥 잠드는 증후군을 앓고 있지만, 다른 환자들을 웃게 하려고 부지런히 움직인다. 상업연합회의 추천으로 엔드필드와 기금회를 잇는 연락책이 되었다. 디저트를 좋아한다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=1174"
+    },
+    "18": {
+      "class": "뱅가드",
+      "gender": "남",
+      "birthday": "9월 1일",
+      "race": "아나티",
+      "cv": {
+        "ko": "임채빈",
+        "ja": "松風雅也",
+        "en": "Heitor Assali",
+        "zh": "曹真"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "캐스팅의 기본"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "비정규 루어"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "얼음 낚시 기술"
+        },
+        {
+          "type": "궁극기",
+          "name": "월척이다!"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "야외 생존",
+          "title": "수중 생존"
+        },
+        {
+          "name": "전략 수립",
+          "title": "작전 계획"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "문화",
+          "title": "심오한 문학"
+        },
+        {
+          "name": "운동",
+          "title": "바다 낚시"
+        }
+      ],
+      "summary": "연맹 공단 측의 추천으로 합류한 린수 장사꾼 겸 낚시꾼. 개척 지역 지하에서 다툼과 배신을 겪다 한쪽 눈을 잃고 손을 뗐다. 느긋해 보여도 위기 땐 날카로운 판단력을 보이며, 개척 지역의 연락·엄호 임무를 맡는다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=18"
+    },
+    "16": {
+      "class": "디펜더",
+      "gender": "여",
+      "birthday": "12월 19일",
+      "race": "우르수스",
+      "cv": {
+        "ko": "유영",
+        "ja": "明坂聡美",
+        "en": "Stephanie Southerland",
+        "zh": "刘十四"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "저체온 강타"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "포화성 방어"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "극지 구조"
+        },
+        {
+          "type": "궁극기",
+          "name": "살얼음 추위"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "야외 생존",
+          "title": "생존 기술"
+        },
+        {
+          "name": "의료 기술",
+          "title": "응급 구조"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "운동",
+          "title": "프리스타일 스키"
+        },
+        {
+          "name": "공익",
+          "title": "습관적인 배려"
+        }
+      ],
+      "summary": "로도스 아일랜드 소속 구조 전문가. 북쪽의 혹한 속에서 쌓은 구조 경험으로 엔드필드의 여러 구조 작전을 이끌었고, 직접 쓴 <극지 생존 가이드>는 설원 구조의 필수 참고서가 되었다. 스노보드를 즐긴다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=16"
+    },
+    "13": {
+      "class": "서포터",
+      "gender": "여",
+      "birthday": "5월 16일",
+      "race": "살카즈",
+      "cv": {
+        "ko": "장예나",
+        "ja": "宫本侑芽",
+        "en": "Elsie Lovelock",
+        "zh": "潘丹妮"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "쿨타임"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "디도스"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "스트레스 테스트"
+        },
+        {
+          "type": "궁극기",
+          "name": "스택 오버플로"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "박학다식",
+          "title": "언어학자"
+        },
+        {
+          "name": "정보 기술",
+          "title": "데이터 교류"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "과학기술",
+          "title": "신호 분석 처리"
+        },
+        {
+          "name": "지능 훈련",
+          "title": "온라인 대국"
+        }
+      ],
+      "summary": "라테라노 고요한 수도회에서 파견된 정보 기술자(세라핀 자이히). 사람보다 기계와 데이터에 더 익숙하며, 제강호의 프로토콜 오리지늄 네트워크 구축과 시스템 통합을 맡고 있다. 내성적이지만 기술 이야기엔 눈을 반짝인다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=13"
+    },
+    "10": {
+      "class": "스트라이커",
+      "gender": "여",
+      "birthday": "10월 25일",
+      "race": "카우투스",
+      "cv": {
+        "ko": "강은애",
+        "ja": "喜多村英梨",
+        "en": "Sheena May",
+        "zh": "蔡娜"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "썬더랜스 · 신속 공격"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "썬더랜스 · 가로채기"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "썬더랜스 · 번개 타격"
+        },
+        {
+          "type": "궁극기",
+          "name": "썬더랜스 · 결전의 떨림"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "교섭",
+          "title": "교류"
+        },
+        {
+          "name": "민첩",
+          "title": "무력"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "생활",
+          "title": "삶의 쉼터"
+        },
+        {
+          "name": "패션",
+          "title": "보석 구매"
+        }
+      ],
+      "summary": "무장한 전달자. 대형 물류 가문 출신이지만 여행에 대한 동경으로 집을 떠났고, 여러 목적지를 오가다 관리자의 흔적을 좇아 엔드필드에 합류했다. 사교에 능하고 부드러워 보이지만 거절당하는 건 싫어한다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=10"
+    },
+    "8": {
+      "class": "스트라이커",
+      "gender": "남",
+      "birthday": "5월 19일",
+      "race": "우르수스",
+      "cv": {
+        "ko": "황창영",
+        "ja": "小山力也",
+        "en": "许棕哲",
+        "zh": "苏翼"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "돌려가며 썰기!"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "뒤집어 주지!"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "조미료 뿌리기!"
+        },
+        {
+          "type": "궁극기",
+          "name": "채 썰어 웍에 넣기!"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "요리",
+          "title": "불 조절"
+        },
+        {
+          "name": "도구 제작",
+          "title": "기계 공학"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "생활",
+          "title": "정성을 담은 요리"
+        },
+        {
+          "name": "공익",
+          "title": "전방위 지원"
+        }
+      ],
+      "summary": "홍산 과학원 출신의 떠돌이 요리사(본명 판 원). 요리사·전기공·운전기사 등 수많은 이력을 가졌고, 여풍에게 창술을 가르친 스승이기도 하다. 늘 들고 다니는 보온병은 사실 '선진 과학 연구자'에게만 주어지는 상징이다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=8"
+    },
+    "7": {
+      "class": "뱅가드",
+      "gender": "여",
+      "birthday": "1월 3일",
+      "race": "쿠란타",
+      "cv": {
+        "ko": "김아롱",
+        "ja": "藤原夏海",
+        "en": "Andrea Gatchalian",
+        "zh": "钟可"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "추적 사냥"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "질풍 섬광"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "천둥의 울림"
+        },
+        {
+          "type": "궁극기",
+          "name": "천둥 번개"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "도구 제작",
+          "title": "효율적인 제작"
+        },
+        {
+          "name": "자연 상식",
+          "title": "'사자'"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "자연",
+          "title": "황무지에서의 탐색"
+        },
+        {
+          "name": "운동",
+          "title": "밤하늘 아래에서의 질주"
+        }
+      ],
+      "summary": "만물의 대지의 방랑자(본명 에쿠트). 황무지에서 가족을 잃었지만 방랑자들에게 구해져 살아남는 법을 배웠다. 엔드필드의 현장 오퍼레이터이자 장비·차량 기술 고문이며, 바이크를 동료처럼 아낀다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=7"
+    },
+    "6": {
+      "class": "캐스터",
+      "gender": "남",
+      "birthday": "11월 16일",
+      "race": "루포",
+      "cv": {
+        "ko": "임혁",
+        "ja": "前野智昭",
+        "en": "Jacopo Calatroni",
+        "zh": "梁達偉"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "다중 연사"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "탄흔의 열기"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "폭렬 수류탄 · β형"
+        },
+        {
+          "type": "궁극기",
+          "name": "늑대의 분노"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "작전 기술",
+          "title": "단독 작전"
+        },
+        {
+          "name": "잠복",
+          "title": "은폐"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "자연",
+          "title": "황무지에서의 조사"
+        },
+        {
+          "name": "창의",
+          "title": "무기 개조"
+        }
+      ],
+      "summary": "랜드브레이커 '울프팀' 소속 용병(본명 카텔로 울프가드 루피노)으로 로시의 오빠. 위기 대책팀의 일원으로 엔드필드의 지휘를 받으며, 은폐와 정찰에 뛰어난 단독 작전형 인물이다. 신뢰를 얻기 어렵지만 한번 믿으면 충실하다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=6"
+    },
+    "4": {
+      "class": "가드",
+      "gender": "여",
+      "birthday": "8월 18일",
+      "race": "용",
+      "cv": {
+        "ko": "정해은",
+        "ja": "鈴代紗弓",
+        "en": "Rebecca Hanssen",
+        "zh": "吱毛"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "파비하"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "귀궁우"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "견천하"
+        },
+        {
+          "type": "궁극기",
+          "name": "예풍상"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "박학다식",
+          "title": "능력 흡수"
+        },
+        {
+          "name": "창의적인 생각",
+          "title": "통찰"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "문화",
+          "title": "반복 학습"
+        },
+        {
+          "name": "공익",
+          "title": "정의"
+        }
+      ],
+      "summary": "엔드필드 위기 대책팀의 핵심 멤버. 어머니와 담검당에게 무예를 배워 스스로 만든 '적소 검법'을 자랑으로 여긴다. 오랫동안 홀로 탈로스 II를 떠돌다 펠리카의 초청으로 합류했으며, 타고난 낙천가다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=4"
+    },
+    "1": {
+      "class": "캐스터",
+      "gender": "여",
+      "birthday": "3월 16일",
+      "race": "리베리",
+      "cv": {
+        "ko": "유혜지",
+        "ja": "若山詩音",
+        "en": "Jane Jackson",
+        "zh": "陳婷婷"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "프로토콜α · 돌파"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "프로토콜ω · 뇌격"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "실시간 프로토콜 · 연쇄 섬광"
+        },
+        {
+          "type": "궁극기",
+          "name": "프로토콜ε · 70.41κ"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "조직 관리",
+          "title": "생산 관리"
+        },
+        {
+          "name": "오리지늄 아츠",
+          "title": "프로토콜 강화"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "생활",
+          "title": "미각의 극한에 도전하기"
+        },
+        {
+          "name": "창의",
+          "title": "황무지에서의 질주"
+        }
+      ],
+      "summary": "엔드필드 공업의 감독관이자 공식 대변인. 프로토콜 오리지늄 기술의 개발과 응용을 이끌고 제강호 관리도 맡는다. 관리자가 휴면에 든 동안 위기 대책팀을 직접 지휘하며 엔드필드를 지켜 왔다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=1"
+    },
+    "24": {
+      "class": "캐스터",
+      "gender": "여",
+      "birthday": "6월 21일",
+      "race": "피디아",
+      "cv": {
+        "ko": "장미",
+        "ja": "大地葉",
+        "en": "Katiana Sarkissian",
+        "zh": "曹雅雯"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "독자적인 사격술"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "서프라이즈?"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "특별 보너스"
+        },
+        {
+          "type": "궁극기",
+          "name": "난장판으로 만들어주지"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "야외 생존",
+          "title": "자급자족"
+        },
+        {
+          "name": "교섭",
+          "title": "길거리 협상"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "자연",
+          "title": "황무지에서의 산책"
+        },
+        {
+          "name": "창의",
+          "title": "'선물' 제작"
+        }
+      ],
+      "summary": "엔드필드 Z7 작전팀의 정찰·교란 담당. 개척 지역에서 떠돌며 자라 거리의 규칙과 사람 심리를 꿰뚫어 보는 관찰력을 갖췄다. 사격 실력만큼 말솜씨도 날카로워 팀의 불안 요소가 되기도 한다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=24"
+    },
+    "23": {
+      "class": "디펜더",
+      "gender": "남",
+      "birthday": "8월 16일",
+      "race": "페로",
+      "cv": {
+        "ko": "김혜성",
+        "ja": "木島隆一",
+        "en": "Kevin Andrew Rivera",
+        "zh": "凯隆"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "기초 전술"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "강력한 저지"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "실시간 억제"
+        },
+        {
+          "type": "궁극기",
+          "name": "교과서적인 맹공"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "도구 제작",
+          "title": "무기 정비"
+        },
+        {
+          "name": "요리",
+          "title": "전장 특별식"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "생활",
+          "title": "가정학 연구"
+        },
+        {
+          "name": "운동",
+          "title": "꾸준한 훈련"
+        }
+      ],
+      "summary": "엔드필드 Z7 작전팀의 엄호·후방 지원 담당(본명 루이 판 카치르). 군인 가문에서 자라 체계적인 군사 훈련을 받았고, 팀에서 가장 어리지만 누구보다 성숙하다. 캠프에서 동료들의 식사를 챙기는 세심한 면도 있다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=23"
+    },
+    "22": {
+      "class": "서포터",
+      "gender": "남",
+      "birthday": "4월 10일",
+      "race": "사브라",
+      "cv": {
+        "ko": "이규창",
+        "ja": "武内駿輔",
+        "en": "Jacob Craner",
+        "zh": "黑石"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "교환 전류"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "지정 연구 대상"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "자기 폭풍 실험장"
+        },
+        {
+          "type": "궁극기",
+          "name": "오버클럭 타임"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "도구 제작",
+          "title": "장치 개조"
+        },
+        {
+          "name": "전황 분석",
+          "title": "수수께끼 풀이"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "지능 훈련",
+          "title": "게임성 평가"
+        },
+        {
+          "name": "창의",
+          "title": "유머 감각 훈련"
+        }
+      ],
+      "summary": "엔드필드 Z7 작전팀의 지원 및 오리지늄 기술 고문. 머리 회전이 빠르지만 분위기 파악에 서툴러 엉뚱한 말을 하곤 한다. 흥미가 생긴 장치나 농담 하나에도 며칠 밤을 새워 파고드는 연구가 기질이다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=22"
+    },
+    "21": {
+      "class": "가드",
+      "gender": "여",
+      "birthday": "4월 9일",
+      "race": "필라인",
+      "cv": {
+        "ko": "이은조",
+        "ja": "高橋花林",
+        "en": "Risa Mei",
+        "zh": "张炜萱"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "노이즈"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "서스테인"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "디스토션"
+        },
+        {
+          "type": "궁극기",
+          "name": "트레몰로"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "전략 수립",
+          "title": "도청"
+        },
+        {
+          "name": "잠복",
+          "title": "환경 위장"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "예술",
+          "title": "음악"
+        },
+        {
+          "name": "지능 훈련",
+          "title": "브레인스토밍"
+        }
+      ],
+      "summary": "엔드필드 Z7 작전팀의 정보 수집·통신 담당(본명 에스텔라 커). 늘 불운이 따르고 체력도 약한 편이지만, 조용하고 평온한 삶과 주변 사람들이 조금 더 가볍게 살 수 있는 세상을 바란다. 헤비메탈을 즐겨 듣는다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=21"
+    },
+    "5": {
+      "class": "뱅가드",
+      "gender": "여",
+      "birthday": "3월 31일",
+      "race": "페로",
+      "cv": {
+        "ko": "김이안",
+        "ja": "長月あおい",
+        "en": "Shu Uchida",
+        "zh": "萧清源"
+      },
+      "skills": [
+        {
+          "type": "일반 공격",
+          "name": "진취의 검날"
+        },
+        {
+          "type": "배틀 스킬",
+          "name": "열정 분출"
+        },
+        {
+          "type": "연계 스킬",
+          "name": "섬광 돌진"
+        },
+        {
+          "type": "궁극기",
+          "name": "소대, 집합!"
+        }
+      ],
+      "specialties": [
+        {
+          "name": "조직 관리",
+          "title": "조직 강화"
+        },
+        {
+          "name": "공익",
+          "title": "티타임"
+        }
+      ],
+      "hobbies": [
+        {
+          "name": "공익",
+          "title": "선행 실천"
+        },
+        {
+          "name": "운동",
+          "title": "종합 체력 훈련"
+        }
+      ],
+      "summary": "엔드필드 특수 기술부 Z7 작전팀의 팀장(본명 시바 모미지). 상학원 우등생 출신으로, 해체된 Z7을 몇 달 만에 재건해 실전 팀으로 키워냈다. 지휘·자원 운용·팀원 관리에 두루 능하고 언제나 의욕이 넘친다.",
+      "wiki": "https://wiki.skport.com/endfield/detail?mainTypeId=1&subTypeId=1&gameEntryId=5"
+    }
+  }
+}

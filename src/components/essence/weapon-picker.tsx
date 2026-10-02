@@ -2,6 +2,7 @@ import { Check, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EssenceOrb } from "./essence-orb";
 import { WeaponThumb } from "./weapon-thumb";
+import { WeaponUsersInline, type WeaponUserInfo } from "./weapon-users";
 import type { StatLabelFn } from "./stat-chip";
 import type { Weapon, WeaponType } from "@/types/game";
 
@@ -28,25 +29,30 @@ interface Props {
   rarity: RarityFilter;
   onRarity: (r: RarityFilter) => void;
   label: StatLabelFn;
+  usersOf: (weaponId: string) => WeaponUserInfo[];
 }
 
 /** 무기 선택 그리드 — 이미지는 비워 두고, 무기마다 고정된 3가지 기질 속성을 보여준다 */
 export function WeaponPicker(props: Props) {
-  const { weapons, selectedId, onSelect, query, onQuery, typeFilter, onTypeFilter, rarity, onRarity, label } = props;
+  const { weapons, usersOf, selectedId, onSelect, query, onQuery, typeFilter, onTypeFilter, rarity, onRarity, label } = props;
   const q = query.trim();
+  // 검색: 무기 이름 또는 그 무기를 쓰는 오퍼레이터 이름
   const list = weapons.filter(
-    (w) => matchRarity(w.rarity, rarity) && (typeFilter === "전체" || w.type === typeFilter) && (!q || w.name.includes(q)),
+    (w) =>
+      matchRarity(w.rarity, rarity) &&
+      (typeFilter === "전체" || w.type === typeFilter) &&
+      (!q || w.name.includes(q) || usersOf(w.id).some(({ op }) => op.name.includes(q))),
   );
 
   return (
     <div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <label className="relative flex-1 sm:max-w-56">
+        <label className="relative flex-1 sm:max-w-64">
           <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <input
             value={query}
             onChange={(e) => onQuery(e.target.value)}
-            placeholder="무기 검색"
+            placeholder="무기 · 오퍼레이터 이름 검색"
             className="h-9 w-full border bg-card pr-3 pl-8 text-sm outline-none focus:border-foreground"
           />
         </label>
@@ -87,7 +93,7 @@ export function WeaponPicker(props: Props) {
 
       <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {list.map((w) => (
-          <WeaponCard key={w.id} w={w} active={w.id === selectedId} onSelect={onSelect} label={label} />
+          <WeaponCard key={w.id} w={w} users={usersOf(w.id)} active={w.id === selectedId} onSelect={onSelect} label={label} />
         ))}
         {list.length === 0 && <li className="col-span-full py-10 text-center text-sm text-muted-foreground">검색 결과가 없습니다.</li>}
       </ul>
@@ -96,7 +102,19 @@ export function WeaponPicker(props: Props) {
 }
 
 /** 무기 카드 — 무기 아이콘(PNG) 사용, 영상은 쓰지 않음 */
-function WeaponCard({ w, active, onSelect, label }: { w: Weapon; active: boolean; onSelect: (id: string) => void; label: StatLabelFn }) {
+function WeaponCard({
+  w,
+  users,
+  active,
+  onSelect,
+  label,
+}: {
+  w: Weapon;
+  users: WeaponUserInfo[];
+  active: boolean;
+  onSelect: (id: string) => void;
+  label: StatLabelFn;
+}) {
   return (
     <li>
       <button
@@ -140,6 +158,8 @@ function WeaponCard({ w, active, onSelect, label }: { w: Weapon; active: boolean
           </span>
           <EssenceOrb skill={w.essence.skill} size={34} alt="목표 기질" className="mt-0.5" />
         </span>
+        {/* 이 무기를 쓰는 오퍼레이터 */}
+        <WeaponUsersInline users={users} className="border-t px-2.5 py-1.5" />
       </button>
     </li>
   );

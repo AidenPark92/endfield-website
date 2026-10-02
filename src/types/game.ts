@@ -53,6 +53,29 @@ export interface Operator {
   /** 공식 위키 '게임 내 추천' — skill: 스킬 조합, attribute: 속성 조합 */
   recommendedWeapons: { skill: string[]; attribute: string[] };
   cover: string;
+  /** 전신 일러스트 (public/operators) */
+  image?: string;
+  /** 작은 초상화 (public/operators/face) */
+  face?: string;
+  profile?: OperatorProfile;
+}
+
+export type OperatorClass = "가드" | "캐스터" | "스트라이커" | "뱅가드" | "디펜더" | "서포터";
+
+/** 위키 오퍼레이터 상세의 기본 정보 (data/operator-profiles.json) */
+export interface OperatorProfile {
+  class: OperatorClass;
+  gender: string;
+  birthday: string;
+  race: string;
+  cv: { ko: string; ja: string; en: string; zh: string };
+  skills: { type: string; name: string }[];
+  specialties: { name: string; title: string }[];
+  hobbies: { name: string; title: string }[];
+  /** 위키 소개를 바탕으로 사이트에서 쓴 요약 */
+  summary: string;
+  /** 원문 스토리가 있는 공식 위키 상세 페이지 */
+  wiki: string;
 }
 
 /** 기질 파밍 지역 (부가 속성 8개 + 스킬 속성 8개 풀) */

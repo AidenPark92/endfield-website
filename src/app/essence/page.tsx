@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { EssenceFarm } from "@/components/essence/essence-farm";
-import { essenceRegions, essenceRegionsMeta, essenceStats, weapons } from "@/lib/data";
+import { essenceRegions, essenceRegionsMeta, essenceStats, operators, weaponUsers, weapons } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "기질 파밍",
@@ -44,7 +44,7 @@ export default function EssencePage() {
 
       {/* 무기 선택을 주소(?w=)로 관리하므로 Suspense 로 감싼다 */}
       <Suspense>
-        <EssenceFarm weapons={weapons} regions={essenceRegions} stats={essenceStats} />
+        <EssenceFarm weapons={weapons} operators={operators} weaponUsers={weaponUsers} regions={essenceRegions} stats={essenceStats} />
       </Suspense>
     </div>
   );

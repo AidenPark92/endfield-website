@@ -8,6 +8,7 @@ import type { ConfigEval, WeaponMatch } from "@/lib/calc/essence-score";
 import { EssenceOrb } from "./essence-orb";
 import type { StatLabelFn } from "./stat-chip";
 import { WeaponThumb } from "./weapon-thumb";
+import { WeaponUsersInline, type WeaponUserInfo } from "./weapon-users";
 import type { EssenceRegion, StatCategory, Weapon } from "@/types/game";
 
 const CATS: StatCategory[] = ["base", "extra", "skill"];
@@ -21,6 +22,7 @@ interface CardProps {
   weaponById: Map<string, Weapon>;
   baseIds: string[];
   label: StatLabelFn;
+  usersOf: (weaponId: string) => WeaponUserInfo[];
 }
 
 /**
@@ -28,7 +30,7 @@ interface CardProps {
  *  1) 추천 기질 선택권 (가장 크게)  2) 선택 무기  3) 이 파밍으로 함께 얻는 무기 기질 (강조)
  * 3줄이 전부 맞아야 쓸 수 있으므로 2줄 일치는 개수만 참고로 표시한다.
  */
-export function BestZoneCard({ ev, region, rank, weaponById, baseIds, label }: CardProps) {
+export function BestZoneCard({ ev, region, rank, weaponById, baseIds, label, usersOf }: CardProps) {
   const [expanded, setExpanded] = useState(false);
   const target = ev.priority[0];
   const weapon = weaponById.get(target.key)!;
@@ -70,6 +72,7 @@ export function BestZoneCard({ ev, region, rank, weaponById, baseIds, label }: C
                 <span className="shrink-0 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">3줄 일치 가능</span>
               </p>
               <LineChips m={target} label={label} />
+              <WeaponUsersInline users={usersOf(weapon.id)} max={4} className="mt-1.5" />
             </div>
             <EssenceOrb skill={weapon.essence.skill} size={40} alt="목표 기질" />
           </div>
@@ -92,7 +95,7 @@ export function BestZoneCard({ ev, region, rank, weaponById, baseIds, label }: C
           ) : (
             <ul className="grid gap-1.5 sm:grid-cols-2 xl:grid-cols-3">
               {shown.map((m) => (
-                <BonusTile key={m.key} m={m} w={weaponById.get(m.key)!} label={label} />
+                <BonusTile key={m.key} m={m} w={weaponById.get(m.key)!} users={usersOf(m.key)} label={label} />
               ))}
             </ul>
           )}
@@ -290,7 +293,7 @@ function LineChips({ m, label }: { m: WeaponMatch; label: StatLabelFn }) {
 }
 
 /** 함께 얻는 무기 타일 */
-function BonusTile({ m, w, label }: { m: WeaponMatch; w: Weapon; label: StatLabelFn }) {
+function BonusTile({ m, w, users, label }: { m: WeaponMatch; w: Weapon; users: WeaponUserInfo[]; label: StatLabelFn }) {
   return (
     <li className="flex items-center gap-2 border bg-card p-2 animate-in fade-in">
       <WeaponThumb weapon={w} size={96} className="size-12" />
@@ -301,7 +304,10 @@ function BonusTile({ m, w, label }: { m: WeaponMatch; w: Weapon; label: StatLabe
             .map((c) => label(c, m.lines[c]!.want))
             .join(" · ")}
         </p>
-        <p className="font-mono text-[10px] font-bold">{formatPercent(m.pPerfect)}</p>
+        <p className="flex items-center justify-between gap-1">
+          <span className="font-mono text-[10px] font-bold">{formatPercent(m.pPerfect)}</span>
+        </p>
+        <WeaponUsersInline users={users} max={3} className="mt-1" />
       </div>
       <EssenceOrb skill={w.essence.skill} size={30} />
     </li>

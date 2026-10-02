@@ -15,12 +15,16 @@ import { WeaponMedia } from "./weapon-media";
 import { NAV_RESET_EVENT } from "@/components/nav-link";
 import { MIN_RARITY, WeaponPicker, type RarityFilter } from "./weapon-picker";
 import { BestZoneCard, CandidateList } from "./farm-result";
-import type { EssenceRegion, EssenceStats, Weapon, WeaponType } from "@/types/game";
+import type { EssenceRegion, EssenceStats, Operator, Weapon, WeaponType } from "@/types/game";
+import type { WeaponUser } from "@/lib/weapon-users";
+import { WeaponUsersList, type WeaponUserInfo } from "./weapon-users";
 
 
 
 interface Props {
   weapons: Weapon[];
+  operators: Operator[];
+  weaponUsers: Record<string, WeaponUser[]>;
   regions: EssenceRegion[];
   stats: EssenceStats;
 }
@@ -29,7 +33,23 @@ interface Props {
  * 기질 파밍 화면
  * 01 무기 선택 → 02 구역 효율(4번 협곡/무릉) → 03 기질 선택권 설정
  */
-export function EssenceFarm({ weapons, regions, stats }: Props) {
+export function EssenceFarm({ weapons, operators, weaponUsers, regions, stats }: Props) {
+  const operatorById = useMemo(() => new Map(operators.map((o) => [o.id, o])), [operators]);
+  const usersOf = useMemo(() => {
+    const cache = new Map<string, WeaponUserInfo[]>();
+    return (weaponId: string) => {
+      if (!cache.has(weaponId)) {
+        cache.set(
+          weaponId,
+          (weaponUsers[weaponId] ?? []).flatMap((user) => {
+            const op = operatorById.get(user.operatorId);
+            return op ? [{ op, user }] : [];
+          }),
+        );
+      }
+      return cache.get(weaponId)!;
+    };
+  }, [weaponUsers, operatorById]);
   const label = useMemo(() => makeStatLabel(stats), [stats]);
   const baseIds = useMemo(() => stats.base.map((s) => s.id), [stats]);
   const weaponById = useMemo(() => new Map(weapons.map((w) => [w.id, w])), [weapons]);
@@ -136,6 +156,7 @@ export function EssenceFarm({ weapons, regions, stats }: Props) {
           />
           <WeaponPicker
             weapons={weapons}
+            usersOf={usersOf}
             selectedId={selectedId}
             onSelect={select}
             query={query}
@@ -150,7 +171,7 @@ export function EssenceFarm({ weapons, regions, stats }: Props) {
       ) : (
         <div className="space-y-6">
           {/* 선택한 무기 — 접힌 상태 */}
-          <TargetBar weapon={weapon} label={label} onChange={openPicker} />
+          <TargetBar weapon={weapon} users={usersOf(weapon.id)} label={label} onChange={openPicker} />
 
           {/* 결과: 왼쪽 최적 존 / 오른쪽 후보·설명 (한 페이지 스크롤) */}
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -162,6 +183,7 @@ export function EssenceFarm({ weapons, regions, stats }: Props) {
               />
               {active ? (
                 <BestZoneCard
+                  usersOf={usersOf}
                   key={`${active.config.regionId}-${active.config.lock.stat}`}
                   ev={active}
                   region={regionById.get(active.config.regionId)!}
@@ -226,7 +248,17 @@ export function EssenceFarm({ weapons, regions, stats }: Props) {
 }
 
 /** 선택한 무기 요약 바 — 무기 목록 대신 접혀서 표시 */
-function TargetBar({ weapon, label, onChange }: { weapon: Weapon; label: StatLabelFn; onChange: () => void }) {
+function TargetBar({
+  weapon,
+  users,
+  label,
+  onChange,
+}: {
+  weapon: Weapon;
+  users: WeaponUserInfo[];
+  label: StatLabelFn;
+  onChange: () => void;
+}) {
   return (
     <div className="ef-cut grid overflow-hidden border bg-card animate-in fade-in slide-in-from-top-1 sm:grid-cols-[minmax(0,420px)_1fr]">
       {/* 회전 연출 */}
@@ -252,6 +284,12 @@ function TargetBar({ weapon, label, onChange }: { weapon: Weapon; label: StatLab
               )}
             </p>
           </div>
+        </div>
+
+        {/* 이 무기를 쓰는 오퍼레이터 */}
+        <div>
+          <p className="mb-1.5 text-[11px] font-semibold text-muted-foreground">이 무기를 쓰는 오퍼레이터 (위키 게임 내 추천)</p>
+          <WeaponUsersList users={users} />
         </div>
 
         <Button variant="outline" onClick={onChange} className="w-full sm:w-auto sm:self-start">
