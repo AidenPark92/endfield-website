@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { EssenceFarm } from "@/components/essence/essence-farm";
 import { essenceRegions, essenceRegionsMeta, essenceStats, weapons } from "@/lib/data";
 
@@ -41,7 +42,10 @@ export default function EssencePage() {
         )}
       </header>
 
-      <EssenceFarm weapons={weapons} regions={essenceRegions} stats={essenceStats} />
+      {/* 무기 선택을 주소(?w=)로 관리하므로 Suspense 로 감싼다 */}
+      <Suspense>
+        <EssenceFarm weapons={weapons} regions={essenceRegions} stats={essenceStats} />
+      </Suspense>
     </div>
   );
 }

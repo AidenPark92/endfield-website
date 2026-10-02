@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Repeat, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,7 +35,11 @@ export function EssenceFarm({ weapons, regions, stats }: Props) {
   const weaponById = useMemo(() => new Map(weapons.map((w) => [w.id, w])), [weapons]);
   const regionById = useMemo(() => new Map(regions.map((r) => [r.id, r])), [regions]);
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // 선택한 무기는 주소(?w=무기id)에 담는다 → 브라우저 뒤로가기 시 무기 목록으로 돌아감
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const wParam = searchParams.get("w");
+  const selectedId = wParam && weaponById.has(wParam) ? wParam : null;
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<WeaponType | "전체">("전체");
   const [showLow, setShowLow] = useState(false);
@@ -48,7 +53,6 @@ export function EssenceFarm({ weapons, regions, stats }: Props) {
   useEffect(() => {
     const reset = (e: Event) => {
       if ((e as CustomEvent<string>).detail !== "/essence") return;
-      setSelectedId(null);
       setPick(0);
       setPickerOpen(true);
       setQuery("");
@@ -80,10 +84,16 @@ export function EssenceFarm({ weapons, regions, stats }: Props) {
   );
   const active = candidates[Math.min(pick, candidates.length - 1)];
 
-  const select = (id: string) => {
-    setSelectedId(id);
+  // 무기가 바뀌면(선택·뒤로가기) 후보 선택과 목록 펼침 상태를 초기화
+  useEffect(() => {
     setPick(0);
     setPickerOpen(false);
+  }, [selectedId]);
+
+  const select = (id: string) => {
+    setPick(0);
+    setPickerOpen(false);
+    if (id !== selectedId) router.push(`/essence?w=${encodeURIComponent(id)}`, { scroll: false });
     setScrollTick((n) => n + 1);
   };
   const openPicker = () => {
