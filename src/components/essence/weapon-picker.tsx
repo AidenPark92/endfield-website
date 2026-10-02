@@ -8,6 +8,13 @@ import { WeaponMedia } from "./weapon-media";
 import type { StatLabelFn } from "./stat-chip";
 import type { Weapon, WeaponType } from "@/types/game";
 
+/** 목록에 보이는 등급: 4~6성 (3성은 기질 줄이 3개가 아니라 제외) */
+export const MIN_RARITY = 4;
+export type RarityFilter = "전체" | 6 | 5 | 4;
+const RARITY_FILTERS: RarityFilter[] = ["전체", 6, 5, 4];
+const RARITY_DOT: Record<number, string> = { 6: "bg-rarity-6", 5: "bg-rarity-5", 4: "bg-rarity-4" };
+export const matchRarity = (r: number, f: RarityFilter) => (f === "전체" ? r >= MIN_RARITY : r === f);
+
 const WEAPON_TYPES: (WeaponType | "전체")[] = ["전체", "한손검", "양손검", "장병기", "권총", "아츠 유닛"];
 
 export const CATEGORY_NAME = { base: "기초", extra: "추가", skill: "스킬" } as const;
@@ -21,17 +28,17 @@ interface Props {
   onQuery: (q: string) => void;
   typeFilter: WeaponType | "전체";
   onTypeFilter: (t: WeaponType | "전체") => void;
-  showLow: boolean;
-  onShowLow: (v: boolean) => void;
+  rarity: RarityFilter;
+  onRarity: (r: RarityFilter) => void;
   label: StatLabelFn;
 }
 
 /** 무기 선택 그리드 — 이미지는 비워 두고, 무기마다 고정된 3가지 기질 속성을 보여준다 */
 export function WeaponPicker(props: Props) {
-  const { weapons, selectedId, onSelect, query, onQuery, typeFilter, onTypeFilter, showLow, onShowLow, label } = props;
+  const { weapons, selectedId, onSelect, query, onQuery, typeFilter, onTypeFilter, rarity, onRarity, label } = props;
   const q = query.trim();
   const list = weapons.filter(
-    (w) => (showLow || w.rarity >= 5) && (typeFilter === "전체" || w.type === typeFilter) && (!q || w.name.includes(q)),
+    (w) => matchRarity(w.rarity, rarity) && (typeFilter === "전체" || w.type === typeFilter) && (!q || w.name.includes(q)),
   );
 
   return (
@@ -62,10 +69,24 @@ export function WeaponPicker(props: Props) {
           ))}
         </div>
       </div>
-      <label className="mt-3 inline-flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
-        <input type="checkbox" checked={showLow} onChange={(e) => onShowLow(e.target.checked)} className="size-3.5 accent-foreground" />
-        뉴비용 3~4성 무기도 보기
-      </label>
+      {/* 등급 필터 (4~6성) */}
+      <div className="mt-3 flex flex-wrap items-center gap-1" role="group" aria-label="무기 등급">
+        <span className="mr-1 text-xs text-muted-foreground">등급</span>
+        {RARITY_FILTERS.map((r) => (
+          <button
+            key={r}
+            onClick={() => onRarity(r)}
+            aria-pressed={rarity === r}
+            className={cn(
+              "inline-flex h-8 cursor-pointer items-center gap-1.5 border px-2.5 text-xs font-medium transition-colors",
+              rarity === r ? "border-foreground bg-foreground text-background" : "bg-card hover:bg-muted",
+            )}
+          >
+            {r !== "전체" && <span className={cn("size-2", RARITY_DOT[r])} />}
+            {r === "전체" ? "전체 (4~6성)" : `${r}성`}
+          </button>
+        ))}
+      </div>
 
       <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {list.map((w) => (

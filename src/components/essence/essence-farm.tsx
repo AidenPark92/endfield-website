@@ -13,7 +13,7 @@ import { StatChip, makeStatLabel, type StatLabelFn } from "./stat-chip";
 import { EssenceOrb } from "./essence-orb";
 import { WeaponMedia } from "./weapon-media";
 import { NAV_RESET_EVENT } from "@/components/nav-link";
-import { WeaponPicker } from "./weapon-picker";
+import { MIN_RARITY, WeaponPicker, type RarityFilter } from "./weapon-picker";
 import { BestZoneCard, CandidateList } from "./farm-result";
 import type { EssenceRegion, EssenceStats, Weapon, WeaponType } from "@/types/game";
 
@@ -42,7 +42,7 @@ export function EssenceFarm({ weapons, regions, stats }: Props) {
   const selectedId = wParam && weaponById.has(wParam) ? wParam : null;
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<WeaponType | "전체">("전체");
-  const [showLow, setShowLow] = useState(false);
+  const [rarity, setRarity] = useState<RarityFilter>("전체");
   const [pick, setPick] = useState(0); // 후보 index
   const [pickerOpen, setPickerOpen] = useState(true);
   const [scrollTick, setScrollTick] = useState(0);
@@ -57,6 +57,7 @@ export function EssenceFarm({ weapons, regions, stats }: Props) {
       setPickerOpen(true);
       setQuery("");
       setTypeFilter("전체");
+      setRarity("전체");
       window.scrollTo({ top: 0, behavior: "smooth" });
     };
     window.addEventListener(NAV_RESET_EVENT, reset);
@@ -68,13 +69,13 @@ export function EssenceFarm({ weapons, regions, stats }: Props) {
     [selectedId, weaponById],
   );
 
-  // 함께 챙길 "다른 무기" = 우선 무기를 뺀 나머지 (목록 필터의 등급 기준과 같게)
+  // 함께 챙길 "다른 무기" = 선택 무기를 뺀 4~6성 전체 (목록 등급 필터와는 무관)
   const others: FarmTarget[] = useMemo(
     () =>
       weapons
-        .filter((w) => w.id !== selectedId && (showLow || w.rarity >= 5))
+        .filter((w) => w.id !== selectedId && w.rarity >= MIN_RARITY)
         .map((w) => ({ key: w.id, essence: w.essence })),
-    [weapons, selectedId, showLow],
+    [weapons, selectedId],
   );
 
   // 전수 탐색 → 구역+고정 속성별 최고 설정만 후보로
@@ -141,8 +142,8 @@ export function EssenceFarm({ weapons, regions, stats }: Props) {
             onQuery={setQuery}
             typeFilter={typeFilter}
             onTypeFilter={setTypeFilter}
-            showLow={showLow}
-            onShowLow={setShowLow}
+            rarity={rarity}
+            onRarity={setRarity}
             label={label}
           />
         </section>
@@ -166,6 +167,7 @@ export function EssenceFarm({ weapons, regions, stats }: Props) {
                   region={regionById.get(active.config.regionId)!}
                   rank={Math.min(pick, candidates.length - 1)}
                   weaponById={weaponById}
+                  baseIds={baseIds}
                   label={label}
                 />
               ) : (

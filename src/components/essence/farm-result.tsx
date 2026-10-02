@@ -19,6 +19,7 @@ interface CardProps {
   region: EssenceRegion;
   rank: number;
   weaponById: Map<string, Weapon>;
+  baseIds: string[];
   label: StatLabelFn;
 }
 
@@ -27,7 +28,7 @@ interface CardProps {
  *  1) 추천 기질 선택권 (가장 크게)  2) 선택 무기  3) 이 파밍으로 함께 얻는 무기 기질 (강조)
  * 3줄이 전부 맞아야 쓸 수 있으므로 2줄 일치는 개수만 참고로 표시한다.
  */
-export function BestZoneCard({ ev, region, rank, weaponById, label }: CardProps) {
+export function BestZoneCard({ ev, region, rank, weaponById, baseIds, label }: CardProps) {
   const [expanded, setExpanded] = useState(false);
   const target = ev.priority[0];
   const weapon = weaponById.get(target.key)!;
@@ -54,7 +55,7 @@ export function BestZoneCard({ ev, region, rank, weaponById, label }: CardProps)
 
       <div className="space-y-4 p-3">
         {/* 1) 추천 기질 선택권 */}
-        <EngravePanel ev={ev} region={region} target={target} label={label} />
+        <EngravePanel ev={ev} region={region} target={target} baseIds={baseIds} label={label} />
 
         {/* 2) 선택 무기 */}
         <div>
@@ -114,70 +115,121 @@ export function BestZoneCard({ ev, region, rank, weaponById, label }: CardProps)
   );
 }
 
-/** 추천 기질 선택권 — 게임에서 그대로 따라 할 수 있게 단계별로 크게 표시 */
-function EngravePanel({ ev, region, target, label }: { ev: ConfigEval; region: EssenceRegion; target: WeaponMatch; label: StatLabelFn }) {
+/**
+ * 추천 기질 선택권 — 게임의 사전 각인 화면을 그대로 옮겨서 "어떤 칸을 누르면 되는지" 보여준다.
+ *  - 맨 위: 한 줄 요약 (기초 3개 + 고정 1개 → 무엇이 나오면 완성)
+ *  - 아래: 게임 화면과 같은 배치의 선택 칸. 눌러야 할 칸만 노랗게, 나머지는 흐리게
+ */
+function EngravePanel({
+  ev,
+  region,
+  target,
+  baseIds,
+  label,
+}: {
+  ev: ConfigEval;
+  region: EssenceRegion;
+  target: WeaponMatch;
+  baseIds: string[];
+  label: StatLabelFn;
+}) {
   const { bases, lock } = ev.config;
   const randomCat = lock.category === "extra" ? "skill" : "extra";
   const randomWant = target.lines[randomCat]?.want;
   const baseWant = target.lines.base?.want;
 
   return (
-    <div className="overflow-hidden border-l-4 border-accent bg-panel text-panel-foreground">
-      <div className="flex items-center justify-between gap-2 bg-accent px-3 py-2 text-accent-foreground">
+    <div className="overflow-hidden border-2 border-accent bg-panel text-panel-foreground">
+      {/* 제목 */}
+      <div className="flex flex-wrap items-center justify-between gap-2 bg-accent px-3 py-2 text-accent-foreground">
         <p className="flex items-center gap-1.5 text-sm font-bold">
-          <Lock className="size-4" /> 추천 기질 선택권
+          <Lock className="size-4" /> 기질 선택권 이렇게 쓰세요
         </p>
-        <p className="text-[11px] font-semibold">이대로 설정하세요</p>
+        <p className="flex items-center gap-1 text-xs font-semibold">
+          <MapPin className="size-3.5" /> {region.area} · {region.name}
+        </p>
       </div>
 
-      <ol className="divide-y divide-panel-foreground/10">
-        <Step no={1} title="파밍 구역">
-          <span className="inline-flex items-center gap-1.5 text-base font-bold">
-            <MapPin className="size-4 text-accent" />
-            {region.area} · {region.name}
-          </span>
-        </Step>
-
-        <Step no={2} title="기초 속성 3개 선택">
-          <div className="flex flex-wrap gap-1.5">
-            {bases.map((b) => (
-              <span
-                key={b}
-                className={cn(
-                  "inline-flex h-9 items-center gap-1 border px-3 text-sm",
-                  b === baseWant ? "border-accent font-bold text-accent" : "border-panel-foreground/30",
-                )}
-              >
-                {b === baseWant && <Star className="size-3.5 fill-current" />}
-                {label("base", b)}
-              </span>
-            ))}
-          </div>
-          <p className="mt-1 text-[11px] opacity-60">이 중 1개가 무작위로 붙어요 (1/3) · ★ 선택 무기에 필요한 속성</p>
-        </Step>
-
-        <Step no={3} title={`${CAT_NAME[lock.category]} 속성 1개 고정`}>
-          <span className="inline-flex h-10 items-center gap-1.5 bg-accent px-4 text-base font-bold text-accent-foreground">
-            <Lock className="size-4" />
+      {/* 한 줄 요약 */}
+      <div className="border-b border-panel-foreground/15 px-3 py-3">
+        <p className="mb-2 text-[11px] font-semibold opacity-60">한눈에 보기</p>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {bases.map((b) => (
+            <span
+              key={b}
+              className={cn(
+                "inline-flex h-9 items-center gap-1 bg-panel-foreground/10 px-3 text-sm font-semibold",
+                b === baseWant && "ring-2 ring-accent",
+              )}
+            >
+              {b === baseWant && <Star className="size-3.5 fill-accent text-accent" />}
+              {label("base", b)}
+            </span>
+          ))}
+          <span className="px-1 text-lg font-bold opacity-50">+</span>
+          <span className="inline-flex h-9 items-center gap-1.5 bg-accent px-3 text-sm font-bold text-accent-foreground">
+            <Lock className="size-3.5" />
             {label(lock.category, lock.stat)}
           </span>
-        </Step>
-
-        <Step no={4} title={`${CAT_NAME[randomCat]} 속성은 무작위`}>
-          <p className="flex flex-wrap items-center gap-1.5 text-sm">
-            <Dices className="size-4 opacity-60" />
-            이 구역 {region[randomCat].length}개 중 1개
-            {randomWant && (
-              <span>
-                → <b className="text-accent">{label(randomCat, randomWant)}</b> 이(가) 나오면 완성 (1/{region[randomCat].length})
+          {randomWant && (
+            <>
+              <span className="px-1 text-lg font-bold opacity-50">→</span>
+              <span className="inline-flex h-9 items-center gap-1.5 border border-dashed border-accent px-3 text-sm">
+                <Dices className="size-3.5 text-accent" />
+                <b className="text-accent">{label(randomCat, randomWant)}</b> 나오면 완성
               </span>
-            )}
-          </p>
-        </Step>
-      </ol>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* 게임 화면 그대로 */}
+      <div className="space-y-4 px-3 py-3">
+        <PickGroup title="기초 속성 3개를 선택해 주세요" count={`${bases.length}/3`}>
+          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+            {baseIds.map((id) => (
+              <PickCell key={id} state={bases.includes(id) ? "pick" : "off"} star={id === baseWant}>
+                {label("base", id)}
+              </PickCell>
+            ))}
+          </div>
+        </PickGroup>
+
+        <PickGroup title="추가 속성 또는 스킬 속성 1개를 선택해 주세요" count="1/1">
+          {(["extra", "skill"] as const).map((cat) => (
+            <div key={cat} className="mt-2 first:mt-0">
+              <p className="mb-1 text-[10px] font-semibold tracking-wider opacity-50">
+                {CAT_NAME[cat]} 속성 {cat === lock.category ? "· 여기서 1개 고정" : "· 이 중 1개 무작위"}
+              </p>
+              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+                {region[cat].map((id) => (
+                  <PickCell
+                    key={id}
+                    state={cat === lock.category && id === lock.stat ? "lock" : cat === randomCat && id === randomWant ? "goal" : "off"}
+                  >
+                    {label(cat, id)}
+                  </PickCell>
+                ))}
+              </div>
+            </div>
+          ))}
+        </PickGroup>
+
+        <p className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] opacity-60">
+          <span className="inline-flex items-center gap-1">
+            <span className="size-2.5 bg-accent" /> 눌러야 할 칸
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Star className="size-3 fill-accent text-accent" /> 선택 무기에 필요한 기초 속성
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="size-2.5 border border-dashed border-accent" /> 무작위로 나와야 할 속성
+          </span>
+        </p>
+      </div>
 
       <div className="flex flex-wrap items-baseline justify-between gap-2 border-t border-panel-foreground/15 bg-black/20 px-3 py-2.5">
-        <span className="text-xs opacity-70">선택 무기 완벽 기질 확률</span>
+        <span className="text-xs opacity-70">선택 무기 완벽 기질 확률 (기초 1/3 × 무작위 1/{region[randomCat].length})</span>
         <span>
           <b className="font-mono text-xl text-accent">{formatPercent(target.pPerfect)}</b>
           <span className="ml-1.5 text-[11px] opacity-60">약 {Math.round(expectedDrops(target.pPerfect))}개당 1개</span>
@@ -187,15 +239,36 @@ function EngravePanel({ ev, region, target, label }: { ev: ConfigEval; region: E
   );
 }
 
-function Step({ no, title, children }: { no: number; title: string; children: React.ReactNode }) {
+function PickGroup({ title, count, children }: { title: string; count: string; children: React.ReactNode }) {
   return (
-    <li className="grid grid-cols-[1.75rem_1fr] gap-x-2 px-3 py-2.5">
-      <span className="grid size-6 place-items-center border border-panel-foreground/30 font-mono text-xs font-bold">{no}</span>
-      <div className="min-w-0">
-        <p className="mb-1.5 text-[11px] font-semibold opacity-60">{title}</p>
-        {children}
-      </div>
-    </li>
+    <div>
+      <p className="mb-2 text-xs font-semibold">
+        {title} <span className="font-mono text-accent">({count})</span>
+      </p>
+      {children}
+    </div>
+  );
+}
+
+/** 게임 선택 칸 — pick/lock: 눌러야 할 칸, goal: 무작위로 나와야 할 칸, off: 누르지 않는 칸 */
+function PickCell({ state, star = false, children }: { state: "pick" | "lock" | "goal" | "off"; star?: boolean; children: React.ReactNode }) {
+  return (
+    <span
+      className={cn(
+        "relative flex h-9 items-center gap-1.5 border px-2.5 text-xs",
+        state === "pick" && "border-accent bg-accent font-bold text-accent-foreground",
+        state === "lock" && "border-accent bg-accent font-bold text-accent-foreground",
+        state === "goal" && "border-dashed border-accent text-accent",
+        state === "off" && "border-panel-foreground/10 opacity-35",
+      )}
+    >
+      {state === "pick" && <Check className="size-3.5 shrink-0" />}
+      {state === "lock" && <Lock className="size-3.5 shrink-0" />}
+      {state === "goal" && <Dices className="size-3.5 shrink-0" />}
+      <span className="truncate">{children}</span>
+      {star && <Star className="absolute -top-1.5 -right-1.5 size-4 fill-panel stroke-[2.5] text-panel" />}
+      {star && <Star className="absolute -top-1 -right-1 size-3 fill-accent text-accent" />}
+    </span>
   );
 }
 
