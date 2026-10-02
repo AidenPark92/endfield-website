@@ -41,7 +41,6 @@ export function EssenceFarm({ weapons, regions, stats }: Props) {
   const [pickerOpen, setPickerOpen] = useState(true);
   const [scrollTick, setScrollTick] = useState(0);
   const topRef = useRef<HTMLDivElement>(null);
-  const [showWeak, setShowWeak] = useState(false); // 1/3 일치도 표시
   const [loaded, setLoaded] = useState(false);
 
   // 선택 복원/저장 (브라우저별 편의 기능 — 실패해도 무시)
@@ -145,13 +144,7 @@ export function EssenceFarm({ weapons, regions, stats }: Props) {
               <StepHeader
                 no="02"
                 title="최적 파밍 존"
-                hint="이 무기를 노리면서, 같이 나오는 기질로 다른 무기까지 챙기는 설정이에요."
-                action={
-                  <label className="flex shrink-0 cursor-pointer items-center gap-1.5 text-[11px] text-muted-foreground">
-                    <input type="checkbox" checked={showWeak} onChange={(e) => setShowWeak(e.target.checked)} className="size-3.5 accent-foreground" />
-                    1/3 일치도 표시
-                  </label>
-                }
+                hint="이 무기의 기질 3줄을 노리면서, 같은 설정으로 다른 무기 기질까지 완벽하게 얻을 수 있는 곳이에요."
               />
               {active ? (
                 <BestZoneCard
@@ -161,7 +154,6 @@ export function EssenceFarm({ weapons, regions, stats }: Props) {
                   rank={Math.min(pick, candidates.length - 1)}
                   weaponById={weaponById}
                   label={label}
-                  showWeak={showWeak}
                 />
               ) : (
                 <Placeholder text="이 무기를 완벽하게 얻을 수 있는 구역이 없어요." />
@@ -187,11 +179,10 @@ export function EssenceFarm({ weapons, regions, stats }: Props) {
                   <p className="space-y-0.5 bg-muted px-2 py-1.5 font-mono text-[11px] text-foreground">
                     <span className="block">점수 = {SCORE_WEIGHTS.priority} × 선택 무기 완벽 확률 ÷ 1/24</span>
                     <span className="block">{"    "}+ {SCORE_WEIGHTS.otherPerfect} × 다른 무기 완벽 확률 ÷ 1/24</span>
-                    <span className="block">{"    "}+ {SCORE_WEIGHTS.otherPartial} × 다른 무기 2/3 확률 ÷ 9/24</span>
                   </p>
                   <p>
-                    선택한 무기를 최대 확률(1/24)로 노리면 100점이에요. 같은 기질이 다른 무기에도 맞으면 무기마다 완벽 최대 +{SCORE_WEIGHTS.otherPerfect}점, 2/3 최대 +
-                    {SCORE_WEIGHTS.otherPartial}점이 더해져요. 순위는 선택 무기 점수를 먼저 비교하고, 같으면 보너스가 큰 쪽이 위로 와요.
+                    선택한 무기를 최대 확률(1/24)로 노리면 100점이에요. 같은 설정에서 다른 무기의 3줄도 전부 맞을 수 있으면 무기마다 최대 +{SCORE_WEIGHTS.otherPerfect}점이 더해져요.
+                    2줄만 맞는 기질은 쓸 수 없어서 점수에 넣지 않아요. 순위는 선택 무기 점수를 먼저 비교하고, 같으면 함께 얻는 무기가 많은 쪽이 위로 와요.
                   </p>
                   <p>12개 구역 × 고정 16가지 × 기초 조합 10가지 = 1,920가지 설정을 모두 계산해서 고릅니다.</p>
                 </div>

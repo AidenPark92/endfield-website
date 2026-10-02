@@ -73,9 +73,17 @@ describe("evaluateConfig", () => {
     const withAxe = evaluateConfig([sword], [axe], region, cfg(["agi", "str", "int"], "extra", "atk"));
     const axeM = withAxe.others[0];
     expect(axeM.key).toBe("axe");
-    // axe 도 최대 확률로 완벽 + 2/3 가능 → +10 +3
-    expect(withAxe.bonusScore).toBeCloseTo(SCORE_WEIGHTS.otherPerfect + SCORE_WEIGHTS.otherPartial);
-    expect(withAxe.score).toBe(113);
+    // axe 도 최대 확률로 완벽 가능 → +10
+    expect(withAxe.bonusScore).toBeCloseTo(SCORE_WEIGHTS.otherPerfect);
+    expect(withAxe.score).toBe(110);
+  });
+
+  it("2줄까지만 맞는 무기는 점수·목록에 넣지 않고 개수만 센다", () => {
+    // bow: 의지 ✓, 생명력 ✗(공격력 고정), 효율 ✓ → 최대 2/3
+    const e = evaluateConfig([sword], [bow], region, cfg(["agi", "wil", "int"], "extra", "atk"));
+    expect(e.others).toHaveLength(0);
+    expect(e.partialOnly).toBe(1);
+    expect(e.bonusScore).toBe(0);
   });
 
   it("한 줄도 못 맞추는 다른 무기는 목록에서 빠진다", () => {

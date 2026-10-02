@@ -1,30 +1,18 @@
 "use client";
 
-import { Check, ChevronDown, Lock, Star, Trophy, X } from "lucide-react";
+import { Check, ChevronDown, Dices, Lock, MapPin, Sparkles, Star, Trophy } from "lucide-react";
 import { useState } from "react";
 import { cn, formatPercent } from "@/lib/utils";
+import { expectedDrops } from "@/lib/calc/essence";
 import type { ConfigEval, WeaponMatch } from "@/lib/calc/essence-score";
+import { EssenceOrb } from "./essence-orb";
 import type { StatLabelFn } from "./stat-chip";
 import { WeaponThumb } from "./weapon-thumb";
 import type { EssenceRegion, StatCategory, Weapon } from "@/types/game";
 
-/** 일치 등급 */
-function grade(m: WeaponMatch): { text: string; tone: "perfect" | "good" | "weak" } {
-  if (m.maxMatch === m.required) return { text: `완벽 (${m.required}/${m.required})`, tone: "perfect" };
-  if (m.maxMatch === m.required - 1) return { text: `양호 (${m.maxMatch}/${m.required})`, tone: "good" };
-  return { text: `${m.maxMatch}/${m.required}`, tone: "weak" };
-}
-
-const TONE_TEXT = {
-  perfect: "text-emerald-600 dark:text-emerald-400",
-  good: "text-sky-600 dark:text-sky-400",
-  weak: "text-muted-foreground",
-} as const;
-const TONE_BOX = {
-  perfect: "border-emerald-600/30 bg-emerald-500/[0.06]",
-  good: "border-sky-600/25 bg-sky-500/[0.05]",
-  weak: "bg-card",
-} as const;
+const CATS: StatCategory[] = ["base", "extra", "skill"];
+const CAT_NAME: Record<StatCategory, string> = { base: "기초", extra: "추가", skill: "스킬" };
+const SHOW = 9;
 
 interface CardProps {
   ev: ConfigEval;
@@ -32,22 +20,23 @@ interface CardProps {
   rank: number;
   weaponById: Map<string, Weapon>;
   label: StatLabelFn;
-  showWeak: boolean;
 }
 
-/** 최적 파밍 존 카드 — 우선 무기 일치 / 기타 무기 일치 / 추천 기질 선택권 */
-export function BestZoneCard({ ev, region, rank, weaponById, label, showWeak }: CardProps) {
+/**
+ * 최적 파밍 존 카드
+ *  1) 추천 기질 선택권 (가장 크게)  2) 선택 무기  3) 이 파밍으로 함께 얻는 무기 기질 (강조)
+ * 3줄이 전부 맞아야 쓸 수 있으므로 2줄 일치는 개수만 참고로 표시한다.
+ */
+export function BestZoneCard({ ev, region, rank, weaponById, label }: CardProps) {
   const [expanded, setExpanded] = useState(false);
-  const others = ev.others.filter((m) => showWeak || m.maxMatch >= m.required - 1);
-  const shown = expanded ? others : others.slice(0, 6);
-  const perfectCount = [...ev.priority, ...ev.others].filter((m) => m.maxMatch === m.required).length;
-  const goodCount = [...ev.priority, ...ev.others].filter((m) => m.maxMatch === m.required - 1 && m.required === 3).length;
-  const { bases, lock } = ev.config;
+  const target = ev.priority[0];
+  const weapon = weaponById.get(target.key)!;
+  const shown = expanded ? ev.others : ev.others.slice(0, SHOW);
 
   return (
-    <div key={`${region.id}-${lock.stat}-${bases.join()}`} className="ef-scan relative overflow-hidden border bg-card shadow-sm">
+    <div className="ef-scan relative overflow-hidden border bg-card shadow-sm">
       {/* 헤더 */}
-      <div className="flex items-start gap-3 bg-panel p-3 text-panel-foreground">
+      <div className="flex items-center gap-3 bg-panel p-3 text-panel-foreground">
         <span className="grid size-10 shrink-0 place-items-center bg-accent text-accent-foreground">
           <Trophy className="size-5" />
         </span>
@@ -56,115 +45,192 @@ export function BestZoneCard({ ev, region, rank, weaponById, label, showWeak }: 
           <span className="block truncate text-base font-bold">
             {region.area} · {region.name}
           </span>
-          <span className="mt-0.5 block text-xs">
-            <b className="text-emerald-400">{perfectCount} 완벽</b>
-            <b className="ml-2 text-sky-400">{goodCount} 양호</b>
-          </span>
         </span>
-        <span className="shrink-0 bg-accent/15 px-2 py-1 font-mono text-sm font-bold text-accent">{ev.score} 점</span>
+        <span className="shrink-0 text-right">
+          <span className="block bg-accent/15 px-2 py-1 font-mono text-sm font-bold text-accent">{ev.score} 점</span>
+          <span className="mt-0.5 block text-[10px] opacity-60">함께 얻는 무기 {ev.others.length}개</span>
+        </span>
       </div>
 
-      <div className="space-y-3 p-3">
-        {/* 우선 무기 */}
+      <div className="space-y-4 p-3">
+        {/* 1) 추천 기질 선택권 */}
+        <EngravePanel ev={ev} region={region} target={target} label={label} />
+
+        {/* 2) 선택 무기 */}
         <div>
           <p className="mb-1.5 flex items-center gap-1 text-[11px] font-bold text-rarity-5">
-            <Star className="size-3.5 fill-current" /> 선택 무기 일치
+            <Star className="size-3.5 fill-current" /> 선택 무기
           </p>
-          <ul className="space-y-1.5">
-            {ev.priority.map((m) => (
-              <WeaponRow key={m.key} m={m} w={weaponById.get(m.key)!} label={label} priority />
-            ))}
-          </ul>
+          <div className="flex items-center gap-3 border border-emerald-600/30 bg-emerald-500/[0.06] p-2.5">
+            <WeaponThumb weapon={weapon} size={112} className="size-14" />
+            <div className="min-w-0 flex-1">
+              <p className="flex items-baseline gap-1.5">
+                <b className="truncate">{weapon.name}</b>
+                <span className="shrink-0 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">3줄 일치 가능</span>
+              </p>
+              <LineChips m={target} label={label} />
+            </div>
+            <EssenceOrb skill={weapon.essence.skill} size={40} alt="목표 기질" />
+          </div>
         </div>
 
-        {/* 기타 무기 */}
-        <div className="border-t pt-3">
-          <p className="mb-1.5 flex items-center gap-1 text-[11px] font-bold text-sky-600 dark:text-sky-400">
-            <Check className="size-3.5" /> 기타 무기 일치 {others.length > 0 && <span className="font-mono">({others.length})</span>}
-          </p>
-          {others.length === 0 ? (
-            <p className="text-xs text-muted-foreground">같이 챙길 수 있는 다른 무기가 없어요.</p>
+        {/* 3) 함께 얻는 무기 기질 */}
+        <div className="border-2 border-accent bg-accent/[0.07] p-3">
+          <div className="mb-2.5 flex items-end justify-between gap-2">
+            <div>
+              <p className="flex items-center gap-1.5 text-sm font-bold">
+                <Sparkles className="size-4 text-rarity-5" /> 이 파밍으로 함께 얻는 무기 기질
+              </p>
+              <p className="text-[11px] text-muted-foreground">같은 설정에서 3줄이 전부 맞을 수 있는 다른 무기예요. 나오면 그대로 쓸 수 있어요.</p>
+            </div>
+            <span className="shrink-0 font-mono text-3xl leading-none font-bold">+{ev.others.length}</span>
+          </div>
+
+          {ev.others.length === 0 ? (
+            <p className="py-3 text-center text-xs text-muted-foreground">이 설정으로 함께 얻을 수 있는 다른 무기 기질은 없어요.</p>
           ) : (
-            <ul className="space-y-1.5">
+            <ul className="grid gap-1.5 sm:grid-cols-2 xl:grid-cols-3">
               {shown.map((m) => (
-                <WeaponRow key={m.key} m={m} w={weaponById.get(m.key)!} label={label} />
+                <BonusTile key={m.key} m={m} w={weaponById.get(m.key)!} label={label} />
               ))}
             </ul>
           )}
-          {others.length > 6 && (
+          {ev.others.length > SHOW && (
             <button
               onClick={() => setExpanded((v) => !v)}
-              className="mt-1.5 flex w-full cursor-pointer items-center justify-center gap-1 py-1 text-xs text-muted-foreground hover:text-foreground"
+              className="mt-2 flex w-full cursor-pointer items-center justify-center gap-1 py-1 text-xs font-medium hover:underline"
             >
-              {expanded ? "접기" : `${others.length - 6}개 더 보기`}
+              {expanded ? "접기" : `${ev.others.length - SHOW}개 더 보기`}
               <ChevronDown className={cn("size-3.5 transition-transform", expanded && "rotate-180")} />
             </button>
           )}
         </div>
-      </div>
 
-      {/* 추천 기질 선택권 */}
-      <div className="border-t bg-panel p-3 text-panel-foreground">
-        <p className="mb-2 flex items-center gap-1 text-[11px] font-bold">
-          <Lock className="size-3.5 text-accent" /> 추천 기질 선택권
-        </p>
-        <div className="flex flex-wrap items-center gap-1.5">
-          {bases.map((b) => (
-            <span key={b} className="border border-panel-foreground/25 px-2 py-1 text-xs">
-              {label("base", b)}
-            </span>
-          ))}
-          <span className="px-0.5 text-xs opacity-60">+</span>
-          <span className="inline-flex items-center gap-1 bg-accent px-2 py-1 text-xs font-bold text-accent-foreground">
-            <Lock className="size-3" />
-            {label(lock.category, lock.stat)}
-          </span>
-        </div>
-        <p className="mt-2 text-[11px] opacity-60">
-          기초 3개 중 1개 무작위 · {lock.category === "extra" ? "스킬" : "추가"} 속성은 이 구역 8개 중 무작위
-        </p>
+        {ev.partialOnly > 0 && (
+          <p className="text-[11px] text-muted-foreground/70">참고: 2줄까지만 맞는 무기 {ev.partialOnly}개는 쓸 수 없는 기질이라 제외했어요.</p>
+        )}
       </div>
     </div>
   );
 }
 
-function WeaponRow({ m, w, label, priority = false }: { m: WeaponMatch; w: Weapon; label: StatLabelFn; priority?: boolean }) {
-  const g = grade(m);
+/** 추천 기질 선택권 — 게임에서 그대로 따라 할 수 있게 단계별로 크게 표시 */
+function EngravePanel({ ev, region, target, label }: { ev: ConfigEval; region: EssenceRegion; target: WeaponMatch; label: StatLabelFn }) {
+  const { bases, lock } = ev.config;
+  const randomCat = lock.category === "extra" ? "skill" : "extra";
+  const randomWant = target.lines[randomCat]?.want;
+  const baseWant = target.lines.base?.want;
+
   return (
-    <li className={cn("flex items-center gap-2.5 border p-2", TONE_BOX[g.tone])}>
-      <span className="relative shrink-0">
-        <WeaponThumb weapon={w} size={96} className="size-12" />
-        {priority && <Star className="absolute -top-1.5 -right-1.5 size-3.5 fill-rarity-5 text-rarity-5" />}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="flex items-baseline gap-1.5">
-          <span className="truncate text-sm font-semibold">{w.name}</span>
-          <span className={cn("shrink-0 text-[11px] font-semibold", TONE_TEXT[g.tone])}>{g.text}</span>
-        </span>
-        <span className="mt-1 flex flex-wrap gap-1">
-          {(["base", "extra", "skill"] as StatCategory[]).map((c) => {
-            const line = m.lines[c];
-            if (!line) return null;
-            const ok = line.chance > 0;
-            return (
+    <div className="overflow-hidden border-l-4 border-accent bg-panel text-panel-foreground">
+      <div className="flex items-center justify-between gap-2 bg-accent px-3 py-2 text-accent-foreground">
+        <p className="flex items-center gap-1.5 text-sm font-bold">
+          <Lock className="size-4" /> 추천 기질 선택권
+        </p>
+        <p className="text-[11px] font-semibold">이대로 설정하세요</p>
+      </div>
+
+      <ol className="divide-y divide-panel-foreground/10">
+        <Step no={1} title="파밍 구역">
+          <span className="inline-flex items-center gap-1.5 text-base font-bold">
+            <MapPin className="size-4 text-accent" />
+            {region.area} · {region.name}
+          </span>
+        </Step>
+
+        <Step no={2} title="기초 속성 3개 선택">
+          <div className="flex flex-wrap gap-1.5">
+            {bases.map((b) => (
               <span
-                key={c}
+                key={b}
                 className={cn(
-                  "inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px]",
-                  ok ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "bg-red-500/10 text-red-600 dark:text-red-400",
+                  "inline-flex h-9 items-center gap-1 border px-3 text-sm",
+                  b === baseWant ? "border-accent font-bold text-accent" : "border-panel-foreground/30",
                 )}
               >
-                {ok ? <Check className="size-2.5" /> : <X className="size-2.5" />}
-                {label(c, line.want)}
+                {b === baseWant && <Star className="size-3.5 fill-current" />}
+                {label("base", b)}
               </span>
-            );
-          })}
+            ))}
+          </div>
+          <p className="mt-1 text-[11px] opacity-60">이 중 1개가 무작위로 붙어요 (1/3) · ★ 선택 무기에 필요한 속성</p>
+        </Step>
+
+        <Step no={3} title={`${CAT_NAME[lock.category]} 속성 1개 고정`}>
+          <span className="inline-flex h-10 items-center gap-1.5 bg-accent px-4 text-base font-bold text-accent-foreground">
+            <Lock className="size-4" />
+            {label(lock.category, lock.stat)}
+          </span>
+        </Step>
+
+        <Step no={4} title={`${CAT_NAME[randomCat]} 속성은 무작위`}>
+          <p className="flex flex-wrap items-center gap-1.5 text-sm">
+            <Dices className="size-4 opacity-60" />
+            이 구역 {region[randomCat].length}개 중 1개
+            {randomWant && (
+              <span>
+                → <b className="text-accent">{label(randomCat, randomWant)}</b> 이(가) 나오면 완성 (1/{region[randomCat].length})
+              </span>
+            )}
+          </p>
+        </Step>
+      </ol>
+
+      <div className="flex flex-wrap items-baseline justify-between gap-2 border-t border-panel-foreground/15 bg-black/20 px-3 py-2.5">
+        <span className="text-xs opacity-70">선택 무기 완벽 기질 확률</span>
+        <span>
+          <b className="font-mono text-xl text-accent">{formatPercent(target.pPerfect)}</b>
+          <span className="ml-1.5 text-[11px] opacity-60">약 {Math.round(expectedDrops(target.pPerfect))}개당 1개</span>
         </span>
-      </span>
-      <span className="shrink-0 text-right font-mono text-[10px] text-muted-foreground">
-        {m.pPerfect > 0 && <span className="block text-xs font-bold text-foreground">{formatPercent(m.pPerfect)}</span>}
-        {m.pPartial > 0 && <span className="block">2/3 {formatPercent(m.pPartial)}</span>}
-      </span>
+      </div>
+    </div>
+  );
+}
+
+function Step({ no, title, children }: { no: number; title: string; children: React.ReactNode }) {
+  return (
+    <li className="grid grid-cols-[1.75rem_1fr] gap-x-2 px-3 py-2.5">
+      <span className="grid size-6 place-items-center border border-panel-foreground/30 font-mono text-xs font-bold">{no}</span>
+      <div className="min-w-0">
+        <p className="mb-1.5 text-[11px] font-semibold opacity-60">{title}</p>
+        {children}
+      </div>
+    </li>
+  );
+}
+
+function LineChips({ m, label }: { m: WeaponMatch; label: StatLabelFn }) {
+  return (
+    <span className="mt-1 flex flex-wrap gap-1">
+      {CATS.map((c) => {
+        const line = m.lines[c];
+        if (!line) return null;
+        return (
+          <span key={c} className="inline-flex items-center gap-0.5 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] text-emerald-700 dark:text-emerald-400">
+            <Check className="size-2.5" />
+            {label(c, line.want)}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
+/** 함께 얻는 무기 타일 */
+function BonusTile({ m, w, label }: { m: WeaponMatch; w: Weapon; label: StatLabelFn }) {
+  return (
+    <li className="flex items-center gap-2 border bg-card p-2 animate-in fade-in">
+      <WeaponThumb weapon={w} size={96} className="size-12" />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold">{w.name}</p>
+        <p className="truncate text-[10px] text-muted-foreground">
+          {CATS.filter((c) => m.lines[c])
+            .map((c) => label(c, m.lines[c]!.want))
+            .join(" · ")}
+        </p>
+        <p className="font-mono text-[10px] font-bold">{formatPercent(m.pPerfect)}</p>
+      </div>
+      <EssenceOrb skill={w.essence.skill} size={30} />
     </li>
   );
 }
@@ -189,7 +255,6 @@ export function CandidateList({
       {candidates.map((c, i) => {
         const r = regionById.get(c.config.regionId)!;
         const active = i === activeIndex;
-        const n = c.others.filter((m) => m.maxMatch >= m.required - 1).length;
         return (
           <li key={`${r.id}-${c.config.lock.stat}`}>
             <button
@@ -212,7 +277,9 @@ export function CandidateList({
                 </span>
                 <span className="w-14 shrink-0 text-right font-mono text-xs font-bold">{c.score}점</span>
               </span>
-              <span className="relative mt-0.5 block pl-7 text-[10px] text-muted-foreground">기타 무기 {n}개 함께 노림</span>
+              <span className="relative mt-0.5 block pl-7 text-[10px] text-muted-foreground">
+                함께 얻는 무기 <b className="text-foreground">{c.others.length}개</b>
+              </span>
             </button>
           </li>
         );

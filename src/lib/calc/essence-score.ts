@@ -8,13 +8,13 @@
 //
 // 따라서 무기 하나에 대해 "몇 줄이 맞는지"의 분포를 정확히 계산할 수 있다.
 // 우선 무기(직접 고른 무기)의 완벽 기질을 최우선으로 노리면서,
-// 같은 기질이 다른 무기에도 맞는(완벽 또는 2/3) 경우를 보너스로 더해 설정을 비교한다.
+// 같은 기질이 다른 무기에도 '3줄 전부' 맞는 경우만 보너스로 더해 설정을 비교한다.
+// (2줄만 맞는 기질은 쓸 수 없으므로 점수에 넣지 않고 참고 개수만 센다)
 //
 // 점수 = 100 × Σ(우선 무기 완벽 확률 ÷ 완벽 최대 확률)
 //      +  10 × Σ(다른 무기 완벽 확률 ÷ 완벽 최대 확률)
-//      +   3 × Σ(다른 무기 2/3 확률 ÷ 2/3 최대 확률)
-//   완벽 최대 확률 = 1/3 × 1/8 = 1/24, 2/3 최대 확률 = 1/3 × 7/8 + 2/3 × 1/8 = 9/24
-//   → 우선 무기 1개를 최대 확률로 노리면 100점, 다른 무기는 최대일 때 완벽 +10 / 2/3 +3 점씩 보너스.
+//   완벽 최대 확률 = 1/3 × 1/8 = 1/24
+//   → 선택 무기를 최대 확률로 노리면 100점, 함께 완벽하게 얻을 수 있는 다른 무기는 최대일 때 +10점씩.
 // 정렬은 "우선 무기 기대값"을 먼저 비교하고, 같으면 보너스로 비교한다
 // (다른 무기가 많아도 우선 무기를 희생하는 설정이 위로 올라오지 않게).
 // TODO: 속성별 등장 확률이 균등하다는 가정은 공식 확인 필요
@@ -28,8 +28,6 @@ export const SCORE_WEIGHTS = {
   priority: 100,
   /** 다른 무기에도 완벽(3/3)으로 맞는 기질 */
   otherPerfect: 10,
-  /** 다른 무기에 2/3 만 맞는 기질 (임시로 쓸 수 있는 정도) */
-  otherPartial: 3,
 } as const;
 
 const EPS = 1e-9;
@@ -65,8 +63,10 @@ export interface ConfigEval {
   /** 표시용 총점 (반올림) */
   score: number;
   priority: WeaponMatch[];
-  /** 1줄 이상 맞을 수 있는 다른 무기 (일치 줄 수 → 완벽 확률 순) */
+  /** 이 설정으로 완벽(3줄 전부)하게 얻을 수 있는 다른 무기 (완벽 확률 순) */
   others: WeaponMatch[];
+  /** 참고: 2줄까지만 맞는 다른 무기 수 (쓸 수 없는 기질) */
+  partialOnly: number;
 }
 
 /** 구역에서 가능한 최대 확률: 완벽(3/3)과 정확히 2/3 (점수 정규화 기준) */
@@ -135,10 +135,9 @@ export function evaluateConfig(
   config: FarmConfig,
 ): ConfigEval {
   const pm = priority.map((t) => matchWeapon(t, region, config));
-  const om = others
-    .map((t) => matchWeapon(t, region, config))
-    .filter((m) => m.maxMatch > 0)
-    .sort((a, b) => b.maxMatch - a.maxMatch || b.pPerfect - a.pPerfect || b.pPartial - a.pPartial);
+  const allOthers = others.map((t) => matchWeapon(t, region, config));
+  const om = allOthers.filter((m) => m.pPerfect > 0).sort((a, b) => b.pPerfect - a.pPerfect);
+  const partialOnly = allOthers.filter((m) => m.pPerfect === 0 && m.maxMatch === m.required - 1).length;
 
   const max = maxChances(region);
   const priorityScore = pm.reduce(
@@ -146,10 +145,10 @@ export function evaluateConfig(
     0,
   );
   const bonusScore = om.reduce(
-    (s, m) => s + SCORE_WEIGHTS.otherPerfect * (m.pPerfect / max.perfect) + SCORE_WEIGHTS.otherPartial * (m.pPartial / max.partial),
+    (s, m) => s + SCORE_WEIGHTS.otherPerfect * (m.pPerfect / max.perfect),
     0,
   );
-  return { config, priorityScore, bonusScore, score: Math.round(priorityScore + bonusScore), priority: pm, others: om };
+  return { config, priorityScore, bonusScore, score: Math.round(priorityScore + bonusScore), priority: pm, others: om, partialOnly };
 }
 
 /** n 개 중 k 개 조합 */
