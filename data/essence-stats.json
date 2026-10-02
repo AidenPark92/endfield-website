@@ -1,0 +1,136 @@
+{
+  "_meta": {
+    "source": "https://wiki.skport.com/endfield (무기 상세 > 추천 주입 기질)",
+    "collectedAt": "2026-10-02"
+  },
+  "base": [
+    {
+      "id": "str",
+      "label": "힘"
+    },
+    {
+      "id": "agi",
+      "label": "민첩"
+    },
+    {
+      "id": "int",
+      "label": "지능"
+    },
+    {
+      "id": "wil",
+      "label": "의지"
+    },
+    {
+      "id": "main",
+      "label": "주요 능력치"
+    }
+  ],
+  "extra": [
+    {
+      "id": "atk",
+      "label": "공격력"
+    },
+    {
+      "id": "hp",
+      "label": "생명력"
+    },
+    {
+      "id": "phys",
+      "label": "물리 피해"
+    },
+    {
+      "id": "heat",
+      "label": "열기 피해"
+    },
+    {
+      "id": "elec",
+      "label": "전기 피해"
+    },
+    {
+      "id": "cryo",
+      "label": "냉기 피해"
+    },
+    {
+      "id": "nature",
+      "label": "자연 피해"
+    },
+    {
+      "id": "crit",
+      "label": "치명타 확률"
+    },
+    {
+      "id": "originium",
+      "label": "오리지늄 아츠 강도"
+    },
+    {
+      "id": "ult",
+      "label": "궁극기 충전 효율"
+    },
+    {
+      "id": "arts",
+      "label": "아츠 피해"
+    },
+    {
+      "id": "heal",
+      "label": "치유 효율"
+    }
+  ],
+  "skill": [
+    {
+      "id": "assault",
+      "label": "강공"
+    },
+    {
+      "id": "suppress",
+      "label": "억제"
+    },
+    {
+      "id": "pursuit",
+      "label": "추격"
+    },
+    {
+      "id": "crush",
+      "label": "분쇄"
+    },
+    {
+      "id": "technique",
+      "label": "기예"
+    },
+    {
+      "id": "burst",
+      "label": "방출"
+    },
+    {
+      "id": "flow",
+      "label": "흐름"
+    },
+    {
+      "id": "efficiency",
+      "label": "효율"
+    },
+    {
+      "id": "morale",
+      "label": "사기"
+    },
+    {
+      "id": "pain",
+      "label": "고통"
+    },
+    {
+      "id": "medic",
+      "label": "의료"
+    },
+    {
+      "id": "fracture",
+      "label": "골절"
+    },
+    {
+      "id": "brutal",
+      "label": "잔혹"
+    },
+    {
+      "id": "dark",
+      "label": "어둠"
+    }
+  ]
+}

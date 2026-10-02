@@ -1,0 +1,698 @@
+{
+  "_meta": {
+    "source": "https://wiki.skport.com/endfield/catalog?mainTypeId=1&subTypeId=1 (무기 추천 > 게임 내 추천)",
+    "collectedAt": "2026-10-02"
+  },
+  "operators": [
+    {
+      "id": "1173",
+      "name": "티프로스",
+      "rarity": 6,
+      "weaponType": "아츠 유닛",
+      "element": "자연",
+      "faction": "로도스 아일랜드",
+      "mainStat": "민첩",
+      "subStat": "의지",
+      "recommendedWeapons": {
+        "skill": [
+          "1175",
+          "1177"
+        ],
+        "attribute": [
+          "96"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260902/1118147466156/6a979563e6c4787f27a2416e_2f76db19.png"
+    },
+    {
+      "id": "1041",
+      "name": "리노",
+      "rarity": 6,
+      "weaponType": "장병기",
+      "element": "전기",
+      "faction": "탈로스 II 상업연합회",
+      "mainStat": "의지",
+      "subStat": "민첩",
+      "recommendedWeapons": {
+        "skill": [
+          "1046",
+          "1044"
+        ],
+        "attribute": [
+          "75"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260808/1118147466156/6a773e50079faa160cf2b34f_6ad0f152.png"
+    },
+    {
+      "id": "1040",
+      "name": "결",
+      "rarity": 6,
+      "weaponType": "아츠 유닛",
+      "element": "자연",
+      "faction": "홍산 과학원",
+      "mainStat": "지능",
+      "subStat": "의지",
+      "recommendedWeapons": {
+        "skill": [
+          "1045",
+          "1043",
+          "47",
+          "63"
+        ],
+        "attribute": [
+          "94"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260716/1118147466156/6a58b9f8337a11068196c14c_13673ac9.png"
+    },
+    {
+      "id": "996",
+      "name": "카뮤",
+      "rarity": 6,
+      "weaponType": "장병기",
+      "element": "열기",
+      "faction": "세쉬카",
+      "mainStat": "민첩",
+      "subStat": "지능",
+      "recommendedWeapons": {
+        "skill": [
+          "1032",
+          "999",
+          "75"
+        ],
+        "attribute": [
+          "93"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260626/1118147466156/6a3e87499650be73424fc499_db193eac.png"
+    },
+    {
+      "id": "995",
+      "name": "미브",
+      "rarity": 6,
+      "weaponType": "양손검",
+      "element": "물리",
+      "faction": "홍산 과학원",
+      "mainStat": "힘",
+      "subStat": "의지",
+      "recommendedWeapons": {
+        "skill": [
+          "1001",
+          "1000",
+          "73"
+        ],
+        "attribute": [
+          "84",
+          "74"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260605/1118147466156/6a22b1339650be73424f5b98_3eac6ad0.png"
+    },
+    {
+      "id": "838",
+      "name": "장방이",
+      "rarity": 6,
+      "weaponType": "아츠 유닛",
+      "element": "전기",
+      "faction": "홍산 과학원",
+      "mainStat": "지능",
+      "subStat": "의지",
+      "recommendedWeapons": {
+        "skill": [
+          "839",
+          "840",
+          "63"
+        ],
+        "attribute": [
+          "96"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260806/1118147466156/6a749a98079faa160cf2aa2b_13673ac9.png"
+    },
+    {
+      "id": "615",
+      "name": "로시",
+      "rarity": 6,
+      "weaponType": "한손검",
+      "element": "물리",
+      "faction": "엔드필드 공업",
+      "mainStat": "민첩",
+      "subStat": "지능",
+      "recommendedWeapons": {
+        "skill": [
+          "733",
+          "71",
+          "346"
+        ],
+        "attribute": [
+          "71",
+          "85"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260327/4559012616678/69c56a6b7c2305399ff6d40f_56331367.png"
+    },
+    {
+      "id": "25",
+      "name": "탕탕",
+      "rarity": 6,
+      "weaponType": "권총",
+      "element": "냉기",
+      "faction": "엔드필드 공업",
+      "mainStat": "민첩",
+      "subStat": "힘",
+      "recommendedWeapons": {
+        "skill": [
+          "732",
+          "734",
+          "67"
+        ],
+        "attribute": [
+          "59"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260313/4559012616678/69b2e5e304c7f0cc11672c2e_13673ac9.png"
+    },
+    {
+      "id": "20",
+      "name": "포그라니치니크",
+      "rarity": 6,
+      "weaponType": "한손검",
+      "element": "물리",
+      "faction": "로도스 아일랜드",
+      "mainStat": "의지",
+      "subStat": "민첩",
+      "recommendedWeapons": {
+        "skill": [
+          "62",
+          "78"
+        ],
+        "attribute": [
+          "85"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260114/4559012616678/69667bc8bc25979e2269259c.png"
+    },
+    {
+      "id": "19",
+      "name": "아델리아",
+      "rarity": 6,
+      "weaponType": "아츠 유닛",
+      "element": "자연",
+      "faction": "로도스 아일랜드",
+      "mainStat": "지능",
+      "subStat": "의지",
+      "recommendedWeapons": {
+        "skill": [
+          "49",
+          "64",
+          "65"
+        ],
+        "attribute": [
+          "94",
+          "95"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260114/4559012616678/696682f84823bf18f42e7ce3.png"
+    },
+    {
+      "id": "17",
+      "name": "라스트 라이트",
+      "rarity": 6,
+      "weaponType": "양손검",
+      "element": "냉기",
+      "faction": "세쉬카",
+      "mainStat": "힘",
+      "subStat": "의지",
+      "recommendedWeapons": {
+        "skill": [
+          "70",
+          "60"
+        ],
+        "attribute": [
+          "74"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260114/4559012616678/6966940fa1c4dd69df7d6963.png"
+    },
+    {
+      "id": "15",
+      "name": "엠버",
+      "rarity": 6,
+      "weaponType": "양손검",
+      "element": "열기",
+      "faction": "철의 서약군",
+      "mainStat": "힘",
+      "subStat": "의지",
+      "recommendedWeapons": {
+        "skill": [
+          "66",
+          "74",
+          "82"
+        ],
+        "attribute": [
+          "73",
+          "84"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260114/4559012616678/69669c19a3dc39acc0469286.png"
+    },
+    {
+      "id": "14",
+      "name": "이본",
+      "rarity": 6,
+      "weaponType": "권총",
+      "element": "냉기",
+      "faction": "엔드필드 공업",
+      "mainStat": "지능",
+      "subStat": "민첩",
+      "recommendedWeapons": {
+        "skill": [
+          "80",
+          "59"
+        ],
+        "attribute": [
+          "76",
+          "67"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260121/4559012616678/6970c6468230f1b03cc50b15.png"
+    },
+    {
+      "id": "12",
+      "name": "여풍",
+      "rarity": 6,
+      "weaponType": "장병기",
+      "element": "물리",
+      "faction": "홍산 과학원",
+      "mainStat": "민첩",
+      "subStat": "힘",
+      "recommendedWeapons": {
+        "skill": [
+          "68",
+          "93",
+          "77"
+        ],
+        "attribute": [
+          "55"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260116/4559012616678/696923370920b30f43778d58.png"
+    },
+    {
+      "id": "11",
+      "name": "레바테인",
+      "rarity": 6,
+      "weaponType": "한손검",
+      "element": "열기",
+      "faction": "로도스 아일랜드",
+      "mainStat": "지능",
+      "subStat": "힘",
+      "recommendedWeapons": {
+        "skill": [
+          "37",
+          "69",
+          "48"
+        ],
+        "attribute": [
+          "88"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260116/4559012616678/696927ad4823bf18f42e7d10.png"
+    },
+    {
+      "id": "9",
+      "name": "질베르타",
+      "rarity": 6,
+      "weaponType": "아츠 유닛",
+      "element": "자연",
+      "faction": "로도스 아일랜드",
+      "mainStat": "의지",
+      "subStat": "지능",
+      "recommendedWeapons": {
+        "skill": [
+          "79",
+          "65"
+        ],
+        "attribute": [
+          "64",
+          "96"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260114/4559012616678/6966a1df4823bf18f42e7cf4.png"
+    },
+    {
+      "id": "3",
+      "name": "관리자(여)",
+      "rarity": 6,
+      "weaponType": "한손검",
+      "element": "물리",
+      "faction": "엔드필드 공업",
+      "mainStat": "민첩",
+      "subStat": "힘",
+      "recommendedWeapons": {
+        "skill": [
+          "61",
+          "72"
+        ],
+        "attribute": [
+          "71",
+          "85"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260116/4559012616678/696947917a9d81effdbeedb4.png"
+    },
+    {
+      "id": "2",
+      "name": "관리자(남)",
+      "rarity": 6,
+      "weaponType": "한손검",
+      "element": "물리",
+      "faction": "엔드필드 공업",
+      "mainStat": "민첩",
+      "subStat": "힘",
+      "recommendedWeapons": {
+        "skill": [
+          "61",
+          "72"
+        ],
+        "attribute": [
+          "71",
+          "85"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260116/4559012616678/696947adc15709c5bd08bf98.png"
+    },
+    {
+      "id": "1174",
+      "name": "푸치나",
+      "rarity": 5,
+      "weaponType": "한손검",
+      "element": "물리",
+      "faction": "탈로스 II 상업연합회",
+      "mainStat": "힘",
+      "subStat": "의지",
+      "recommendedWeapons": {
+        "skill": [
+          "1176",
+          "1042"
+        ],
+        "attribute": [
+          "71"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260924/1118147466156/6ab4a136a03f3aa857d19489_db193eac.png"
+    },
+    {
+      "id": "18",
+      "name": "알레쉬",
+      "rarity": 5,
+      "weaponType": "한손검",
+      "element": "냉기",
+      "faction": "연맹 공단",
+      "mainStat": "힘",
+      "subStat": "지능",
+      "recommendedWeapons": {
+        "skill": [
+          "43",
+          "81",
+          "78"
+        ],
+        "attribute": [
+          "69"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260114/4559012616678/69668f4fa1c4dd69df7d695f.png"
+    },
+    {
+      "id": "16",
+      "name": "스노우샤인",
+      "rarity": 5,
+      "weaponType": "양손검",
+      "element": "냉기",
+      "faction": "로도스 아일랜드",
+      "mainStat": "힘",
+      "subStat": "의지",
+      "recommendedWeapons": {
+        "skill": [
+          "45",
+          "70"
+        ],
+        "attribute": [
+          "74",
+          "73"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260114/4559012616678/69669860a1c4dd69df7d6968.png"
+    },
+    {
+      "id": "13",
+      "name": "자이히",
+      "rarity": 5,
+      "weaponType": "아츠 유닛",
+      "element": "냉기",
+      "faction": "고요한 수도회",
+      "mainStat": "의지",
+      "subStat": "지능",
+      "recommendedWeapons": {
+        "skill": [
+          "64",
+          "98"
+        ],
+        "attribute": [
+          "79",
+          "96"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260116/4559012616678/69691c89e9a3e4b7c53d5b70.png"
+    },
+    {
+      "id": "10",
+      "name": "아비웨나",
+      "rarity": 5,
+      "weaponType": "장병기",
+      "element": "전기",
+      "faction": "탈로스 II 상업연합회",
+      "mainStat": "의지",
+      "subStat": "민첩",
+      "recommendedWeapons": {
+        "skill": [
+          "75",
+          "97"
+        ],
+        "attribute": [
+          "51"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260116/4559012616678/69692cefc15709c5bd08bf90.png"
+    },
+    {
+      "id": "8",
+      "name": "판",
+      "rarity": 5,
+      "weaponType": "양손검",
+      "element": "물리",
+      "faction": "홍산 과학원",
+      "mainStat": "힘",
+      "subStat": "의지",
+      "recommendedWeapons": {
+        "skill": [
+          "73",
+          "74"
+        ],
+        "attribute": [
+          "86",
+          "60"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260116/4559012616678/69693388e868cec3d8081125.png"
+    },
+    {
+      "id": "7",
+      "name": "아크라이트",
+      "rarity": 5,
+      "weaponType": "한손검",
+      "element": "전기",
+      "faction": "만물의 대지",
+      "mainStat": "민첩",
+      "subStat": "지능",
+      "recommendedWeapons": {
+        "skill": [
+          "48",
+          "78"
+        ],
+        "attribute": [
+          "92",
+          "81"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260116/4559012616678/696938e04e40f4ca8347a4a4.png"
+    },
+    {
+      "id": "6",
+      "name": "울프가드",
+      "rarity": 5,
+      "weaponType": "권총",
+      "element": "열기",
+      "faction": "엔드필드 공업",
+      "mainStat": "힘",
+      "subStat": "민첩",
+      "recommendedWeapons": {
+        "skill": [
+          "46",
+          "76"
+        ],
+        "attribute": [
+          "89",
+          "57"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260114/4559012616678/6966a26fbc25979e226925bc.png"
+    },
+    {
+      "id": "4",
+      "name": "진천우",
+      "rarity": 5,
+      "weaponType": "한손검",
+      "element": "물리",
+      "faction": "엔드필드 공업",
+      "mainStat": "민첩",
+      "subStat": "힘",
+      "recommendedWeapons": {
+        "skill": [
+          "71",
+          "83"
+        ],
+        "attribute": [
+          "61",
+          "72"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260116/4559012616678/696940d5a3432288f624afc0.png"
+    },
+    {
+      "id": "1",
+      "name": "펠리카",
+      "rarity": 5,
+      "weaponType": "아츠 유닛",
+      "element": "전기",
+      "faction": "엔드필드 공업",
+      "mainStat": "지능",
+      "subStat": "의지",
+      "recommendedWeapons": {
+        "skill": [
+          "63",
+          "47"
+        ],
+        "attribute": [
+          "90",
+          "94"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260116/4559012616678/6969443cc15709c5bd08bf96.png"
+    },
+    {
+      "id": "24",
+      "name": "플루라이트",
+      "rarity": 4,
+      "weaponType": "권총",
+      "element": "자연",
+      "faction": "엔드필드 공업",
+      "mainStat": "민첩",
+      "subStat": "지능",
+      "recommendedWeapons": {
+        "skill": [
+          "67",
+          "59"
+        ],
+        "attribute": [
+          "87"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260113/4559012616678/69664bd1a1c4dd69df7d694d.png"
+    },
+    {
+      "id": "23",
+      "name": "카치르",
+      "rarity": 4,
+      "weaponType": "양손검",
+      "element": "물리",
+      "faction": "엔드필드 공업",
+      "mainStat": "힘",
+      "subStat": "의지",
+      "recommendedWeapons": {
+        "skill": [
+          "45",
+          "86"
+        ],
+        "attribute": [
+          "74",
+          "60"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260113/4559012616678/6966600ba1c4dd69df7d6950.png"
+    },
+    {
+      "id": "22",
+      "name": "안탈",
+      "rarity": 4,
+      "weaponType": "아츠 유닛",
+      "element": "전기",
+      "faction": "엔드필드 공업",
+      "mainStat": "지능",
+      "subStat": "힘",
+      "recommendedWeapons": {
+        "skill": [
+          "47",
+          "95"
+        ],
+        "attribute": [
+          "63",
+          "94"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260113/4559012616678/69666bf94823bf18f42e7cd5.png"
+    },
+    {
+      "id": "21",
+      "name": "에스텔라",
+      "rarity": 4,
+      "weaponType": "장병기",
+      "element": "냉기",
+      "faction": "엔드필드 공업",
+      "mainStat": "의지",
+      "subStat": "힘",
+      "recommendedWeapons": {
+        "skill": [
+          "75",
+          "91"
+        ],
+        "attribute": [
+          "97"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260114/4559012616678/6966738dbc25979e22692597.png"
+    },
+    {
+      "id": "5",
+      "name": "아케쿠리",
+      "rarity": 4,
+      "weaponType": "한손검",
+      "element": "열기",
+      "faction": "엔드필드 공업",
+      "mainStat": "민첩",
+      "subStat": "지능",
+      "recommendedWeapons": {
+        "skill": [
+          "78",
+          "81"
+        ],
+        "attribute": [
+          "72",
+          "61"
+        ]
+      },
+      "cover": "https://static.skport.com/image/rm42wiki/20260116/4559012616678/69693cfa859d9d5c90cf75f7.png"
+    }
+  ]
+}

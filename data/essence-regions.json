@@ -1,0 +1,311 @@
+{
+  "_meta": {
+    "source": "인게임 '전체 기질 보기' 캡처 12장 (/capture, 사용자 제공)",
+    "collectedAt": "2026-10-02",
+    "verified": true,
+    "rules": "각인권 사용 시: 기초 속성 3개 선택(그중 1개 무작위) + 부가 또는 스킬 속성 1개 고정, 나머지 1개는 해당 지역 풀 8개 중 무작위 (인게임 사전 각인 화면 기준)",
+    "todo": "TODO: 각 속성의 등장 확률이 균등한지 확인 필요"
+  },
+  "regions": [
+    {
+      "id": "valley-hub",
+      "name": "거점 지역",
+      "area": "4번 협곡",
+      "extra": [
+        "atk",
+        "heat",
+        "elec",
+        "cryo",
+        "nature",
+        "originium",
+        "ult",
+        "arts"
+      ],
+      "skill": [
+        "assault",
+        "suppress",
+        "pursuit",
+        "crush",
+        "technique",
+        "burst",
+        "flow",
+        "efficiency"
+      ]
+    },
+    {
+      "id": "valley-originium",
+      "name": "오리지늄 연구 구역",
+      "area": "4번 협곡",
+      "extra": [
+        "atk",
+        "phys",
+        "elec",
+        "cryo",
+        "nature",
+        "crit",
+        "ult",
+        "arts"
+      ],
+      "skill": [
+        "suppress",
+        "pursuit",
+        "morale",
+        "technique",
+        "pain",
+        "medic",
+        "fracture",
+        "efficiency"
+      ]
+    },
+    {
+      "id": "valley-ore",
+      "name": "광맥 구역",
+      "area": "4번 협곡",
+      "extra": [
+        "hp",
+        "phys",
+        "heat",
+        "cryo",
+        "nature",
+        "crit",
+        "originium",
+        "heal"
+      ],
+      "skill": [
+        "assault",
+        "suppress",
+        "technique",
+        "brutal",
+        "pain",
+        "burst",
+        "dark",
+        "efficiency"
+      ]
+    },
+    {
+      "id": "valley-energy",
+      "name": "에너지 공급 고지",
+      "area": "4번 협곡",
+      "extra": [
+        "atk",
+        "hp",
+        "phys",
+        "heat",
+        "nature",
+        "crit",
+        "originium",
+        "heal"
+      ],
+      "skill": [
+        "pursuit",
+        "crush",
+        "morale",
+        "brutal",
+        "pain",
+        "medic",
+        "fracture",
+        "flow"
+      ]
+    },
+    {
+      "id": "wuling-city",
+      "name": "무릉성",
+      "area": "무릉",
+      "extra": [
+        "atk",
+        "hp",
+        "elec",
+        "cryo",
+        "crit",
+        "ult",
+        "arts",
+        "heal"
+      ],
+      "skill": [
+        "assault",
+        "crush",
+        "brutal",
+        "medic",
+        "fracture",
+        "burst",
+        "dark",
+        "flow"
+      ]
+    },
+    {
+      "id": "wuling-qingbo",
+      "name": "청파채",
+      "area": "무릉",
+      "extra": [
+        "hp",
+        "phys",
+        "elec",
+        "cryo",
+        "originium",
+        "ult",
+        "arts",
+        "heal"
+      ],
+      "skill": [
+        "suppress",
+        "crush",
+        "morale",
+        "technique",
+        "medic",
+        "fracture",
+        "burst",
+        "dark"
+      ]
+    },
+    {
+      "id": "wuling-sudun",
+      "name": "수돈",
+      "area": "무릉",
+      "extra": [
+        "atk",
+        "phys",
+        "heat",
+        "elec",
+        "nature",
+        "crit",
+        "ult",
+        "arts"
+      ],
+      "skill": [
+        "assault",
+        "pursuit",
+        "morale",
+        "brutal",
+        "pain",
+        "dark",
+        "flow",
+        "efficiency"
+      ]
+    },
+    {
+      "id": "wuling-lab",
+      "name": "실험 구역",
+      "area": "무릉",
+      "extra": [
+        "hp",
+        "heat",
+        "elec",
+        "cryo",
+        "nature",
+        "originium",
+        "ult",
+        "heal"
+      ],
+      "skill": [
+        "suppress",
+        "crush",
+        "technique",
+        "brutal",
+        "pain",
+        "fracture",
+        "dark",
+        "flow"
+      ]
+    },
+    {
+      "id": "wuling-sword",
+      "name": "장검 골짜기",
+      "area": "무릉",
+      "extra": [
+        "atk",
+        "hp",
+        "phys",
+        "heat",
+        "cryo",
+        "nature",
+        "originium",
+        "heal"
+      ],
+      "skill": [
+        "assault",
+        "pursuit",
+        "morale",
+        "technique",
+        "medic",
+        "fracture",
+        "burst",
+        "efficiency"
+      ]
+    },
+    {
+      "id": "wuling-gate",
+      "name": "응룡 관문",
+      "area": "무릉",
+      "extra": [
+        "atk",
+        "phys",
+        "elec",
+        "cryo",
+        "nature",
+        "crit",
+        "originium",
+        "arts"
+      ],
+      "skill": [
+        "suppress",
+        "pursuit",
+        "technique",
+        "brutal",
+        "pain",
+        "burst",
+        "flow",
+        "efficiency"
+      ]
+    },
+    {
+      "id": "wuling-north",
+      "name": "북쪽 금지 구역",
+      "area": "무릉",
+      "extra": [
+        "hp",
+        "phys",
+        "heat",
+        "nature",
+        "crit",
+        "originium",
+        "arts",
+        "heal"
+      ],
+      "skill": [
+        "assault",
+        "suppress",
+        "pursuit",
+        "crush",
+        "morale",
+        "pain",
+        "medic",
+        "efficiency"
+      ]
+    },
+    {
+      "id": "wuling-forest",
+      "name": "눈 덮인 소나무 숲",
+      "area": "무릉",
+      "extra": [
+        "atk",
+        "hp",
+        "heat",
+        "elec",
+        "crit",
+        "ult",
+        "arts",
+        "heal"
+      ],
+      "skill": [
+        "assault",
+        "crush",
+        "morale",
+        "brutal",
+        "medic",
+        "burst",
+        "dark",
+        "flow"
+      ]
+    }
+  ]
+}
