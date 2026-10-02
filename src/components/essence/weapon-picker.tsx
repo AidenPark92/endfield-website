@@ -1,7 +1,10 @@
+"use client";
+
+import { useState } from "react";
 import { Check, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EssenceOrb } from "./essence-orb";
-import { WeaponThumb } from "./weapon-thumb";
+import { WeaponMedia } from "./weapon-media";
 import type { StatLabelFn } from "./stat-chip";
 import type { Weapon, WeaponType } from "@/types/game";
 
@@ -64,54 +67,62 @@ export function WeaponPicker(props: Props) {
         뉴비용 3~4성 무기도 보기
       </label>
 
-      <ul className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
-        {list.map((w) => {
-          const active = w.id === selectedId;
-          return (
-            <li key={w.id}>
-              <button
-                onClick={() => onSelect(w.id)}
-                aria-pressed={active}
-                data-active={active}
-                className={cn(
-                  "ef-bracket relative flex w-full cursor-pointer flex-col border bg-card text-left transition-all hover:-translate-y-0.5 hover:shadow-md",
-                  active && "border-foreground",
-                )}
-              >
-                <WeaponThumb weapon={w} size={192} bar="top" className="aspect-[3/2] w-full border-0 border-b">
-                  <span className="absolute bottom-1.5 left-2 font-mono text-[10px] text-muted-foreground">
-                    {w.rarity}★ · {w.type}
-                  </span>
-                  {active && (
-                    <span className="absolute top-2 right-2 grid size-6 place-items-center bg-accent text-accent-foreground animate-in zoom-in-50">
-                      <Check className="size-4" />
-                    </span>
-                  )}
-                </WeaponThumb>
-                <span className="flex items-center gap-1 px-2 pt-2">
-                  <span className="flex-1 truncate text-sm font-semibold">{w.name}</span>
-                </span>
-                {/* 고정 3속성 + 목표 기질 */}
-                <span className="flex items-end gap-2 px-2 pt-1 pb-2">
-                  <span className="min-w-0 flex-1 space-y-0.5">
-                    {(["base", "extra", "skill"] as const).map((c) =>
-                      w.essence[c] ? (
-                        <span key={c} className="flex items-center gap-1.5 text-[11px]">
-                          <span className={cn("size-1.5 shrink-0", CATEGORY_DOT[c])} />
-                          <span className="w-6 shrink-0 text-muted-foreground">{CATEGORY_NAME[c]}</span>
-                          <span className="truncate">{label(c, w.essence[c]!)}</span>
-                        </span>
-                      ) : null,
-                    )}
-                  </span>
-                  <EssenceOrb skill={w.essence.skill} size={32} alt="목표 기질" />
-                </span>
-              </button>
-            </li>
-          );
-        })}
+      <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        {list.map((w) => (
+          <WeaponCard key={w.id} w={w} active={w.id === selectedId} onSelect={onSelect} label={label} />
+        ))}
         {list.length === 0 && <li className="col-span-full py-10 text-center text-sm text-muted-foreground">검색 결과가 없습니다.</li>}
       </ul>
     </div>
+  );
+}
+
+/** 무기 카드 — 대표 프레임 위에 마우스를 올리면 회전 연출 재생 */
+function WeaponCard({ w, active, onSelect, label }: { w: Weapon; active: boolean; onSelect: (id: string) => void; label: StatLabelFn }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <li>
+      <button
+        onClick={() => onSelect(w.id)}
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
+        onFocus={() => setHover(true)}
+        onBlur={() => setHover(false)}
+        aria-pressed={active}
+        data-active={active}
+        className={cn(
+          "ef-bracket group relative flex w-full cursor-pointer flex-col overflow-hidden border bg-card text-left transition-all hover:-translate-y-0.5 hover:shadow-lg",
+          active && "border-foreground",
+        )}
+      >
+        <WeaponMedia weapon={w} mode="hover" active={hover} className="aspect-video w-full">
+          <span className="absolute bottom-1.5 left-2 bg-black/55 px-1.5 py-0.5 font-mono text-[10px] text-white">
+            {w.rarity}★ · {w.type}
+          </span>
+          {active && (
+            <span className="absolute top-2 right-2 grid size-6 place-items-center bg-accent text-accent-foreground animate-in zoom-in-50">
+              <Check className="size-4" />
+            </span>
+          )}
+        </WeaponMedia>
+        <span className="flex items-start gap-2 px-2.5 pt-2 pb-2.5">
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-bold">{w.name}</span>
+            <span className="mt-1 block space-y-0.5">
+              {(["base", "extra", "skill"] as const).map((c) =>
+                w.essence[c] ? (
+                  <span key={c} className="flex items-center gap-1.5 text-[11px]">
+                    <span className={cn("size-1.5 shrink-0", CATEGORY_DOT[c])} />
+                    <span className="w-6 shrink-0 text-muted-foreground">{CATEGORY_NAME[c]}</span>
+                    <span className="truncate">{label(c, w.essence[c]!)}</span>
+                  </span>
+                ) : null,
+              )}
+            </span>
+          </span>
+          <EssenceOrb skill={w.essence.skill} size={34} alt="목표 기질" className="mt-0.5" />
+        </span>
+      </button>
+    </li>
   );
 }

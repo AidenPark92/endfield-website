@@ -34,6 +34,10 @@ export interface Weapon {
   cover: string;
   /** 사이트 내 무기 이미지 (public/weapons, 없으면 undefined) */
   image?: string;
+  /** 회전 연출 영상 경로 (확장자 제외 — .webm / .mp4 둘 다 있음) */
+  video?: string;
+  /** 영상 첫 프레임 (public/weapons/poster) */
+  poster?: string;
   note?: string;
 }
 

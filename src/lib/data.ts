@@ -9,6 +9,15 @@ import type { EssenceRegion, EssenceStats, Operator, Weapon } from "@/types/game
 export const essenceStats: EssenceStats = statsJson;
 export const essenceRegions: EssenceRegion[] = regionsJson.regions;
 export const essenceRegionsMeta = regionsJson._meta;
-const weaponImages: Record<string, string> = weaponImagesJson.images;
-export const weapons: Weapon[] = (weaponsJson.weapons as Weapon[]).map((w) => ({ ...w, image: weaponImages[w.id] }));
+const media = weaponImagesJson as {
+  images: Record<string, string>;
+  videos?: Record<string, string>;
+  posters?: Record<string, string>;
+};
+export const weapons: Weapon[] = (weaponsJson.weapons as Weapon[]).map((w) => ({
+  ...w,
+  image: media.images[w.id],
+  video: media.videos?.[w.id],
+  poster: media.posters?.[w.id],
+}));
 export const operators = operatorsJson.operators as Operator[];

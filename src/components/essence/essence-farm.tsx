@@ -11,7 +11,7 @@ import { SCORE_WEIGHTS, rankConfigs, uniqueByZoneLock } from "@/lib/calc/essence
 import { LOW_TIER_ESSENCES } from "@/lib/essence-images";
 import { StatChip, makeStatLabel, type StatLabelFn } from "./stat-chip";
 import { EssenceOrb } from "./essence-orb";
-import { WeaponThumb } from "./weapon-thumb";
+import { WeaponMedia } from "./weapon-media";
 import { NAV_RESET_EVENT } from "@/components/nav-link";
 import { WeaponPicker } from "./weapon-picker";
 import { BestZoneCard, CandidateList } from "./farm-result";
@@ -104,8 +104,14 @@ export function EssenceFarm({ weapons, regions, stats }: Props) {
   // 무기를 고르거나 바꾸기를 누르면 화면 맨 위(작업 영역)로 부드럽게 이동
   useEffect(() => {
     if (scrollTick === 0) return;
-    requestAnimationFrame(() => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
-  }, [scrollTick]);
+    // 화면 전환(목록 → 결과)이 그려진 뒤 위치를 계산해 헤더(80px) 아래로 맞춘다
+    requestAnimationFrame(() => {
+      const el = topRef.current;
+      if (!el) return;
+      const y = el.getBoundingClientRect().top + window.scrollY - 80;
+      window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+    });
+  }, [scrollTick, selectedId]);
 
   const weapon = selectedId ? weaponById.get(selectedId)! : null;
   const showPicker = pickerOpen || !weapon;
@@ -220,24 +226,36 @@ export function EssenceFarm({ weapons, regions, stats }: Props) {
 /** 선택한 무기 요약 바 — 무기 목록 대신 접혀서 표시 */
 function TargetBar({ weapon, label, onChange }: { weapon: Weapon; label: StatLabelFn; onChange: () => void }) {
   return (
-    <div className="ef-cut flex flex-wrap items-center gap-3 border bg-card p-3 animate-in fade-in slide-in-from-top-1">
-      <WeaponThumb weapon={weapon} size={160} className="size-20" />
-      <div className="min-w-0 flex-1">
-        <p className="ef-label whitespace-nowrap">01 // 선택한 무기</p>
-        <p className="truncate text-lg leading-tight font-bold">{weapon.name}</p>
-        <p className="mt-1 flex flex-wrap items-center gap-1">
-          <span className="mr-1 text-[11px] text-muted-foreground">
+    <div className="ef-cut grid overflow-hidden border bg-card animate-in fade-in slide-in-from-top-1 sm:grid-cols-[minmax(0,420px)_1fr]">
+      {/* 회전 연출 */}
+      <WeaponMedia weapon={weapon} mode="auto" className="aspect-video w-full" />
+
+      <div className="flex flex-col justify-between gap-4 p-4 sm:p-5">
+        <div>
+          <p className="ef-label whitespace-nowrap">01 // 선택한 무기</p>
+          <p className="mt-1 text-2xl leading-tight font-bold tracking-tight">{weapon.name}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
             {weapon.rarity}★ · {weapon.type}
-          </span>
-          {(["base", "extra", "skill"] as const).map((c) =>
-            weapon.essence[c] ? <StatChip key={c} category={c} id={weapon.essence[c]!} label={label} showCategory /> : null,
-          )}
-        </p>
+            {weapon.trait && <> · {weapon.trait}</>}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <EssenceOrb skill={weapon.essence.skill} size={56} alt="목표 기질" />
+          <div className="min-w-0">
+            <p className="mb-1 text-[11px] font-semibold text-muted-foreground">맞춰야 할 기질 3줄</p>
+            <p className="flex flex-wrap gap-1">
+              {(["base", "extra", "skill"] as const).map((c) =>
+                weapon.essence[c] ? <StatChip key={c} category={c} id={weapon.essence[c]!} label={label} showCategory /> : null,
+              )}
+            </p>
+          </div>
+        </div>
+
+        <Button variant="outline" onClick={onChange} className="w-full sm:w-auto sm:self-start">
+          <Repeat /> 무기 변경
+        </Button>
       </div>
-      <EssenceOrb skill={weapon.essence.skill} size={48} alt="목표 기질" className="hidden sm:block" />
-      <Button variant="outline" onClick={onChange} className="w-full sm:w-auto">
-        <Repeat /> 무기 변경
-      </Button>
     </div>
   );
 }
