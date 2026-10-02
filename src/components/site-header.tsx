@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NavLink } from "@/components/nav-link";
 
 const NAV = [
   { href: "/essence", label: "기질 파밍" },
@@ -23,9 +24,9 @@ export function SiteHeader() {
         </Link>
         <nav className="flex items-center gap-1 text-sm">
           {NAV.map((n) => (
-            <Link key={n.href} href={n.href} className="px-3 py-1.5 font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+            <NavLink key={n.href} href={n.href}>
               {n.label}
-            </Link>
+            </NavLink>
           ))}
         </nav>
         <div className="ml-auto">

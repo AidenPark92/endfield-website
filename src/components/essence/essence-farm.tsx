@@ -11,11 +11,12 @@ import { LOW_TIER_ESSENCES } from "@/lib/essence-images";
 import { StatChip, makeStatLabel, type StatLabelFn } from "./stat-chip";
 import { EssenceOrb } from "./essence-orb";
 import { WeaponThumb } from "./weapon-thumb";
+import { NAV_RESET_EVENT } from "@/components/nav-link";
 import { WeaponPicker } from "./weapon-picker";
 import { BestZoneCard, CandidateList } from "./farm-result";
 import type { EssenceRegion, EssenceStats, Weapon, WeaponType } from "@/types/game";
 
-const STORAGE_KEY = "ef:essence:v3";
+
 
 interface Props {
   weapons: Weapon[];
@@ -41,26 +42,22 @@ export function EssenceFarm({ weapons, regions, stats }: Props) {
   const [pickerOpen, setPickerOpen] = useState(true);
   const [scrollTick, setScrollTick] = useState(0);
   const topRef = useRef<HTMLDivElement>(null);
-  const [loaded, setLoaded] = useState(false);
 
-  // 선택 복원/저장 (브라우저별 편의 기능 — 실패해도 무시)
+  // 이전 선택은 저장하지 않음 — 메뉴로 들어오면 항상 무기 선택 화면부터.
+  // 이미 이 페이지에 있을 때 상단 메뉴를 다시 누르면(같은 주소라 화면이 그대로 남음) 처음 상태로 되돌린다.
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved && weaponById.has(saved)) {
-        setSelectedId(saved);
-        setPickerOpen(false);
-      }
-    } catch {}
-    setLoaded(true);
-  }, [weaponById]);
-  useEffect(() => {
-    if (!loaded) return;
-    try {
-      if (selectedId) localStorage.setItem(STORAGE_KEY, selectedId);
-      else localStorage.removeItem(STORAGE_KEY);
-    } catch {}
-  }, [selectedId, loaded]);
+    const reset = (e: Event) => {
+      if ((e as CustomEvent<string>).detail !== "/essence") return;
+      setSelectedId(null);
+      setPick(0);
+      setPickerOpen(true);
+      setQuery("");
+      setTypeFilter("전체");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+    window.addEventListener(NAV_RESET_EVENT, reset);
+    return () => window.removeEventListener(NAV_RESET_EVENT, reset);
+  }, []);
 
   const targets: FarmTarget[] = useMemo(
     () => (selectedId ? [{ key: selectedId, essence: weaponById.get(selectedId)!.essence }] : []),
