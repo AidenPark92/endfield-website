@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   expectedDrops,
   explainLines,
+  regionsForPair,
   lockedPartChance,
   perfectChance,
   planFarming,
@@ -214,5 +215,18 @@ describe("rankLocks", () => {
     ];
     const best = recommendFarming(targets, [region], BASES)[0];
     expect(rankLocks(targets, region, BASES)[0].score).toBeCloseTo(best.score);
+  });
+});
+
+describe("regionsForPair", () => {
+  const other: EssenceRegion = { ...region, id: "r2", extra: ["hp"], skill: ["dark"] };
+  it("추가·스킬이 모두 있는 구역만", () => {
+    expect(regionsForPair("atk", "flow", [region, other]).map((r) => r.id)).toEqual(["r1"]);
+    expect(regionsForPair("hp", "flow", [region, other])).toHaveLength(1);
+    expect(regionsForPair("hp", "dark", [region, other]).map((r) => r.id)).toEqual(["r2"]);
+    expect(regionsForPair("heal", "dark", [region, other])).toHaveLength(0);
+  });
+  it("null 이면 그 줄은 무시", () => {
+    expect(regionsForPair(null, "dark", [region, other]).map((r) => r.id)).toEqual(["r2"]);
   });
 });

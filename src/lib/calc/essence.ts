@@ -251,3 +251,11 @@ export function explainLines(
 
   return { base, extra: line("extra"), skill: line("skill") };
 }
+
+/**
+ * 추가·스킬 속성이 둘 다 나올 수 있는 구역 (예고 무기처럼 속성만 알 때 위치 찾기용).
+ * 둘 중 하나가 null 이면 나머지 하나만 본다.
+ */
+export function regionsForPair(extra: string | null, skill: string | null, regions: EssenceRegion[]): EssenceRegion[] {
+  return regions.filter((r) => (extra === null || r.extra.includes(extra)) && (skill === null || r.skill.includes(skill)));
+}

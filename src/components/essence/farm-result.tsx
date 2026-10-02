@@ -73,7 +73,7 @@ export function BestZoneCard({ ev, region, rank, weaponById, baseIds, label, use
                 <span className="shrink-0 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">3줄 일치 가능</span>
               </p>
               <LineChips m={target} label={label} />
-              <WeaponUsersInline users={usersOf(weapon.id)} max={4} className="mt-1.5" />
+              {usersOf(weapon.id).length > 0 && <WeaponUsersInline users={usersOf(weapon.id)} max={4} className="mt-1.5" />}
             </div>
             <EssenceOrb skill={weapon.essence.skill} size={40} alt="목표 기질" />
           </div>
