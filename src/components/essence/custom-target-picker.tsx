@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Check, MapPin, Megaphone, Search, TriangleAlert } from "lucide-react";
+import { Check, MapPin, SlidersHorizontal, Search, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { regionsForPair } from "@/lib/calc/essence";
@@ -54,7 +54,8 @@ const GROUPS: {
 ];
 
 /**
- * 속성으로 직접 찾기 — 출시 예고 무기처럼 아직 목록에 없는 무기를
+ * 속성으로 직접 찾기 — 원하는 속성 3가지를 직접 골라 파밍 위치를 찾는다.
+ * (출시 예고 무기처럼 목록에 없는 무기, 또는 무기와 상관없이 속성 조합만 확인하고 싶을 때)
  * 공개된 속성 3가지만으로 파밍 위치를 찾는다.
  */
 export function CustomTargetPicker({
@@ -103,11 +104,11 @@ export function CustomTargetPicker({
     <div className="space-y-4">
       {/* 안내 */}
       <div className="flex gap-3 border-l-4 border-accent bg-card p-3">
-        <Megaphone className="mt-0.5 size-4 shrink-0 text-accent-strong" />
+        <SlidersHorizontal className="mt-0.5 size-4 shrink-0 text-accent-strong" />
         <p className="text-sm leading-relaxed">
-          <b>출시 예고된 무기</b>처럼 아직 목록에 없는 무기는, 공지에 나온{" "}
-          <b>속성 3가지</b>를 순서대로 고르면 어디서 파밍해야 하는지 바로
-          알려드려요.
+          무기를 고르지 않고 <b>기초 · 추가 · 스킬 속성 3가지를 직접</b> 골라서
+          어디서 파밍해야 하는지 찾아보세요. 원하는 조합을 확인하거나, 아직
+          목록에 없는 <b>출시 예고 무기</b>의 속성을 넣어 볼 때 쓰면 좋아요.
         </p>
       </div>
 
@@ -121,7 +122,7 @@ export function CustomTargetPicker({
             <input
               value={value.name}
               onChange={(e) => onChange({ ...value, name: e.target.value })}
-              placeholder="예: 예고된 신규 무기 이름"
+              placeholder="예: 내가 원하는 조합, 예고된 무기 이름"
               maxLength={30}
               className="h-9 w-full border bg-card px-3 text-sm outline-none focus:border-foreground sm:max-w-80"
             />
@@ -186,7 +187,7 @@ export function CustomTargetPicker({
           <div className="border bg-card p-3">
             <p className="mb-2 flex items-center gap-2 text-xs font-bold">
               <EssenceOrb skill={skill} size={26} />
-              {value.name.trim() || "예고 무기"}에 필요한 기질
+              {value.name.trim() || "직접 고른 속성"} · 필요한 기질
             </p>
             <EssenceSlots
               essence={{ base, extra, skill }}
@@ -255,7 +256,11 @@ export function CustomTargetPicker({
       {/* 모바일: 다 고르면 하단에 바로 찾기 버튼 */}
       {done && zones.length > 0 && (
         <div className="fixed inset-x-4 bottom-4 z-30 animate-in slide-in-from-bottom-4 lg:hidden">
-          <Button variant="accent" className="h-12 w-full shadow-lg" onClick={onSubmit}>
+          <Button
+            variant="accent"
+            className="h-12 w-full shadow-lg"
+            onClick={onSubmit}
+          >
             <Search /> 파밍 위치 찾기 · {zones.length}곳
           </Button>
         </div>

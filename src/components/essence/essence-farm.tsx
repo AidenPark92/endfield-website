@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { Megaphone, Repeat, X } from "lucide-react";
+import { SlidersHorizontal, Repeat, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { FarmTarget } from "@/lib/calc/essence";
@@ -18,7 +18,7 @@ import { EssenceOrb } from "./essence-orb";
 import { WeaponMedia } from "./weapon-media";
 import { CustomTargetPicker, type CustomTarget } from "./custom-target-picker";
 
-/** 속성으로 직접 찾기(예고 무기)의 가상 무기 id */
+/** 속성으로 직접 찾기(직접 고른 속성 · 예고 무기)의 가상 무기 id */
 const CUSTOM_ID = "custom";
 import { EssenceSlots } from "./essence-slots";
 import { NAV_RESET_EVENT } from "@/components/nav-link";
@@ -89,7 +89,7 @@ export function EssenceFarm({
   const wParam = searchParams.get("w");
   const selectedId = wParam && weaponById.has(wParam) ? wParam : null;
 
-  // 속성으로 직접 찾기(예고 무기): ?b=기초&e=추가&s=스킬&n=이름
+  // 속성으로 직접 찾기: ?b=기초&e=추가&s=스킬&n=이름(선택)
   const statIds = useMemo(
     () => ({
       base: new Set(baseIds),
@@ -110,7 +110,7 @@ export function EssenceFarm({
       statIds.skill.has(cs)
         ? {
             id: CUSTOM_ID,
-            name: cName.trim() || "예고 무기",
+            name: cName.trim() || "직접 고른 속성",
             rarity: 6,
             type: "한손검",
             essence: { base: cb, extra: ce, skill: cs },
@@ -249,7 +249,7 @@ export function EssenceFarm({
             hint={
               mode === "weapon"
                 ? "기질을 맞출 무기 하나를 고르세요. 무기마다 필요한 속성 3개가 정해져 있어요."
-                : "아직 목록에 없는 무기는 속성 3가지만 골라도 파밍 위치를 찾을 수 있어요."
+                : "기초 · 추가 · 스킬 속성 3가지를 직접 골라 파밍 위치를 찾아요."
             }
             action={
               weapon && (
@@ -271,8 +271,8 @@ export function EssenceFarm({
           >
             {(
               [
-                ["weapon", "무기 목록에서 고르기", "출시된 무기"],
-                ["custom", "속성으로 직접 찾기", "출시 예고 무기"],
+                ["weapon", "무기로 찾기", "무기 목록에서 고르기"],
+                ["custom", "속성으로 찾기", "속성 3가지 직접 입력 · 예고 무기"],
               ] as const
             ).map(([m, title, sub]) => (
               <button
@@ -469,7 +469,7 @@ export function EssenceFarm({
 }
 
 /** 선택한 무기 요약 바 — 무기 목록 대신 접혀서 표시 */
-/** 속성으로 찾기 결과 상단 — 예고 무기는 이미지가 없어 목표 기질 구슬을 크게 보여준다 */
+/** 속성으로 찾기 결과 상단 — 무기 이미지가 없어 목표 기질 구슬을 크게 보여준다 */
 function CustomTargetBar({
   weapon,
   label,
@@ -484,19 +484,20 @@ function CustomTargetBar({
       <div className="relative grid aspect-video place-items-center bg-gradient-to-br from-muted/30 to-muted">
         <span className="absolute inset-x-0 top-0 h-1 bg-accent" />
         <span className="absolute top-3 left-3 inline-flex items-center gap-1 bg-accent px-2 py-1 text-[11px] font-bold text-accent-foreground">
-          <Megaphone className="size-3.5" /> 출시 예고 · 속성으로 찾기
+          <SlidersHorizontal className="size-3.5" /> 속성으로 찾기
         </span>
         <EssenceOrb skill={weapon.essence.skill} size={140} alt="목표 기질" />
       </div>
 
       <div className="flex flex-col justify-between gap-4 p-4 sm:p-5">
         <div>
-          <p className="ef-label whitespace-nowrap">01 // 직접 입력한 무기</p>
+          <p className="ef-label whitespace-nowrap">01 // 직접 고른 속성</p>
           <p className="mt-1 text-2xl leading-tight font-bold tracking-tight">
             {weapon.name}
           </p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            공지된 속성 3가지로 계산했어요. 출시 후 실제 정보와 다를 수 있어요.
+            직접 고른 속성 3가지로 계산했어요. 예고 무기라면 출시 후 정보와 다를
+            수 있어요.
           </p>
         </div>
 
