@@ -1,9 +1,7 @@
 {
   "_meta": {
     "source": "src/images/무기/*.png (사용자 제공)",
-    "missing": [
-      "고난의 끝"
-    ]
+    "missing": []
   },
   "images": {
     "37": "/weapons/37.webp",
@@ -84,6 +82,7 @@
     "1045": "/weapons/1045.webp",
     "1046": "/weapons/1046.webp",
     "1175": "/weapons/1175.webp",
-    "1176": "/weapons/1176.webp"
+    "1176": "/weapons/1176.webp",
+    "1177": "/weapons/1177.webp"
   }
 }
