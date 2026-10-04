@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { effectBlackboard, renderTemplate, type TextSegment } from "@/lib/skill-text";
@@ -305,7 +306,13 @@ function Potentials({ data }: { data: CombatCharacter }) {
     <ol className="divide-y">
       {data.potentials.map((p) => (
         <li key={p.level} className="flex gap-4 px-4 py-4 sm:px-5">
-          <span className="grid size-11 shrink-0 place-items-center bg-foreground font-mono text-xl font-bold text-background">{p.level}</span>
+          {/* 잠재 단계 아이콘 (public/icons/potential, 원본: src/images/잠재이미지) */}
+          <span className="relative size-14 shrink-0">
+            <Image src={`/icons/potential/${p.level}.webp`} alt={`잠재 ${p.level}단계`} fill sizes="56px" unoptimized className="object-contain" />
+            <span className="absolute -right-1 -bottom-1 grid size-5 place-items-center bg-foreground font-mono text-[11px] font-bold text-background">
+              {p.level}
+            </span>
+          </span>
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground">잠재 {p.level}단계</p>
             <p className="text-lg font-bold">{p.name}</p>

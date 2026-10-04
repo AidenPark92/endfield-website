@@ -2,6 +2,7 @@
 
 - 속성/*.png → public/icons/element/{slug}.webp
 - 직업/*.png → public/icons/class/{slug}.webp
+- src/images/잠재이미지/N잠.png → public/icons/potential/N.webp
 - 원본 파일명은 게임 내 표기(화염·얼음·스트라이크)라 데이터 표기(열기·냉기·스트라이커)와 다르다.
   화면에서 쓰는 매핑은 src/lib/operator-meta.ts 의 ELEMENT_ICON / CLASS_ICON 참고.
 
@@ -14,6 +15,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "src" / "images" / "캐릭터 상세 아이콘"
+SRC_POTENTIAL = ROOT / "src" / "images" / "잠재이미지"  # 1잠.png ~ 5잠.png → public/icons/potential/1~5.webp
 OUT = ROOT / "public" / "icons"
 
 # 원본 파일명 → 출력 slug
@@ -42,3 +44,23 @@ for folder, (out_dir, names) in GROUPS.items():
         tmp.replace(dst)
     missing = set(names) - found
     print(f"{folder}: {len(found)}/{len(names)}" + (f" missing={sorted(missing)}" if missing else ""))
+
+# 잠재 단계 아이콘
+pot_dir = OUT / "potential"
+pot_dir.mkdir(parents=True, exist_ok=True)
+n_pot = 0
+for f in sorted(SRC_POTENTIAL.glob("*.png")):
+    stem = unicodedata.normalize("NFC", f.stem)
+    if not (stem.endswith("잠") and stem[:-1].isdigit()):
+        print(f"[skip] 잠재 아이콘 이름 형식 아님: {f.name}")
+        continue
+    dst = pot_dir / f"{stem[:-1]}.webp"
+    n_pot += 1
+    if dst.exists() and dst.stat().st_mtime >= f.stat().st_mtime:
+        continue
+    im = Image.open(f).convert("RGBA")
+    im.thumbnail((128, 128), Image.LANCZOS)
+    tmp = dst.with_suffix(".tmp.webp")
+    im.save(tmp, "WEBP", quality=90, method=6)
+    tmp.replace(dst)
+print(f"잠재: {n_pot}/5")
