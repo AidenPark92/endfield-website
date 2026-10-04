@@ -93,12 +93,20 @@ describe("팀 시너지", () => {
       expect(w.dealerGain).toBe(0);
     }
   });
-  it("서포터: 메인 딜러를 올려 주는 무기가 1위 (리노 전성기 · 아델리아 바다와 별의 꿈 · 안탈 O.B.J. 아츠 아이덴티티 — 게임 추천과 일치)", { timeout: 120000 }, () => {
-    for (const [name, weapon] of [["리노", "전성기"], ["아델리아", "바다와 별의 꿈"], ["안탈", "O.B.J. 아츠 아이덴티티"]]) {
+  it("서포터: 메인 딜러를 올려 주는 무기가 1위 (리노 찬란한 밤의 데뷔 · 아델리아 바다와 별의 꿈 · 안탈 O.B.J. 아츠 아이덴티티 — 게임 추천과 일치)", { timeout: 120000 }, () => {
+    for (const [name, weapon] of [["리노", "찬란한 밤의 데뷔"], ["아델리아", "바다와 별의 꿈"], ["안탈", "O.B.J. 아츠 아이덴티티"]]) {
       const r = getBuildRecommendation(operators.find((o) => o.name === name)!.id)!;
       expect(r.role.self, name).toBe(0);
       expect(r.weapons[0].name, name).toBe(weapon);
       expect(r.weapons[0].dealerGain, name).toBeGreaterThan(0);
     }
+  });
+  it("치유를 받은 오퍼레이터의 공격력 = 팀원 대상 공격력 (생존 효과 아님)", () => {
+    const fx = parseTrait("장착자가 자신의 스킬로 팀 내 다른 오퍼레이터를 치유할 때, 장착자의 치유를 받은 오퍼레이터의 공격력 +{atk_up:0.0%}, {duration:0}초 동안 지속.\n같은 이름의 효과는 최대 {max_stack:0}스택까지 중첩되며", { atk_up: 0.056, duration: 20, max_stack: 4 });
+    expect(fx[0]).toMatchObject({ zone: "atk", self: false, others: 1, maxStack: 4 });
+  });
+  it("지속형 모드 주기: 3초 간격 치유 → 초당 1/3회", () => {
+    const k: OperatorKit = { ...kit, texts: { ...kit.texts, battle: "범위 내의 오퍼레이터를 지속적으로 치유합니다." }, periodic: { battle: { interval: 3, duration: 60 } } };
+    expect(triggerRate("장착자가 자신의 스킬로 팀 내 다른 오퍼레이터를 치유할 때", k, rates(rot, 0)).rate).toBeCloseTo(1 / 3);
   });
 });

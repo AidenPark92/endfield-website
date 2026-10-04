@@ -14,7 +14,7 @@ import gearJson from "@data/combat/gear.json";
 import type { CombatWeapon, GearPiece, GearSuit } from "@/types/build";
 import { addBag, rankGear, rates, synergy, talentBag, SP_REGEN_INTERVAL, type GearRank, type OperatorBase, type Rotation, type Synergy } from "@/lib/calc/build";
 import { splitTerms } from "@/lib/glossary";
-import type { CombatCharacter, SkillForm, SkillGroup } from "@/types/combat";
+import type { Blackboard, CombatCharacter, SkillForm, SkillGroup } from "@/types/combat";
 import { damageWeight, rankWeaponsByValue, ROLE_WEIGHT, type DealerRef, type OperatorKit, type RoleWeight, type TeamPool, type WeaponValueRank } from "@/lib/calc/weapon-value";
 import { comboRequirement, rankTeams, type ComboRequirement, type TeamCandidate, type TeamEval } from "@/lib/calc/team";
 import type { EssenceRegion, EssenceStats, Operator, OperatorDetails, OperatorProfile, OperatorStats, Weapon } from "@/types/game";
@@ -159,6 +159,15 @@ function rotationOf(id: string): Rotation | undefined {
   };
 }
 
+/** 지속형 모드 주기: 스킬 표의 "…간격(초)" 최소값, "…지속 시간(초)" 최대값 */
+function periodicOf(id: string, type: string): { interval: number; duration: number } | undefined {
+  const ds = lastLevel(id, type).flatMap((l) => l.display ?? []);
+  const num = (re: RegExp) => ds.filter((d) => re.test(d.label)).map((d) => parseFloat(d.value)).filter((v) => v > 0);
+  const iv = num(/간격\(초\)/);
+  const du = num(/지속 시간\(초\)/);
+  return iv.length && du.length ? { interval: Math.min(...iv), duration: Math.max(...du) } : undefined;
+}
+
 /** 팀원 후보 = 이 오퍼레이터와 같은 캐릭터(관리자 남/여)를 뺀 전체 */
 function teamPool(id: string): TeamPool {
   const group = (oid: string) => operators.find((o) => o.id === oid)?.name.replace(/\s*\(.*\)$/, "");
@@ -195,13 +204,18 @@ function buildKit(id: string): OperatorKit | undefined {
     subAttr: base.subAttr,
     rotation: base.rotation,
     texts: { basic: text("일반 공격"), battle: text("배틀 스킬"), combo: text("연계 스킬"), ult: text("궁극기") },
+    periodic: { battle: periodicOf(id, "배틀 스킬"), combo: periodicOf(id, "연계 스킬"), ult: periodicOf(id, "궁극기") },
     tags: (cc.battleTags ?? []).map((t) => t.name),
   };
 }
 
 export interface BuildRecommendation {
   role: RoleWeight;
-  weapons: (WeaponValueRank & { official: "skill" | "attribute" | null; image?: string })[];
+  weapons: (WeaponValueRank & {
+    official: "skill" | "attribute" | null;
+    image?: string;
+    trait?: { name: string | null; desc: string | null; bb: Blackboard; level: number };
+  })[];
   gear: GearRank[];
   synergy: Synergy;
 }
@@ -234,6 +248,11 @@ export function getBuildRecommendation(id: string): BuildRecommendation | undefi
     ...r,
     official: op.recommendedWeapons.skill.includes(r.id) ? ("skill" as const) : op.recommendedWeapons.attribute.includes(r.id) ? ("attribute" as const) : null,
     image: weapons.find((w) => w.id === r.id)?.image,
+    // 고유 특성 원문 + 현재 레벨 수치 (화면에서 효과 원문 보기)
+    trait: (() => {
+      const t = combatWeapons[r.id].skills.at(-1);
+      return t ? { name: t.name, desc: t.desc, bb: t.levels[r.levels.at(-1)! - 1]?.bb ?? {}, level: r.levels.at(-1)! } : undefined;
+    })(),
   }));
   // 장비는 1위 무기를 낀 상태로 비교
   const topWeapon = ranked[0] ? combatWeapons[ranked[0].id] : undefined;

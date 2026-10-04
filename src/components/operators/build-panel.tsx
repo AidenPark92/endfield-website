@@ -103,14 +103,15 @@ export function BuildPanel({
                     <div className={cn("h-full", rank === 1 ? "bg-accent" : "bg-foreground/70")} style={{ width: `${Math.max(2, shown(w) * 100)}%` }} />
                   </div>
                 </div>
-                {(w.applied.length > 0 || w.team.length > 0 || w.excluded.length > 0) && (
+                {(w.applied.length > 0 || w.team.length > 0 || w.excluded.length > 0 || w.trait?.desc) && (
                   <div className="col-span-2 sm:col-span-3">
                     <ul className="flex flex-wrap gap-1.5 text-[12px]">
                       {w.applied.map((a, i) => (
                         <li key={i} className="border bg-background px-2 py-0.5" title={a.via}>
                           {a.text.replace(/\s*\+\s*$/, "").replace(/\+\[.*\]$/, "")}{" "}
                           <b className="font-mono text-accent-strong">+{a.pct ? pct(a.value, 1) : Math.round(a.value)}</b>
-                          {a.uptime < 1 ? (
+                          {a.maxStack > 1 && <span className="text-muted-foreground"> × {a.stacks.toFixed(a.stacks % 1 ? 1 : 0)}스택</span>}
+                          {a.uptime < 1 && a.maxStack === 1 ? (
                             <span className="text-muted-foreground"> × 가동 {Math.round(a.uptime * 100)}%</span>
                           ) : a.via !== "항상" ? (
                             <span className="text-muted-foreground"> · 상시 유지</span>
@@ -123,12 +124,24 @@ export function BuildPanel({
                           <span className="mr-1 bg-emerald-600 px-1 text-[10px] font-semibold text-white">{a.target === "적" ? "적 약화" : "메인 딜러에게"}</span>
                           {a.text.replace(/\s*\+\s*$/, "").replace(/\+\[.*\]$/, "")}{" "}
                           <b className="font-mono text-emerald-700 dark:text-emerald-300">+{a.pct ? pct(a.value, 1) : Math.round(a.value)}</b>
-                          {a.uptime < 0.995 && <span className="text-muted-foreground"> × 가동 {Math.round(a.uptime * 100)}%</span>}
+                          {a.maxStack > 1 ? (
+                            <span className="text-muted-foreground"> × {a.stacks.toFixed(a.stacks % 1 ? 1 : 0)}스택</span>
+                          ) : (
+                            a.uptime < 0.995 && <span className="text-muted-foreground"> × 가동 {Math.round(a.uptime * 100)}%</span>
+                          )}
 
                           {a.via !== "항상" && <span className="ml-1 text-[11px] text-muted-foreground">({a.via})</span>}
                         </li>
                       ))}
                     </ul>
+                    {w.trait?.desc && (
+                      <details className="mt-1 text-[12px]">
+                        <summary className="cursor-pointer text-muted-foreground">
+                          무기 효과 원문 · {w.trait.name} (레벨 {w.trait.level})
+                        </summary>
+                        <Rich template={w.trait.desc} bb={w.trait.bb} className="mt-1 border-l-2 pl-3 text-[13px] leading-6" autoTerms />
+                      </details>
+                    )}
                     {w.excluded.length > 0 && (
                       <details className="mt-1 text-[12px] text-muted-foreground">
                         <summary className="cursor-pointer">반영하지 않은 효과 {w.excluded.length}개</summary>

@@ -35,6 +35,11 @@ export interface OperatorKit {
   /** 스킬 종류별 설명 (형태가 있으면 모두 이어 붙임) */
   texts: Record<SkillKind, string>;
   tags: string[];
+  /**
+   * 지속형 모드의 주기 (스킬 표 "…간격(초)" 최소값 · "…지속 시간(초)" 최대값)
+   * 예) 리노 배틀 스킬 라이브 모드: 3초 간격 노랫소리로 지속 치유, 60초 지속
+   */
+  periodic?: Partial<Record<SkillKind, { interval: number; duration: number }>>;
 }
 
 /** 팀원 후보 (이 오퍼레이터를 뺀 전체 오퍼레이터) — 특정 조합이 아닌 기대값 계산용 */
@@ -111,6 +116,8 @@ type ZoneInfo = Pick<TraitEffect, "zone" | "elems" | "types" | "enemyState" | "s
 /** 누가 받는 효과인지: 본인 / 팀 전체 / 다른 팀원 / 속성이 다른 팀원. 적이 받는 피해 증가는 팀 전체에 이득 */
 function scopeOf(phrase: string): Pick<TraitEffect, "self" | "others" | "othersDiffElem"> {
   if (/자신과 속성이 다른 오퍼레이터/.test(phrase)) return { self: false, others: 1, othersDiffElem: true };
+  // "장착자의 치유를 받은 오퍼레이터의 공격력" — 조건이 "팀 내 다른 오퍼레이터를 치유할 때"라 팀원 대상
+  if (/(치유|버프|효과)를 받은 오퍼레이터/.test(phrase)) return { self: false, others: 1 };
   if (/팀 내의? (다른|기타) 오퍼레이터|다른 오퍼레이터/.test(phrase)) return { self: false, others: 1 };
   if (/팀 전체|(목표|적)(가|이) 받는/.test(phrase)) return { self: true, others: 1 };
   return { self: true, others: 0 };
@@ -121,7 +128,10 @@ function zoneOf(phrase: string): ZoneInfo {
 }
 
 function zoneOnly(phrase: string): Omit<ZoneInfo, "self" | "others" | "othersDiffElem"> {
-  if (/치유|생명력|방어력|보호/.test(phrase)) return { zone: null, skip: "생존 효과 (피해 계산 밖)" };
+  // 생존 효과는 "+" 바로 앞 능력치 이름으로 판단 ("치유를 받은 오퍼레이터의 공격력"은 공격력)
+  const statWord = phrase.trim().match(/(공격력|피해|치명타 확률|치명타 피해|능력치|아츠 강도|충전 효율|치유 효율|최대 생명력|생명력|방어력|보호 효과|보호)\s*$/)?.[1];
+  if (statWord && /치유|생명력|방어력|보호/.test(statWord)) return { zone: null, skip: "생존 효과 (피해 계산 밖)" };
+  if (!statWord && /치유|생명력|방어력|보호/.test(phrase)) return { zone: null, skip: "생존 효과 (피해 계산 밖)" };
   const enemyState = /상태의 적에게 주는/.test(phrase)
     ? (["불균형", ...STATE_ORDER].filter((t) => phrase.includes(t)).join("·") || "특정")
     : undefined;
@@ -158,6 +168,7 @@ export function parseTrait(desc: string | null | undefined, bb: Blackboard): Tra
     const st = line.match(/(?:같은 이름의 효과는|해당 효과는) 최대로? ⟦([^⟧]+)⟧스택까지/);
     const cd = line.match(/⟦(cd)⟧초(?:마다| 내) 최대 1회/);
     for (const e of pending) {
+      if (!e.cond) continue; // 조건 없는 줄(첫 줄 능력치)은 중첩 대상이 아님
       if (st) e.maxStack = Number(bb[st[1]] ?? 1) || 1;
       if (cd) e.cooldown = Number(bb.cd ?? bb["cd "] ?? 0) || undefined;
     }
@@ -300,6 +311,24 @@ export function triggerRate(cond: string, kit: OperatorKit, r: Record<"battle" |
     const hit = STATE_WORDS[state].some((w) => t.includes(w));
     return hit && (!consume || t.includes("소모"));
   });
+  // 지속형 모드(예: 3초마다 치유)가 그 상태를 계속 만들면 주기 빈도 × 모드 가동률
+  const periodicRate = (k: SkillKind) => {
+    const pd = kit.periodic?.[k];
+    if (!pd || k === "basic" || !/지속적으로/.test(kit.texts[k] ?? "")) return 0;
+    return (1 / pd.interval) * Math.min(1, pd.duration * r[k]);
+  };
+  const best = kinds.reduce<{ rate: number; periodic: boolean }>(
+    (acc, k) => {
+      const base = k === "basic" ? 1 : r[k];
+      const per = periodicRate(k);
+      return per > base && per > acc.rate ? { rate: per, periodic: true } : base > acc.rate ? { rate: base, periodic: false } : acc;
+    },
+    { rate: 0, periodic: false },
+  );
+  if (kinds.length && best.periodic) {
+    const k = kinds.find((x) => periodicRate(x) === best.rate)!;
+    return { rate: best.rate, via: `${label([k])} 지속 효과로 ${state} (${kit.periodic![k]!.interval}초 간격)` };
+  }
   if (!kinds.length) {
     const tagged = kit.tags.some((t) => STATE_WORDS[state].includes(t));
     if (tagged && !named.length && !consume) return { rate: r.battle, via: `${state} (전투 태그)` };
@@ -395,6 +424,9 @@ export interface WeaponEffectLine {
   /** % 수치인지 (아츠 강도·고정 공격력은 false) */
   pct: boolean;
   via: string;
+  /** 평균 스택 · 최대 스택 (중첩형) */
+  stacks: number;
+  maxStack: number;
   /** 누가 받는지 */
   target: "본인" | "팀 전체" | "팀원" | "적";
 }
@@ -444,12 +476,12 @@ export function evaluateWeapon(w: CombatWeapon, kit: OperatorKit, baseAttrs: Rec
       const tb = teammateBag(e, e.value * stacks * e.others);
       const share = teammateShare(e, kit.element, pool);
       if (tb && share > 0) {
-        team.push({ text: e.text, uptime, value: e.value * e.others, applied: e.value * stacks * e.others, pct: isPct(e), via, target: targetOf(e), bag: tb, share, effect: e });
+        team.push({ text: e.text, uptime, value: e.value * e.others, applied: e.value * stacks * e.others, pct: isPct(e), via, target: targetOf(e), bag: tb, share, effect: e, stacks, maxStack: e.maxStack });
         used = true;
       }
     }
     if (used) {
-      if (e.self && effectBag(e, kit, 1)) applied.push({ text: e.text, uptime, value: e.value, applied: e.value * stacks, pct: isPct(e), via, target: targetOf(e) });
+      if (e.self && effectBag(e, kit, 1)) applied.push({ text: e.text, uptime, value: e.value, applied: e.value * stacks, pct: isPct(e), via, target: targetOf(e), stacks, maxStack: e.maxStack });
     } else excluded.push({ text: e.text, reason: basicOnly(e) ? "일반 공격 피해 (아직 미반영)" : "이 오퍼레이터·팀원 속성과 다름" });
   };
   if (trait) {
