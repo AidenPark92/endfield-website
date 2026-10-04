@@ -37,7 +37,7 @@ export function BuildPanel({
     <div className="space-y-6">
       {/* 계산 기준 */}
       <div className="flex flex-wrap gap-1.5 text-xs">
-        {["레벨 90", "잠재 0", "무기 재련 0", "기질로 무기 스킬 상한까지", "재능 배열 완료", "장비 단조 0", "조건부 효과 제외"].map((t) => (
+        {["레벨 90", "잠재 0", "무기 재련 0", "기질로 무기 스킬 상한까지", "재능 배열 완료", "장비 단조 0", "파티 효과 제외", "조건부 효과는 혼자 발동되는 만큼"].map((t) => (
           <span key={t} className="border bg-card px-2 py-1">
             {t}
           </span>
@@ -48,7 +48,7 @@ export function BuildPanel({
       <section className="border bg-card">
         <header className="flex flex-wrap items-baseline justify-between gap-2 border-b px-4 py-3">
           <h3 className="text-lg font-bold">추천 무기</h3>
-          <p className="text-xs text-muted-foreground">1위 대비 스킬 피해 지수 (배틀·연계·궁극기 평균) · 고유 특성은 조건 없는 효과만 반영</p>
+          <p className="text-xs text-muted-foreground">1위 = 100% · 초당 피해 기대치 기준 · 고유 특성은 이 오퍼레이터가 혼자 발동하는 만큼 가동률로 반영</p>
         </header>
         <ol className="divide-y">
           {shownWeapons.map((w) => {
@@ -84,6 +84,36 @@ export function BuildPanel({
                     <div className={cn("h-full", rank === 1 ? "bg-accent" : "bg-foreground/70")} style={{ width: `${Math.max(2, w.relative * 100)}%` }} />
                   </div>
                 </div>
+                {(w.applied.length > 0 || w.excluded.length > 0) && (
+                  <div className="col-span-2 sm:col-span-3">
+                    <ul className="flex flex-wrap gap-1.5 text-[12px]">
+                      {w.applied.map((a, i) => (
+                        <li key={i} className="border bg-background px-2 py-0.5" title={a.via}>
+                          {a.text.replace(/\s*\+\s*$/, "").replace(/\+\[.*\]$/, "")}{" "}
+                          <b className="font-mono text-accent-strong">+{a.pct ? pct(a.value, 1) : Math.round(a.value)}</b>
+                          {a.uptime < 1 ? (
+                            <span className="text-muted-foreground"> × 가동 {Math.round(a.uptime * 100)}%</span>
+                          ) : a.via !== "항상" ? (
+                            <span className="text-muted-foreground"> · 상시 유지</span>
+                          ) : null}
+                          {a.via !== "항상" && <span className="ml-1 text-[11px] text-muted-foreground">({a.via})</span>}
+                        </li>
+                      ))}
+                    </ul>
+                    {w.excluded.length > 0 && (
+                      <details className="mt-1 text-[12px] text-muted-foreground">
+                        <summary className="cursor-pointer">반영하지 않은 효과 {w.excluded.length}개</summary>
+                        <ul className="mt-1 space-y-0.5 pl-3">
+                          {w.excluded.map((e, i) => (
+                            <li key={i}>
+                              {e.text.replace(/\s*\+\s*$/, "")} — <span className="text-foreground">{e.reason}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
+                  </div>
+                )}
               </li>
             );
           })}
@@ -198,12 +228,19 @@ export function BuildPanel({
       <details className="border bg-card px-4 py-3 text-sm">
         <summary className="cursor-pointer font-semibold">어떻게 계산했나요?</summary>
         <div className="mt-2 space-y-1 text-[13px] leading-6 text-muted-foreground">
-          <p>스킬 피해 지수 = 공격력 × (1 + 속성 피해 + 스킬 종류 피해) × (1 + 치명타 확률 × 치명타 피해)</p>
-          <p>공격력 = (캐릭터 + 무기 기초 공격력) × (1 + 공격력%) × (1 + 0.5% × 주 능력치 + 0.2% × 보조 능력치)</p>
+          <p className="font-semibold text-foreground">추천 무기 점수 (정규화)</p>
+          <p>초당 피해 기대치 = Σ(배틀·연계·궁극기) 초당 사용 횟수 × 피해 배율 × 공격력 × (1 + 피해%) × (1 + 치명률 × 치명 피해) × (1 + 적이 받는 피해%)</p>
           <p>
-            방어력·저항·스킬 배율은 같은 오퍼레이터끼리 비교할 때 똑같이 곱해지므로 빼고, 순위만 비교해요. 무기 고유 특성과 세트 효과 중
-            &quot;…할 때 / …후 / …동안&quot; 같은 조건부 효과는 반영하지 않았어요(실전에서는 더 강할 수 있음). 무기의 게임 추천은 공식 위키 기준이에요.
+            초당 사용 횟수 — 배틀 스킬: 스킬 게이지 자연 회복(12.5초에 1칸) · 연계 스킬: 쿨타임마다 · 궁극기: 필요 에너지 ÷ (배틀 스킬 6.5 + 연계 스킬 10 에너지)의
+            충전 시간. 궁극기 충전 효율이 오르면 궁극기를 더 자주 써요. 피해 배율은 스킬 설명 표의 만렙 값 합이에요.
           </p>
+          <p>
+            고유 특성의 조건부 효과는 <b className="text-foreground">이 오퍼레이터가 혼자 발동할 수 있을 때만</b> 넣고, 가동률 = min(1, 발동 빈도 × 지속 시간)을
+            곱해요(중첩형은 평균 스택). 예: 궁극기 사용 시 15초 버프 → 궁극기를 약 64초마다 쓰면 가동 23%. 동료가 만들어야 하는 조건 · 다른 동료에게만 주는
+            효과 · 적 상태(불균형 등) 조건 · 일반 공격 피해 · 생존 효과는 빼고, 무기마다 &quot;반영하지 않은 효과&quot;에 이유를 적었어요.
+          </p>
+          <p>점수는 1위 무기를 100%로 나눈 값이에요. 방어력·저항은 같은 오퍼레이터끼리 비교하면 똑같이 곱해지므로 빼요. 게임 추천 표시는 공식 위키 기준이에요.</p>
+          <p>공격력 = (캐릭터 + 무기 기초 공격력) × (1 + 공격력%) × (1 + 0.5% × 주 능력치 + 0.2% × 보조 능력치)</p>
         </div>
       </details>
     </div>

@@ -12,9 +12,10 @@ import combatCharactersJson from "@data/combat/characters.json";
 import combatWeaponsJson from "@data/combat/weapons.json";
 import gearJson from "@data/combat/gear.json";
 import type { CombatWeapon, GearPiece, GearSuit } from "@/types/build";
-import { addBag, rankGear, rankWeapons, synergy, talentBag, weaponBag, type GearRank, type OperatorBase, type Synergy, type WeaponRank } from "@/lib/calc/build";
+import { addBag, rankGear, rankWeapons, synergy, talentBag, weaponBag, SP_REGEN_INTERVAL, type GearRank, type OperatorBase, type Rotation, type Synergy } from "@/lib/calc/build";
 import { splitTerms } from "@/lib/glossary";
 import type { CombatCharacter, SkillForm, SkillGroup } from "@/types/combat";
+import { damageWeight, rankWeaponsByValue, type OperatorKit, type WeaponValueRank } from "@/lib/calc/weapon-value";
 import { comboRequirement, rankTeams, type ComboRequirement, type TeamCandidate, type TeamEval } from "@/lib/calc/team";
 import type { EssenceRegion, EssenceStats, Operator, OperatorDetails, OperatorProfile, OperatorStats, Weapon } from "@/types/game";
 import { buildWeaponUsers } from "@/lib/weapon-users";
@@ -128,11 +129,59 @@ function operatorBase(id: string): OperatorBase | undefined {
     atk: s.atk[89],
     attrs: { 힘: s.str[89], 민첩: s.agi[89], 지능: s.int[89], 의지: s.wil[89] },
     critRate: c.critRate ?? 0.05,
+    rotation: rotationOf(id),
+  };
+}
+
+type RawLevel = { costValue: number; coolDown: number; bb: Record<string, number | string>; display?: { label: string; value: string }[] };
+const lastLevel = (id: string, type: string): RawLevel[] =>
+  (combatChars[id]?.skillGroups.find((g) => g.type === type)?.skills ?? []).map((s) => s.levels.at(-1) as unknown as RawLevel).filter(Boolean);
+
+/** 스킬 회전 (만렙 스킬 기준) — calc/build.ts Rotation 설명 참고 */
+function rotationOf(id: string): Rotation | undefined {
+  const combo = lastLevel(id, "연계 스킬");
+  const ult = lastLevel(id, "궁극기");
+  const battle = lastLevel(id, "배틀 스킬");
+  if (!combo.length || !ult.length || !battle.length) return undefined;
+  const comboCd = Math.max(...combo.map((l) => l.coolDown));
+  return {
+    battleRate: 1 / SP_REGEN_INTERVAL,
+    comboRate: comboCd > 0 ? 1 / comboCd : 0,
+    ultCost: Math.max(...ult.map((l) => l.costValue)),
+    ultCooldown: Math.max(...ult.map((l) => l.coolDown)),
+    // 연계 스킬이 주는 궁극기 에너지 (스킬 데이터 usp, 없으면 공통 10 ✅)
+    comboEnergy: Number(combo[0].bb.usp ?? 10),
+    weight: {
+      battle: damageWeight(battle.flatMap((l) => l.display ?? [])),
+      combo: damageWeight(combo.flatMap((l) => l.display ?? [])),
+      ult: damageWeight(ult.flatMap((l) => l.display ?? [])),
+    },
+  };
+}
+
+/** 무기 평가용 오퍼레이터 정보 (스킬 설명 · 전투 태그) */
+function operatorKit(id: string): OperatorKit | undefined {
+  const base = operatorBase(id);
+  const cc = getCombatCharacter(id);
+  if (!base?.rotation || !cc) return undefined;
+  const text = (type: string) =>
+    cc.skillGroups
+      .filter((g) => g.type === type)
+      .map((g) => [g.desc ?? "", ...(g.forms ?? []).map((f) => f.desc)].join("\n"))
+      .join("\n")
+      .replace(/<[^>]*>/g, "");
+  return {
+    element: base.element,
+    mainAttr: base.mainAttr,
+    subAttr: base.subAttr,
+    rotation: base.rotation,
+    texts: { basic: text("일반 공격"), battle: text("배틀 스킬"), combo: text("연계 스킬"), ult: text("궁극기") },
+    tags: (cc.battleTags ?? []).map((t) => t.name),
   };
 }
 
 export interface BuildRecommendation {
-  weapons: (WeaponRank & { official: "skill" | "attribute" | null; image?: string })[];
+  weapons: (WeaponValueRank & { official: "skill" | "attribute" | null; image?: string })[];
   gear: GearRank[];
   synergy: Synergy;
 }
@@ -158,14 +207,15 @@ export function getBuildRecommendation(id: string): BuildRecommendation | undefi
   if (!op || !base) return undefined;
   const talents = talentBag(combatChars[id].talents.attributes);
   const candidates = Object.entries(combatWeapons).filter(([wid]) => weapons.find((w) => w.id === wid)?.type === op.weaponType);
-  const ranked = rankWeapons(base, talents, candidates).map((r) => ({
+  const kit = operatorKit(id);
+  const ranked = (kit ? rankWeaponsByValue(base, kit, talents, candidates) : rankWeapons(base, talents, candidates).map((r) => ({ ...r, applied: [], excluded: [], bag: weaponBag(combatWeapons[r.id]).bag }))).map((r) => ({
     ...r,
     official: op.recommendedWeapons.skill.includes(r.id) ? ("skill" as const) : op.recommendedWeapons.attribute.includes(r.id) ? ("attribute" as const) : null,
     image: weapons.find((w) => w.id === r.id)?.image,
   }));
   // 장비는 1위 무기를 낀 상태로 비교
   const topWeapon = ranked[0] ? combatWeapons[ranked[0].id] : undefined;
-  const withWeapon = topWeapon ? addBag(talents, weaponBag(topWeapon).bag) : talents;
+  const withWeapon = ranked[0] ? addBag(talents, ranked[0].bag) : talents;
   const gear = rankGear(base, topWeapon?.baseAtk.at(-1) ?? 0, withWeapon, Object.entries(gearPieces), Object.entries(gearSuits));
   return { weapons: ranked, gear, synergy: synergy(id, synergyIndex(), findTerms) };
 }

@@ -35,6 +35,8 @@ export interface StatBag {
   dmg: Record<Elem | "arts" | "all" | DmgType, number>;
   artsIntensity: number;
   ultGain: number;
+  /** 적이 받는 피해 증가 (이 오퍼레이터 속성에 해당하는 것만, 받는 피해 증가·취약 구간) */
+  taken: number;
 }
 
 export const emptyBag = (): StatBag => ({
@@ -53,11 +55,12 @@ export const emptyBag = (): StatBag => ({
   dmg: { phys: 0, fire: 0, pulse: 0, cryst: 0, natural: 0, arts: 0, all: 0, basic: 0, battle: 0, combo: 0, ult: 0 },
   artsIntensity: 0,
   ultGain: 0,
+  taken: 0,
 });
 
 export function addBag(a: StatBag, b: StatBag): StatBag {
   const r = { ...a, dmg: { ...a.dmg } };
-  for (const k of ["str", "agi", "int", "wil", "main", "sub", "mainPct", "subPct", "atkPct", "flatAtk", "critRate", "critDmg", "artsIntensity", "ultGain"] as const) r[k] += b[k];
+  for (const k of ["str", "agi", "int", "wil", "main", "sub", "mainPct", "subPct", "atkPct", "flatAtk", "critRate", "critDmg", "artsIntensity", "ultGain", "taken"] as const) r[k] += b[k];
   for (const k of Object.keys(r.dmg) as (keyof StatBag["dmg"])[]) r.dmg[k] += b.dmg[k];
   return r;
 }
@@ -190,6 +193,33 @@ export interface OperatorBase {
   atk: number;
   attrs: Record<AttrName, number>;
   critRate: number;
+  /** 스킬 회전 (있으면 피해 기대 지수를 초당 기대값으로 계산) */
+  rotation?: Rotation;
+}
+
+/**
+ * 스킬 회전 — combat-mechanics.md §2 기준, 파티와 무관한 "혼자 기준" 정규화
+ * - 배틀 스킬: SP 자연 회복 1칸/12.5초 ✅ → 초당 1/12.5회 (이 오퍼레이터가 SP를 다 쓴다고 가정)
+ * - 연계 스킬: 쿨타임마다 1회 (발동 조건은 충족된다고 가정 — 조합 효과 제외)
+ * - 궁극기: 필요 에너지 ÷ 초당 에너지(배틀 스킬 6.5 × 횟수 + 본인 연계 10 × 횟수) × 1/(1+충전 효율), 쿨타임보다 짧을 수 없음
+ * - weight: 스킬 설명 표의 피해 배율 합 (만렙 기준) — 1회 사용 피해의 크기
+ */
+export interface Rotation {
+  battleRate: number;
+  comboRate: number;
+  ultCost: number;
+  ultCooldown: number;
+  comboEnergy: number;
+  weight: Record<"battle" | "combo" | "ult", number>;
+}
+
+export const SP_REGEN_INTERVAL = 12.5;
+export const BATTLE_ULT_ENERGY = 6.5;
+
+export function rates(r: Rotation, ultGain: number): Record<"battle" | "combo" | "ult", number> {
+  const energyPerSec = BATTLE_ULT_ENERGY * r.battleRate + r.comboEnergy * r.comboRate;
+  const ultInterval = Math.max(r.ultCooldown, energyPerSec > 0 ? r.ultCost / (energyPerSec * (1 + ultGain)) : Infinity);
+  return { battle: r.battleRate, combo: r.comboRate, ult: Number.isFinite(ultInterval) && ultInterval > 0 ? 1 / ultInterval : 0 };
 }
 
 export interface ScoreResult {
@@ -199,8 +229,10 @@ export interface ScoreResult {
   critDmg: number;
   /** 스킬 종류별 피해 지수 */
   byType: Record<DmgType, number>;
-  /** 배틀·연계·궁극기 평균 */
+  /** 회전이 있으면 초당 피해 기대 지수 Σ(초당 횟수 × 피해 배율 × 종류별 지수), 없으면 배틀·연계·궁극기 평균 */
   overall: number;
+  /** 초당 사용 횟수 (회전이 있을 때) */
+  rates?: Record<"battle" | "combo" | "ult", number>;
   attrs: Record<AttrName, number>;
   dmgPct: Record<DmgType, number>;
   artsIntensity: number;
@@ -224,7 +256,17 @@ export function score(op: OperatorBase, weaponAtk: number, bag: StatBag): ScoreR
   const crit = 1 + critRate * critDmg;
   const types: DmgType[] = ["basic", "battle", "combo", "ult"];
   const dmgPct = Object.fromEntries(types.map((t) => [t, elemDmg + bag.dmg[t]])) as Record<DmgType, number>;
-  const byType = Object.fromEntries(types.map((t) => [t, atk * (1 + dmgPct[t]) * crit])) as Record<DmgType, number>;
+  const taken = 1 + bag.taken;
+  const byType = Object.fromEntries(types.map((t) => [t, atk * (1 + dmgPct[t]) * crit * taken])) as Record<DmgType, number>;
+  if (op.rotation) {
+    const r = rates(op.rotation, bag.ultGain);
+    const w = op.rotation.weight;
+    const totalW = w.battle + w.combo + w.ult;
+    // 피해 배율 정보가 없으면 세 종류를 같은 크기로
+    const weight = (t: "battle" | "combo" | "ult") => (totalW > 0 ? w[t] : 1);
+    const overall = (["battle", "combo", "ult"] as const).reduce((s, t) => s + r[t] * weight(t) * byType[t], 0);
+    return { atk, attrBonus, critRate, critDmg, byType, overall, rates: r, attrs, dmgPct, artsIntensity: bag.artsIntensity };
+  }
   const overall = DMG_TYPES.reduce((s, t) => s + byType[t], 0) / DMG_TYPES.length;
   return { atk, attrBonus, critRate, critDmg, byType, overall, attrs, dmgPct, artsIntensity: bag.artsIntensity };
 }
