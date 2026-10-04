@@ -143,3 +143,14 @@ describe("용어 툴팁 (glossary)", () => {
     expect([...missing]).toEqual([]);
   });
 });
+
+describe("중첩 태그", () => {
+  it("수치 강조 안의 용어 태그를 한 덩어리 수치로 렌더링", () => {
+    const r = renderTemplate("물리 피해 <@ba.vup>+[{x:0%}×<#ba.consume>소모</>한 스택 수치]</>, 끝", { x: 0.06 });
+    expect(r.segments.map((s) => [s.text, s.tone])).toEqual([
+      ["물리 피해 ", "plain"],
+      ["+[6%×소모한 스택 수치]", "value"],
+      [", 끝", "plain"],
+    ]);
+  });
+});

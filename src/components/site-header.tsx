@@ -5,6 +5,7 @@ import { NavLink } from "@/components/nav-link";
 const NAV = [
   { href: "/essence", label: "기질 파밍" },
   { href: "/operators", label: "캐릭터" },
+  { href: "/gear", label: "장비" },
   // 추후: 데미지 계산기, 청사진
 ];
 

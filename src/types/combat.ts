@@ -85,6 +85,8 @@ export interface CombatAttrNode {
 export interface CombatCharacter {
   charId: string;
   name: string;
+  /** 게임 내 전투 태그 (전기 부착, 띄우기, 치유 ...) */
+  battleTags?: { id: string; name: string }[];
   rarity: number;
   element: string;
   mainAttr: AttrName;

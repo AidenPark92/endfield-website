@@ -4,13 +4,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight, BookOpen, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { essenceStats, getCombatCharacter, operators, weapons } from "@/lib/data";
+import { essenceStats, gearSuits, getBuildRecommendation, getCombatCharacter, operators, weapons } from "@/lib/data";
 import { CLASS_ICON, ELEMENT_BG, ELEMENT_ICON, ELEMENT_TEXT, RARITY_BG } from "@/lib/operator-meta";
 import { essenceImage } from "@/lib/essence-images";
 import type { StatCategory, Weapon } from "@/types/game";
 import { EssenceSlots } from "@/components/essence/essence-slots";
 import { OperatorStatsPanel } from "@/components/operators/operator-stats";
 import { CombatPanel } from "@/components/operators/combat-panel";
+import { BuildPanel } from "@/components/operators/build-panel";
 
 export function generateStaticParams() {
   return operators.map((o) => ({ id: o.id }));
@@ -35,6 +36,7 @@ export default async function OperatorPage({ params }: { params: Promise<{ id: s
   if (!op) notFound();
   const p = op.profile;
   const combat = getCombatCharacter(op.id);
+  const build = getBuildRecommendation(op.id);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6">
@@ -114,6 +116,19 @@ export default async function OperatorPage({ params }: { params: Promise<{ id: s
           )}
         </Section>
       </div>
+
+      {/* 추천 빌드 (무기 · 장비 · 연계 시너지) */}
+      {build && (
+        <div className="mt-6">
+          <Section title="추천 빌드" hint="게임 데이터로 계산한 상대 비교 · 잠재 0 기준">
+            <BuildPanel
+              rec={build}
+              suits={gearSuits}
+              mates={Object.fromEntries(operators.map((o) => [o.id, { id: o.id, name: o.name, face: o.face }]))}
+            />
+          </Section>
+        </div>
+      )}
 
       {/* 전투 데이터 (스킬 레벨별 수치 · 재능 · 잠재) */}
       {combat && (

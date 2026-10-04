@@ -202,9 +202,14 @@ def build_characters(f, tx, talents_extra, operators):
         # SkillPatchTable 의 재능 패시브 수치 (있는 캐릭터만)
         talent_bb = {k: [bb(x.get("blackboard")) for x in v["SkillPatchDataBundle"]] for k, v in talents_extra.items() if k.startswith(char_id + "_talent")}
 
+        # 전투 태그 (게임 내 오퍼레이터 특징 태그: 전기 부착, 띄우기, 치유 ...) — 연계 시너지 계산에 사용
+        tag_names = [tx(t) for t in d.get("battleTagsData", [])]
+        battle_tags = [{"id": tid, "name": n} for tid, n in zip(lite.get("charBattleTagIds", []), tag_names) if n]
+
         out[op_id] = {
             "charId": char_id,
             "name": name,
+            "battleTags": battle_tags,
             "rarity": lite["rarity"],
             "element": ELEMENT.get(lite["charTypeId"], lite["charTypeId"]),
             "mainAttr": ATTR_KO[lite["mainAttrType"]],
@@ -283,7 +288,11 @@ def build_gear(f, tx):
             "suitId": d.get("suitID") or None,
             "partType": d.get("partType"),
             # attrValues: 단조 0~3단계 값
-            "attrs": [{"attrType": a["attrType"], "values": [num(v) for v in a["attrValues"]], "modifierType": a["modifierType"]} for a in d.get("equipAttrModifiers", [])],
+            # attrType 0 은 modifyAttributeType 1=주요 능력치 / 2=보조 능력치, modifierType 5=고정값 / 6=배율(비율)
+            "attrs": [
+                {"attrType": a["attrType"], "values": [num(v) for v in a["attrValues"]], "modifierType": a["modifierType"], "target": a.get("modifyAttributeType", 0)}
+                for a in d.get("equipAttrModifiers", [])
+            ],
         }
     return {"suits": suits, "pieces": pieces}
 

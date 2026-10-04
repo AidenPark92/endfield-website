@@ -4,9 +4,8 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { effectBlackboard, renderTemplate, type TextSegment } from "@/lib/skill-text";
-import { lookupTerm, splitTerms } from "@/lib/glossary";
-import { Term } from "@/components/ui/term";
+import { effectBlackboard } from "@/lib/skill-text";
+import { Rich } from "@/components/rich-text";
 import type { Blackboard, CombatCharacter, CombatPassive, SkillGroup } from "@/types/combat";
 
 const LEVEL_LABELS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "M1", "M2", "M3"];
@@ -343,53 +342,6 @@ function Potentials({ data }: { data: CombatCharacter }) {
         </li>
       ))}
     </ol>
-  );
-}
-
-function Rich({ template, bb, className, autoTerms }: { template: string | null; bb: Blackboard; className?: string; autoTerms?: boolean }) {
-  const { segments } = renderTemplate(template, bb);
-  if (!segments.length) return null;
-  return (
-    <p className={className}>
-      {segments.map((s: TextSegment, i) => {
-        if (s.tone === "value")
-          return (
-            <span key={i} className="mx-0.5 bg-accent/30 px-1 font-mono text-[1.05em] font-bold text-foreground">
-              {s.text}
-            </span>
-          );
-        if (s.tone === "keyword") {
-          const g = lookupTerm(s.text, s.tag);
-          // 설명이 있는 용어만 밑줄 + 툴팁, 캐릭터 고유 명칭 등은 굵게만
-          return g ? (
-            <Term key={i} title={g.term} desc={g.desc}>
-              {s.text}
-            </Term>
-          ) : (
-            <b key={i} className="font-semibold">
-              {s.text}
-            </b>
-          );
-        }
-        // 태그 없는 문장(공식 위키 설명)은 용어를 찾아 툴팁을 붙인다
-        if (autoTerms)
-          return (
-            <span key={i}>
-              {splitTerms(s.text).map((p, j) => {
-                const g = p.term ? lookupTerm(p.term) : undefined;
-                return g ? (
-                  <Term key={j} title={g.term} desc={g.desc}>
-                    {p.text}
-                  </Term>
-                ) : (
-                  p.text
-                );
-              })}
-            </span>
-          );
-        return <span key={i}>{s.text}</span>;
-      })}
-    </p>
   );
 }
 

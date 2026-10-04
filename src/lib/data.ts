@@ -9,6 +9,11 @@ import operatorProfilesJson from "@data/operator-profiles.json";
 import operatorStatsJson from "@data/operator-stats.json";
 import operatorDetailsJson from "@data/operator-details.json";
 import combatCharactersJson from "@data/combat/characters.json";
+import combatWeaponsJson from "@data/combat/weapons.json";
+import gearJson from "@data/combat/gear.json";
+import type { CombatWeapon, GearPiece, GearSuit } from "@/types/build";
+import { addBag, rankGear, rankWeapons, synergy, talentBag, weaponBag, type GearRank, type OperatorBase, type Synergy, type WeaponRank } from "@/lib/calc/build";
+import { splitTerms } from "@/lib/glossary";
 import type { CombatCharacter, SkillForm, SkillGroup } from "@/types/combat";
 import type { EssenceRegion, EssenceStats, Operator, OperatorDetails, OperatorProfile, OperatorStats, Weapon } from "@/types/game";
 import { buildWeaponUsers } from "@/lib/weapon-users";
@@ -67,6 +72,7 @@ export function getCombatCharacter(id: string): CombatCharacter | undefined {
     critRate: c.critRate,
     skillGroups: c.skillGroups.map((g) => withForms(id, g)),
     defaultForm: defaultForm(id),
+    battleTags: (c as unknown as { battleTags?: { id: string; name: string }[] }).battleTags,
     formAttrs: opStats[id] && c.skillGroups.length && defaultForm(id) ? { 지능: Math.floor(opStats[id].int[89]), 의지: Math.floor(opStats[id].wil[89]) } : undefined,
     potentials: c.potentials,
     talents: { attributes: c.talents.attributes, passives: c.talents.passives },
@@ -103,4 +109,63 @@ function defaultForm(id: string): string | undefined {
   const s = opStats[id];
   if (!s) return undefined;
   return s.int[89] >= s.wil[89] ? "진결 · 지혜" : "진결 · 의지";
+}
+
+// ───────── 무기 · 장비 · 추천 빌드 ─────────
+export const combatWeapons = (combatWeaponsJson as unknown as { weapons: Record<string, CombatWeapon> }).weapons;
+export const gearPieces = (gearJson as unknown as { pieces: Record<string, GearPiece> }).pieces;
+export const gearSuits = (gearJson as unknown as { suits: Record<string, GearSuit> }).suits;
+
+function operatorBase(id: string): OperatorBase | undefined {
+  const c = combatChars[id];
+  const s = opStats[id];
+  if (!c || !s) return undefined;
+  return {
+    element: c.element,
+    mainAttr: c.mainAttr,
+    subAttr: c.subAttr,
+    atk: s.atk[89],
+    attrs: { 힘: s.str[89], 민첩: s.agi[89], 지능: s.int[89], 의지: s.wil[89] },
+    critRate: c.critRate ?? 0.05,
+  };
+}
+
+export interface BuildRecommendation {
+  weapons: (WeaponRank & { official: "skill" | "attribute" | null; image?: string })[];
+  gear: GearRank[];
+  synergy: Synergy;
+}
+
+const synergyIndex = () =>
+  Object.fromEntries(
+    Object.entries(combatChars).map(([oid, c]) => [
+      oid,
+      {
+        comboDesc: (() => {
+          const g = getCombatCharacter(oid)?.skillGroups.find((g) => g.type === "연계 스킬");
+          return g?.forms ? g.forms.map((f) => f.desc).join("\n") : (g?.desc ?? null);
+        })(),
+        tags: ((c as unknown as { battleTags?: { name: string }[] }).battleTags ?? []).map((t) => t.name),
+      },
+    ]),
+  );
+const findTerms = (text: string) => splitTerms(text).filter((p) => p.term).map((p) => p.term!);
+
+/** 오퍼레이터 추천 빌드 — 레벨 90 · 잠재 0 · 무기 재련 0 · 재능 배열 완료 기준 (빌드 시 미리 계산) */
+export function getBuildRecommendation(id: string): BuildRecommendation | undefined {
+  const op = operators.find((o) => o.id === id);
+  const base = operatorBase(id);
+  if (!op || !base) return undefined;
+  const talents = talentBag(combatChars[id].talents.attributes);
+  const candidates = Object.entries(combatWeapons).filter(([wid]) => weapons.find((w) => w.id === wid)?.type === op.weaponType);
+  const ranked = rankWeapons(base, talents, candidates).map((r) => ({
+    ...r,
+    official: op.recommendedWeapons.skill.includes(r.id) ? ("skill" as const) : op.recommendedWeapons.attribute.includes(r.id) ? ("attribute" as const) : null,
+    image: weapons.find((w) => w.id === r.id)?.image,
+  }));
+  // 장비는 1위 무기를 낀 상태로 비교
+  const topWeapon = ranked[0] ? combatWeapons[ranked[0].id] : undefined;
+  const withWeapon = topWeapon ? addBag(talents, weaponBag(topWeapon).bag) : talents;
+  const gear = rankGear(base, topWeapon?.baseAtk.at(-1) ?? 0, withWeapon, Object.entries(gearPieces), Object.entries(gearSuits));
+  return { weapons: ranked, gear, synergy: synergy(id, synergyIndex(), findTerms) };
 }

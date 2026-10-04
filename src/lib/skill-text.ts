@@ -55,17 +55,35 @@ export function renderTemplate(template: string | null | undefined, bb: Blackboa
       }
       return formatValue(v, fmt);
     });
+  // 태그는 중첩될 수 있다 (예: <@ba.vup>+[{x}×<#ba.consume>소모</>한 스택]</>) → 스택으로 파싱, 가장 안쪽 태그 기준
+  // <@ba.vup> = 수치 강조, 그 밖의 <@ba.xxx>/<#ba.xxx> = 용어, <image=...>·<action=...> 는 버림
   const segments: TextSegment[] = [];
-  // <@ba.vup>값</> = 수치 강조, <#ba.xxx>키워드</> · <@ba.xxx>키워드</> = 용어, <image=...> 는 버림
-  const re = /<([@#])([\w.]+)>([\s\S]*?)<\/>|<image=[^>]*>/g;
+  const stack: string[] = [];
+  const re = /<([@#])([\w.]+)>|<\/>|<(?:image|action)=[^>]*>/g;
   let last = 0;
+  const push = (text: string) => {
+    if (!text) return;
+    const top = stack.at(-1);
+    const inValue = stack.includes("ba.vup");
+    if (!top) segments.push({ text: fill(text), tone: "plain" });
+    else if (top === "ba.vup") segments.push({ text: fill(text), tone: "value" });
+    else segments.push(inValue ? { text: fill(text), tone: "value" } : { text: fill(text), tone: "keyword", tag: top });
+  };
   for (const m of template.matchAll(re)) {
-    if (m.index! > last) segments.push({ text: fill(template.slice(last, m.index)), tone: "plain" });
-    if (m[3] !== undefined) segments.push(m[2] === "ba.vup" ? { text: fill(m[3]), tone: "value" } : { text: fill(m[3]), tone: "keyword", tag: m[2] });
+    push(template.slice(last, m.index));
+    if (m[2]) stack.push(m[2]);
+    else if (m[0] === "</>") stack.pop();
     last = m.index! + m[0].length;
   }
-  if (last < template.length) segments.push({ text: fill(template.slice(last)), tone: "plain" });
-  return { segments: segments.filter((s) => s.text), missing };
+  push(template.slice(last));
+  // 이웃한 같은 성격 구간은 합친다 (중첩 태그로 쪼개진 수치 강조를 한 덩어리로)
+  const merged: TextSegment[] = [];
+  for (const sgm of segments) {
+    const prev = merged.at(-1);
+    if (prev && prev.tone === sgm.tone && prev.tone !== "keyword") prev.text += sgm.text;
+    else merged.push({ ...sgm });
+  }
+  return { segments: merged.filter((s) => s.text), missing };
 }
 
 /** 설명 템플릿이 능력치 변경을 가리킬 때 쓰는 키 (게임 attrType enum 이름) */
