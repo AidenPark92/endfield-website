@@ -3,7 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Rich } from "@/components/rich-text";
-import { DMG_TYPE_LABEL, DMG_TYPES } from "@/lib/calc/build";
+import { BASIC_CHAIN_SECONDS, DMG_TYPE_LABEL, DMG_TYPES } from "@/lib/calc/build";
+import { STAGGER_UPTIME } from "@/lib/calc/weapon-value";
 import type { BuildRecommendation } from "@/lib/data";
 import type { GearSuit } from "@/types/build";
 import { RARITY_BG } from "@/lib/operator-meta";
@@ -33,14 +34,20 @@ export function BuildPanel({
   ];
   const topGear = rec.gear.slice(0, 3);
   // 점수 표시: 서포터는 내부 지표(메인 딜러 피해 증가)를 1위 대비로 환산 — 수치 자체는 화면에 쓰지 않음
-  const maxGain = Math.max(0, ...rec.weapons.map((w) => w.dealerGain));
-  const shown = (w: (typeof rec.weapons)[number]) => (rec.role.self === 0 && maxGain > 0 ? w.dealerGain / maxGain : w.relative);
+  const shown = (w: (typeof rec.weapons)[number]) => w.relative;
+  // 비중 문장 (치유 스킬이 없으면 치유 몫은 메인 딜러로)
+  const roleParts = [
+    ["본인 피해", rec.role.self],
+    ["메인 딜러 강화", rec.role.dealer + (rec.heals ? 0 : rec.role.heal)],
+    ["치유량", rec.heals ? rec.role.heal : 0],
+    ["생존", rec.role.survival],
+  ].filter(([, v]) => (v as number) > 0) as [string, number][];
 
   return (
     <div className="space-y-6">
       {/* 계산 기준 */}
       <div className="flex flex-wrap gap-1.5 text-xs">
-        {["레벨 90", "잠재 0", "무기 재련 0", "기질로 무기 스킬 상한까지", "재능 배열 완료", "장비 단조 0", "조건부 효과는 가동률만큼", "메인 딜러 = 스트라이커 평균"].map((t) => (
+        {["레벨 90", "잠재 0", "무기 재련 0", "기질로 무기 스킬 상한까지", "재능 배열 완료", "장비 단조 0", "조건부 효과는 가동률만큼", "메인 딜러 = 스트라이커 평균", `일반 공격 1세트 ${BASIC_CHAIN_SECONDS}초 (가정)`, `적 불균형 ${Math.round(STAGGER_UPTIME * 100)}% (가정)`].map((t) => (
           <span key={t} className="border bg-card px-2 py-1">
             {t}
           </span>
@@ -56,11 +63,9 @@ export function BuildPanel({
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b bg-muted/40 px-4 py-2 text-sm">
           <span className="bg-foreground px-2 py-0.5 text-xs font-semibold text-background">{rec.role.label}</span>
           <span>
-            {rec.role.self === 1
-              ? "본인 피해만 봐요. 팀원을 강화하는 효과는 메인 딜러에게 의미가 없어서 빼요."
-              : rec.role.self === 0
-                ? "메인 딜러의 피해를 얼마나 올려 주는지만 봐요. 본인 공격력은 의미가 없어서 같은 점수일 때만 비교해요."
-                : `본인 피해 ${Math.round(rec.role.self * 100)}% + 메인 딜러 피해 증가 ${Math.round((1 - rec.role.self) * 100)}% 비중으로 봐요.`}
+            {roleParts.map(([k, v]) => `${k} ${Math.round(v * 100)}%`).join(" + ")} 비중으로 무기의 모든 능력치를 합쳐 봐요.
+            {rec.role.self === 1 && " 팀원을 강화하는 효과는 메인 딜러에게 의미가 없어서 빼요."}
+            {rec.role.self === 0 && " 본인 공격력은 의미가 없어서 같은 점수일 때만 비교해요."}
           </span>
         </div>
         <ol className="divide-y">
@@ -97,9 +102,14 @@ export function BuildPanel({
                     <div className={cn("h-full", rank === 1 ? "bg-accent" : "bg-foreground/70")} style={{ width: `${Math.max(2, shown(w) * 100)}%` }} />
                   </div>
                 </div>
-                {(w.applied.length > 0 || w.team.length > 0 || w.excluded.length > 0 || w.trait?.desc) && (
+                {(w.applied.length > 0 || w.team.length > 0 || w.extraHits.length > 0 || w.excluded.length > 0 || w.trait?.desc) && (
                   <div className="col-span-2 sm:col-span-3">
                     <ul className="flex flex-wrap gap-1.5 text-[12px]">
+                      {w.statSkills.map((st, i) => (
+                        <li key={`s${i}`} className="border border-dashed bg-background px-2 py-0.5">
+                          <Rich template={st.desc} bb={st.bb} className="[&>span]:mx-0 [&>span]:bg-transparent [&>span]:px-0.5 [&>span]:text-accent-strong" />
+                        </li>
+                      ))}
                       {w.applied.map((a, i) => (
                         <li key={i} className="border bg-background px-2 py-0.5" title={a.via}>
                           {a.text.replace(/\s*\+\s*$/, "").replace(/\+\[.*\]$/, "")}{" "}
@@ -111,6 +121,12 @@ export function BuildPanel({
                             <span className="text-muted-foreground"> · 상시 유지</span>
                           ) : null}
                           {a.via !== "항상" && <span className="ml-1 text-[11px] text-muted-foreground">({a.via})</span>}
+                        </li>
+                      ))}
+                      {w.extraHits.map((x, i) => (
+                        <li key={`x${i}`} className="border bg-background px-2 py-0.5" title={x.via}>
+                          추가 타격 <b className="font-mono text-accent-strong">공격력 {Math.round(x.scale * 100)}%</b>
+                          <span className="text-muted-foreground"> · {x.rate > 0 ? `${(1 / x.rate).toFixed(0)}초마다` : "발동 없음"} ({x.via})</span>
                         </li>
                       ))}
                       {w.team.map((a, i) => (
@@ -264,27 +280,29 @@ export function BuildPanel({
       <details className="border bg-card px-4 py-3 text-sm">
         <summary className="cursor-pointer font-semibold">어떻게 계산했나요?</summary>
         <div className="mt-2 space-y-1 text-[13px] leading-6 text-muted-foreground">
-          <p className="font-semibold text-foreground">추천 무기 점수 (정규화)</p>
-          <p>초당 피해 기대치 = Σ(배틀·연계·궁극기) 초당 사용 횟수 × 피해 배율 × 공격력 × (1 + 피해%) × (1 + 치명률 × 치명 피해) × (1 + 적이 받는 피해%)</p>
+          <p className="font-semibold text-foreground">추천 무기 점수 — 무기의 모든 능력치를 이 오퍼레이터 기준으로</p>
+          <p>점수 = 본인 피해 비중 × (본인 피해 ÷ 1위) + 메인 딜러 강화 비중 × (1 + 메인 딜러 피해 증가 ÷ 1위) + 치유 비중 × (치유량 ÷ 1위) + 생존 비중 × (실질 생명력 ÷ 1위)</p>
           <p>
-            초당 사용 횟수 — 배틀 스킬: 스킬 게이지 자연 회복(12.5초에 1칸) · 연계 스킬: 쿨타임마다 · 궁극기: 필요 에너지 ÷ (배틀 스킬 6.5 + 연계 스킬 10 에너지)의
-            충전 시간. 궁극기 충전 효율이 오르면 궁극기를 더 자주 써요. 피해 배율은 스킬 설명 표의 만렙 값 합이에요.
+            비중(직업): 스트라이커 본인 100% · 캐스터/가드 본인 50% + 메인 딜러 50% · 뱅가드 본인 25% + 메인 딜러 75% · 서포터 메인 딜러 70% + 치유 30% · 디펜더 메인 딜러
+            40% + 치유 20% + 생존 40%. 치유 스킬이 없으면 치유 몫은 메인 딜러로 옮겨요.
           </p>
           <p>
-            고유 특성의 조건부 효과는 <b className="text-foreground">이 오퍼레이터가 혼자 발동할 수 있으면 그 빈도로</b>, 가동률 = min(1, 발동 빈도 × 지속 시간)을
-            곱해요(중첩형은 평균 스택). 예: 궁극기 사용 시 15초 버프 → 궁극기를 약 64초마다 쓰면 가동 23%. 동료가 만들어야 하는 조건 · 팀원에게 주는
-            효과는 아래 팀 시너지로 따로 계산해요. 적 상태(불균형 등) 조건 · 일반 공격 피해 · 생존 효과는 빼고, 무기마다 &quot;반영하지 않은 효과&quot;에 이유를 적었어요.
-          </p>
-          <p className="font-semibold text-foreground">역할에 따른 시너지</p>
-          <p>무기 점수 = α × (본인 피해 ÷ 본인 1위 무기 피해) + (1 − α) × (1 + 메인 딜러 피해 증가율)</p>
-          <p>
-            α는 직업으로 정해요: 스트라이커(메인 딜러) 1 · 캐스터/가드(서브 딜러) 0.5 · 뱅가드 0.25 · 서포터/디펜더 0. 메인 딜러는 팀원을 강화하는 효과가 의미 없고,
-            서포터는 본인 공격력이 의미 없어요.
+            <b className="text-foreground">본인 피해</b> = 스킬(배틀·연계·궁극기 초당 사용 횟수 × 피해 배율) + 일반 공격(1세트 배율 ÷ 세트 시간) + 이상 피해(아츠 폭발 160% · 물리
+            이상 120% × (1 + 아츠 강도/100)) + 추가 타격, 각각 × 공격력 × (1 + 피해%) × 치명 기대값 × (1 + 적이 받는 피해%). 궁극기 충전 효율은 궁극기 횟수로, 아츠 강도는 이상
+            피해로 들어가요.
           </p>
           <p>
-            메인 딜러 피해 증가율 = 메인 딜러(스트라이커) 전원이 각자 1위 무기를 낀 상태에 이 무기의 팀 효과(팀 전체 버프 · 팀원 버프 · 적이 받는 피해 증가)를 더했을 때 피해 증가율의
-            평균이에요. 속성이 맞지 않는 딜러는 0이라 속성 비율이 자연히 반영돼요. 동료가 만들어야 하는 조건은 그 상태를 만들 수 있는 오퍼레이터가 3인 편성에 들어올 확률만큼 가동률을
-            낮춰요. 메인 딜러를 올려 주는 무기가 없는 경우(생존 무기 위주의 디펜더 등)는 본인 피해 순으로 보여 줘요 — 치유·보호 가치는 아직 계산하지 않아요.
+            <b className="text-foreground">메인 딜러 강화</b> = 스트라이커 전원(각자 1위 무기)에 팀 버프·적 약화를 더했을 때 피해 증가율 평균. 속성이 안 맞는 딜러는 0.{" "}
+            <b className="text-foreground">치유량</b> = 스킬 표의 (기초 치유 + 능력치 계수 × 능력치) × 빈도 × (1 + 치유 효율).{" "}
+            <b className="text-foreground">실질 생명력</b> = (기초 생명력 + 힘 × 5) × (1 + 생명력%) × (1 + 보호 효과% — 보호를 주는 오퍼레이터만).
+          </p>
+          <p>
+            조건부 효과: 가동률 = min(1, 발동 빈도 × 지속 시간), 중첩형은 평균 스택. 혼자 못 만드는 조건은 그 상태를 만드는 오퍼레이터가 3인 편성에 들어올 확률만큼. 적 상태(방어
+            불능·동결 등)는 그 상태를 만드는 빈도 × 상태 지속 시간, 불균형은 가정값. 치명타 조건은 타수 × 치명률. 속성이 안 맞거나 능력치 조건이 안 되면 0이고, 무기마다
+            &quot;반영하지 않은 효과&quot;에 이유를 적었어요.
+          </p>
+          <p>
+            가정값(실측 필요): 일반 공격 1세트 {BASIC_CHAIN_SECONDS}초 · 적 불균형 가동 {Math.round(STAGGER_UPTIME * 100)}% · &quot;생명력 N% 이상&quot; 조건은 항상 유지.
           </p>
           <p>점수는 1위 무기를 100%로 나눈 값이에요. 방어력·저항은 같은 오퍼레이터끼리 비교하면 똑같이 곱해지므로 빼요. 게임 추천 표시는 공식 위키 기준이에요.</p>
           <p>공격력 = (캐릭터 + 무기 기초 공격력) × (1 + 공격력%) × (1 + 0.5% × 주 능력치 + 0.2% × 보조 능력치)</p>

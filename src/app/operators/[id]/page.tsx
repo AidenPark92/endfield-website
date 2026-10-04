@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight, BookOpen, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { essenceStats, gearSuits, getBuildRecommendation, bestTeamsFor, getCombatCharacter, operators, weapons } from "@/lib/data";
+import { attrScaleMax, essenceStats, gearSuits, getBuildRecommendation, bestTeamsFor, getCombatCharacter, operators, weapons } from "@/lib/data";
 import { CLASS_ICON, ELEMENT_BG, ELEMENT_ICON, ELEMENT_TEXT, RARITY_BG } from "@/lib/operator-meta";
 import { essenceImage } from "@/lib/essence-images";
 import type { StatCategory, Weapon } from "@/types/game";
@@ -110,7 +110,7 @@ export default async function OperatorPage({ params }: { params: Promise<{ id: s
       <div className="mt-6">
         <Section title="기본 능력치" hint="레벨을 바꿔 보세요 · 무기·장비 제외 기본치">
           {op.stats || op.statMilestones ? (
-            <OperatorStatsPanel stats={op.stats} milestones={op.statMilestones} />
+            <OperatorStatsPanel stats={op.stats} milestones={op.statMilestones} scaleMax={attrScaleMax} />
           ) : (
             <p className="border bg-card p-4 text-sm text-muted-foreground">아직 능력치 데이터가 없는 캐릭터예요. 데이터가 들어오면 바로 표시돼요.</p>
           )}

@@ -37,6 +37,11 @@ export interface StatBag {
   ultGain: number;
   /** 적이 받는 피해 증가 (이 오퍼레이터 속성에 해당하는 것만, 받는 피해 증가·취약 구간) */
   taken: number;
+  /** 생존·치유 (피해 지수 밖, 무기 평가의 치유·생존 지표에서 사용) */
+  healEff: number;
+  hpPct: number;
+  defPct: number;
+  shieldEff: number;
 }
 
 export const emptyBag = (): StatBag => ({
@@ -56,11 +61,15 @@ export const emptyBag = (): StatBag => ({
   artsIntensity: 0,
   ultGain: 0,
   taken: 0,
+  healEff: 0,
+  hpPct: 0,
+  defPct: 0,
+  shieldEff: 0,
 });
 
 export function addBag(a: StatBag, b: StatBag): StatBag {
   const r = { ...a, dmg: { ...a.dmg } };
-  for (const k of ["str", "agi", "int", "wil", "main", "sub", "mainPct", "subPct", "atkPct", "flatAtk", "critRate", "critDmg", "artsIntensity", "ultGain", "taken"] as const) r[k] += b[k];
+  for (const k of ["str", "agi", "int", "wil", "main", "sub", "mainPct", "subPct", "atkPct", "flatAtk", "critRate", "critDmg", "artsIntensity", "ultGain", "taken", "healEff", "hpPct", "defPct", "shieldEff"] as const) r[k] += b[k];
   for (const k of Object.keys(r.dmg) as (keyof StatBag["dmg"])[]) r.dmg[k] += b.dmg[k];
   return r;
 }
@@ -122,6 +131,8 @@ export function bagFromKey(key: string, v: number): StatBag | undefined {
     case "spelldam": case "spell_dmg_up": b.dmg.arts += v; break;
     case "physpell": case "phy_spell_up": b.artsIntensity += v; break;
     case "usgs": case "ultimate_gain_up": b.ultGain += v; break;
+    case "heal": case "heal_up": b.healEff += v; break;
+    case "hp": case "hp_up": b.hpPct += v; break;
     // "모든 스킬 피해" = 배틀·연계·궁극기 (일반 공격 제외)
     case "skill_dmg_up": b.dmg.battle += v; b.dmg.combo += v; b.dmg.ult += v; break;
     case "dmg_up": b.dmg.all += v; break;
@@ -210,8 +221,17 @@ export interface Rotation {
   ultCost: number;
   ultCooldown: number;
   comboEnergy: number;
-  weight: Record<"battle" | "combo" | "ult", number>;
+  weight: Record<"battle" | "combo" | "ult", number> & {
+    /** 일반 공격 1세트(최대 단계) 피해 배율 합 — 처형·낙하 제외 */
+    basic?: number;
+  };
 }
+
+/**
+ * TODO(실측): 일반 공격 1세트(최대 단계)에 걸리는 시간(초). 게임 데이터에 애니메이션 길이가 없어 가정값.
+ * 비조작 오퍼레이터도 자동 일반 공격을 하므로(combat-mechanics §1) 모든 오퍼레이터에 같은 가정 적용
+ */
+export const BASIC_CHAIN_SECONDS = 4;
 
 export const SP_REGEN_INTERVAL = 12.5;
 export const BATTLE_ULT_ENERGY = 6.5;
@@ -264,7 +284,8 @@ export function score(op: OperatorBase, weaponAtk: number, bag: StatBag): ScoreR
     const totalW = w.battle + w.combo + w.ult;
     // 피해 배율 정보가 없으면 세 종류를 같은 크기로
     const weight = (t: "battle" | "combo" | "ult") => (totalW > 0 ? w[t] : 1);
-    const overall = (["battle", "combo", "ult"] as const).reduce((s, t) => s + r[t] * weight(t) * byType[t], 0);
+    const basic = op.rotation.weight.basic ? (op.rotation.weight.basic / BASIC_CHAIN_SECONDS) * byType.basic : 0;
+    const overall = (["battle", "combo", "ult"] as const).reduce((s, t) => s + r[t] * weight(t) * byType[t], 0) + basic;
     return { atk, attrBonus, critRate, critDmg, byType, overall, rates: r, attrs, dmgPct, artsIntensity: bag.artsIntensity };
   }
   const overall = DMG_TYPES.reduce((s, t) => s + byType[t], 0) / DMG_TYPES.length;

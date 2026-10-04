@@ -110,3 +110,41 @@ describe("팀 시너지", () => {
     expect(triggerRate("장착자가 자신의 스킬로 팀 내 다른 오퍼레이터를 치유할 때", k, rates(rot, 0)).rate).toBeCloseTo(1 / 3);
   });
 });
+
+describe("모든 능력치 반영", () => {
+  it("생존·치유 능력치는 버리지 않고 지표로", () => {
+    const fx = parseTrait("최대 생명력 +{hp_up:0.0%}\n연계 스킬로 주는 치유 효과 +{heal_up:0.0%}\n장착자가 넘어뜨리기 피해를 줄 때, 방어력 +{def_up:0.0%}, {duration:0}초 동안 지속.", { hp_up: 0.2, heal_up: 0.3, def_up: 0.5, duration: 15 });
+    expect(fx.map((e) => e.zone)).toEqual(["hp", "heal", "def"]);
+  });
+  it("치유량 지수: (기초 + 계수 × 능력치) × 빈도 × (1 + 치유 효율)", async () => {
+    const { healIndex } = await import("./weapon-value");
+    const { emptyBag } = await import("./build");
+    const k: OperatorKit = { ...kit, heals: { combo: [{ base: 100, coef: 1, attr: "의지" }] } };
+    const attrs = { 힘: 0, 민첩: 0, 지능: 0, 의지: 50 };
+    const b = emptyBag();
+    expect(healIndex(k, attrs, b)).toBeCloseTo((1 / 20) * 150);
+    b.healEff = 0.5;
+    expect(healIndex(k, attrs, b)).toBeCloseTo((1 / 20) * 150 * 1.5);
+  });
+  it("실질 생명력: 힘 1 = 생명력 5", async () => {
+    const { survivalIndex } = await import("./weapon-value");
+    const { emptyBag } = await import("./build");
+    const b = emptyBag();
+    b.str = 10;
+    b.hpPct = 0.1;
+    expect(survivalIndex({ ...kit, hp: 1000, def: 0 }, b)).toBeCloseTo(1050 * 1.1);
+  });
+  it("추가 타격 (공격력의 N배)", () => {
+    const fx = parseTrait("장착자가 물리 이상 효과를 준 후, 추가로 자신의 공격력 {atk_scale:0.0%}의 물리 피해를 줍니다.", { atk_scale: 3.36 });
+    expect(fx[0].extraScale).toBeCloseTo(3.36);
+  });
+  it("치명타 조건 = 타수 × 치명률", () => {
+    const t = triggerRate("장착자가 치명타 피해를 준 후", { ...kit, critRate: 0.2, basicHits: 5 }, rates(rot, 0));
+    expect(t.rate).toBeCloseTo((5 / 4) * 0.2);
+  });
+  it("실데이터: 디펜더 엠버는 천둥의 흔적 · 푸치나는 간식 시간 1위 (생존·치유 반영, 게임 추천과 일치)", { timeout: 120000 }, () => {
+    for (const [name, weapon] of [["엠버", "천둥의 흔적"], ["푸치나", "간식 시간"]]) {
+      expect(getBuildRecommendation(operators.find((o) => o.name === name)!.id)!.weapons[0].name, name).toBe(weapon);
+    }
+  });
+});

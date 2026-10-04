@@ -17,7 +17,7 @@ import { splitTerms } from "@/lib/glossary";
 import type { Blackboard, CombatCharacter, SkillForm, SkillGroup } from "@/types/combat";
 import { damageWeight, rankWeaponsByValue, ROLE_WEIGHT, type DealerRef, type OperatorKit, type RoleWeight, type TeamPool, type WeaponValueRank } from "@/lib/calc/weapon-value";
 import { comboRequirement, rankTeams, type ComboRequirement, type TeamCandidate, type TeamEval } from "@/lib/calc/team";
-import type { EssenceRegion, EssenceStats, Operator, OperatorDetails, OperatorProfile, OperatorStats, Weapon } from "@/types/game";
+import type { AttrName, EssenceRegion, EssenceStats, Operator, OperatorDetails, OperatorProfile, OperatorStats, Weapon } from "@/types/game";
 import { buildWeaponUsers } from "@/lib/weapon-users";
 
 export const essenceStats: EssenceStats = statsJson;
@@ -38,6 +38,10 @@ const opImages = operatorImagesJson as { full: Record<string, string>; face: Rec
 const opProfiles = operatorProfilesJson.profiles as Record<string, OperatorProfile>;
 const opStats = operatorStatsJson.stats as Record<string, OperatorStats>;
 export const operatorStatsMeta = operatorStatsJson._meta;
+/** 능력치 막대 기준: 전체 오퍼레이터 레벨 90 힘·민첩·지능·의지 최댓값 */
+export const attrScaleMax = Math.max(
+  ...Object.values(operatorStatsJson.stats as Record<string, OperatorStats>).flatMap((s) => [s.str, s.agi, s.int, s.wil].map((a) => a[a.length - 1])),
+);
 const opDetails = operatorDetailsJson.operators as unknown as Record<string, OperatorDetails>;
 export const operatorDetailsMeta = operatorDetailsJson._meta;
 
@@ -155,8 +159,38 @@ function rotationOf(id: string): Rotation | undefined {
       battle: damageWeight(battle.flatMap((l) => l.display ?? [])),
       combo: damageWeight(combo.flatMap((l) => l.display ?? [])),
       ult: damageWeight(ult.flatMap((l) => l.display ?? [])),
+      basic: basicWeight(id),
     },
   };
+}
+
+/** 스킬 표의 피해 배율 항목 수 (타수 근사) */
+function damageLabels(id: string, type: string): number {
+  return new Set(lastLevel(id, type).flatMap((l) => l.display ?? []).filter((d) => /배율/.test(d.label) && !/취약|불균형/.test(d.label)).map((d) => d.label)).size;
+}
+
+/** 일반 공격 1세트 피해 배율 합 (attack1~N, 처형·낙하 제외) */
+function basicWeight(id: string): number {
+  const g = combatChars[id]?.skillGroups.find((x) => x.type === "일반 공격");
+  const ds = (g?.skills ?? [])
+    .filter((sk) => /^attack\d+$/.test((sk as unknown as { part: string }).part))
+    .flatMap((sk) => ((sk.levels.at(-1) as unknown as RawLevel)?.display ?? []));
+  return damageWeight(ds);
+}
+
+/** 치유량 식: 스킬 표 "기초 치유 수치" 다음 "X 1포인트마다 증가하는 치유 수치" 쌍 */
+function healsOf(id: string, type: string): { base: number; coef: number; attr?: AttrName }[] {
+  const out: { base: number; coef: number; attr?: AttrName }[] = [];
+  for (const d of lastLevel(id, type).flatMap((l) => l.display ?? [])) {
+    const v = parseFloat(d.value);
+    if (!Number.isFinite(v)) continue;
+    const per = d.label.match(/(힘|민첩|지능|의지) 1포인트마다 증가하는 치유/);
+    if (per && out.length) {
+      out[out.length - 1].coef = v;
+      out[out.length - 1].attr = per[1] as AttrName;
+    } else if (/치유 수치/.test(d.label) && !per) out.push({ base: v, coef: 0 });
+  }
+  return out;
 }
 
 /** 지속형 모드 주기: 스킬 표의 "…간격(초)" 최소값, "…지속 시간(초)" 최대값 */
@@ -205,16 +239,39 @@ function buildKit(id: string): OperatorKit | undefined {
     rotation: base.rotation,
     texts: { basic: text("일반 공격"), battle: text("배틀 스킬"), combo: text("연계 스킬"), ult: text("궁극기") },
     periodic: { battle: periodicOf(id, "배틀 스킬"), combo: periodicOf(id, "연계 스킬"), ult: periodicOf(id, "궁극기") },
+    heals: Object.fromEntries(
+      (
+        [
+          ["battle", "배틀 스킬"],
+          ["combo", "연계 스킬"],
+          ["ult", "궁극기"],
+        ] as const
+      )
+        .map(([k, t]) => [k, healsOf(id, t)] as const)
+        .filter(([, h]) => h.length),
+    ),
+    critRate: base.critRate,
+    skillHits: {
+      battle: Math.max(1, damageLabels(id, "배틀 스킬")),
+      combo: Math.max(1, damageLabels(id, "연계 스킬")),
+      ult: Math.max(1, damageLabels(id, "궁극기")),
+    },
+    basicHits: (combatChars[id]?.skillGroups.find((x) => x.type === "일반 공격")?.skills ?? []).filter((sk) => /^attack\d+$/.test((sk as unknown as { part: string }).part)).length || 5,
+    hp: opStats[id]?.hp.at(-1),
+    def: opStats[id]?.def.at(-1),
     tags: (cc.battleTags ?? []).map((t) => t.name),
   };
 }
 
 export interface BuildRecommendation {
   role: RoleWeight;
+  /** 치유 스킬이 있는지 (치유 비중 적용 여부) */
+  heals: boolean;
   weapons: (WeaponValueRank & {
     official: "skill" | "attribute" | null;
     image?: string;
     trait?: { name: string | null; desc: string | null; bb: Blackboard; level: number };
+    statSkills: { desc: string | null; bb: Blackboard }[];
   })[];
   gear: GearRank[];
   synergy: Synergy;
@@ -244,7 +301,7 @@ export function getBuildRecommendation(id: string): BuildRecommendation | undefi
   const kit = operatorKit(id);
   if (!kit) return undefined;
   const role = roleOf(id);
-  const ranked = rankWeaponsByValue(base, kit, talents, candidates, 0, teamPool(id), role, role.self < 1 ? mainDealers() : []).map((r) => ({
+  const ranked = rankWeaponsByValue(base, kit, talents, candidates, 0, teamPool(id), role, role.dealer > 0 || role.heal > 0 ? mainDealers() : []).map((r) => ({
     ...r,
     official: op.recommendedWeapons.skill.includes(r.id) ? ("skill" as const) : op.recommendedWeapons.attribute.includes(r.id) ? ("attribute" as const) : null,
     image: weapons.find((w) => w.id === r.id)?.image,
@@ -253,12 +310,14 @@ export function getBuildRecommendation(id: string): BuildRecommendation | undefi
       const t = combatWeapons[r.id].skills.at(-1);
       return t ? { name: t.name, desc: t.desc, bb: t.levels[r.levels.at(-1)! - 1]?.bb ?? {}, level: r.levels.at(-1)! } : undefined;
     })(),
+    // 능력치 스킬 2개 (현재 레벨 수치)
+    statSkills: combatWeapons[r.id].skills.slice(0, -1).map((sk, i) => ({ desc: sk.desc, bb: sk.levels[r.levels[i] - 1]?.bb ?? {} })),
   }));
   // 장비는 1위 무기를 낀 상태로 비교
   const topWeapon = ranked[0] ? combatWeapons[ranked[0].id] : undefined;
   const withWeapon = ranked[0] ? addBag(talents, ranked[0].bag) : talents;
   const gear = rankGear(base, topWeapon?.baseAtk.at(-1) ?? 0, withWeapon, Object.entries(gearPieces), Object.entries(gearSuits));
-  return { weapons: ranked, role, gear, synergy: synergy(id, synergyIndex(), findTerms) };
+  return { weapons: ranked, role, heals: Object.keys(kit.heals ?? {}).length > 0, gear, synergy: synergy(id, synergyIndex(), findTerms) };
 }
 
 const candidatesFor = (id: string) => {
@@ -269,7 +328,7 @@ const candidatesFor = (id: string) => {
 /** 직업 → 역할 비중 */
 export function roleOf(id: string): RoleWeight {
   const cls = operators.find((o) => o.id === id)?.profile?.class;
-  return (cls && ROLE_WEIGHT[cls]) || { label: "메인 딜러", self: 1 };
+  return (cls && ROLE_WEIGHT[cls]) || ROLE_WEIGHT.스트라이커;
 }
 
 let dealerCache: DealerRef[] | undefined;

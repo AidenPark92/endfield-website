@@ -19,7 +19,7 @@
 //   - 일반 공격 피해 (일반 공격 회전 속도 데이터 없음) — TODO
 import type { Blackboard } from "@/types/combat";
 import type { CombatWeapon } from "@/types/build";
-import { addBag, emptyBag, bagFromKey, rates, score, ELEM_OF, type DmgType, type OperatorBase, type Rotation, type ScoreResult, type StatBag } from "./build";
+import { addBag, emptyBag, bagFromKey, rates, score, BASIC_CHAIN_SECONDS, ELEM_OF, type DmgType, type OperatorBase, type Rotation, type ScoreResult, type StatBag } from "./build";
 import type { AttrName } from "@/types/game";
 
 export type SkillKind = "basic" | "battle" | "combo" | "ult";
@@ -40,12 +40,35 @@ export interface OperatorKit {
    * 예) 리노 배틀 스킬 라이브 모드: 3초 간격 노랫소리로 지속 치유, 60초 지속
    */
   periodic?: Partial<Record<SkillKind, { interval: number; duration: number }>>;
+  /** 치유량 식 (스킬 표 "기초 치유 수치" + "X 1포인트마다 증가하는 치유 수치") */
+  heals?: Partial<Record<SkillKind, { base: number; coef: number; attr?: AttrName }[]>>;
+  /** 레벨 90 기초 생명력 · 방어력 */
+  hp?: number;
+  def?: number;
+  /** 치명타 확률 (기본 + 무기·재능, 평가 중 갱신) */
+  critRate?: number;
+  /** 일반 공격 1세트 타수 */
+  basicHits?: number;
+  /** 스킬 1회 타수 (스킬 표 피해 배율 항목 수 — 근사) */
+  skillHits?: Partial<Record<SkillKind, number>>;
 }
 
 /** 팀원 후보 (이 오퍼레이터를 뺀 전체 오퍼레이터) — 특정 조합이 아닌 기대값 계산용 */
 export interface TeamPool {
   others: { id: string; element: string; kit: OperatorKit; rates: Record<"battle" | "combo" | "ult", number> }[];
 }
+
+/** TODO(실측): "생명력이 N%보다 높을 때" 조건 가동률 가정 */
+export const HIGH_HP_UPTIME = 1;
+/** TODO(실측): 적 불균형 상태 가동률 가정 (불균형 지속·누적 속도 데이터 없음) */
+export const STAGGER_UPTIME = 0.2;
+/** 적 상태 지속 시간(초) — combat-mechanics §5·6 (부착·방어 불능 20초 ✅, 동결 5.75초 📘, 감전 12초 📘, 부식 15초 📘, 연소 10초 ✅, 갑옷 파괴 12초 ✅) */
+export const STATE_DURATION: Record<string, number> = {
+  "아츠 부착": 20, "열기 부착": 20, "전기 부착": 20, "냉기 부착": 20, "자연 부착": 20,
+  "방어 불능": 20, 동결: 5.75, 감전: 12, 부식: 15, 연소: 10, "갑옷 파괴": 12, "물리 취약": 12, "아츠 취약": 12,
+};
+/** 이상 피해 배율: 아츠 폭발 160% ✅, 띄우기·넘어뜨리기 120% ✅ (물리 이상 대표값) */
+export const ANOMALY_SCALE = { arts: 1.6, phys: 1.2 };
 
 /** 팀원 수 (4인 편성) */
 export const TEAMMATES = 3;
@@ -61,7 +84,7 @@ export function atLeastOne(n: number, k: number, pick = TEAMMATES): number {
 
 // ───────── 특성 문장 파싱 ─────────
 
-type Zone = "atk" | "flatAtk" | "crit" | "critDmg" | "main" | "sub" | "allAttr" | "arts" | "ultGain" | "dmg" | "taken";
+type Zone = "atk" | "flatAtk" | "crit" | "critDmg" | "main" | "sub" | "allAttr" | "arts" | "ultGain" | "dmg" | "taken" | "heal" | "hp" | "def" | "shield";
 
 export interface TraitEffect {
   /** 화면 표시용 원문 조각 */
@@ -89,6 +112,10 @@ export interface TraitEffect {
   others: number;
   /** 자신과 속성이 다른 팀원만 */
   othersDiffElem?: boolean;
+  /** 추가 타격: 공격력의 N배 피해 (용사 등) */
+  extraScale?: number;
+  /** "N스택일 때 / N스택까지 중첩된 후" — 바로 앞 효과가 가득 찼을 때 */
+  afterFull?: "while" | "reset";
 }
 
 const ELEM_WORDS = ["물리", "열기", "전기", "냉기", "자연", "아츠"];
@@ -102,7 +129,7 @@ function fill(desc: string): string {
 
 function valueOf(part: string, bb: Blackboard): number | undefined {
   // [⟦a⟧+⟦b⟧×소모 스택 수치] → a + b × 4 (방어 불능·부착 최대 4스택 ✅ combat-mechanics §5·6)
-  const f = part.match(/\[(?:⟦([^⟧]+)⟧\+)?⟦([^⟧]+)⟧×소모 스택 수치\]/);
+  const f = part.match(/\[(?:⟦([^⟧]+)⟧\+)?⟦([^⟧]+)⟧×소모한? 스택 수치\]/);
   const key = (k: string) => k.replace(/%$/, "");
   if (f) return (f[1] ? Number(bb[key(f[1])] ?? 0) : 0) + Number(bb[key(f[2])] ?? 0) * 4;
   const m = part.match(/\+⟦([^⟧*]+)⟧/);
@@ -129,9 +156,12 @@ function zoneOf(phrase: string): ZoneInfo {
 
 function zoneOnly(phrase: string): Omit<ZoneInfo, "self" | "others" | "othersDiffElem"> {
   // 생존 효과는 "+" 바로 앞 능력치 이름으로 판단 ("치유를 받은 오퍼레이터의 공격력"은 공격력)
-  const statWord = phrase.trim().match(/(공격력|피해|치명타 확률|치명타 피해|능력치|아츠 강도|충전 효율|치유 효율|최대 생명력|생명력|방어력|보호 효과|보호)\s*$/)?.[1];
-  if (statWord && /치유|생명력|방어력|보호/.test(statWord)) return { zone: null, skip: "생존 효과 (피해 계산 밖)" };
-  if (!statWord && /치유|생명력|방어력|보호/.test(phrase)) return { zone: null, skip: "생존 효과 (피해 계산 밖)" };
+  const statWord = phrase.trim().match(/(공격력|피해|치명타 확률|치명타 피해|능력치|아츠 강도|충전 효율|치유 효율|치유 효과|최대 생명력|생명력|방어력|보호 효과|보호)\s*$/)?.[1];
+  const surv = statWord ?? phrase;
+  if (/치유 효율|치유 효과/.test(surv)) return { zone: "heal" };
+  if (/생명력/.test(surv) && !/공격력|피해/.test(statWord ?? "")) return { zone: "hp" };
+  if (/방어력/.test(surv)) return { zone: "def" };
+  if (/보호/.test(surv) && !/공격력|피해/.test(statWord ?? "")) return { zone: "shield" };
   const enemyState = /상태의 적에게 주는/.test(phrase)
     ? (["불균형", ...STATE_ORDER].filter((t) => phrase.includes(t)).join("·") || "특정")
     : undefined;
@@ -176,6 +206,7 @@ export function parseTrait(desc: string | null | undefined, bb: Blackboard): Tra
   };
 
   let gate: TraitEffect["gate"];
+  let lastDuration: number | undefined;
   for (const rawLine of text.split("\n")) {
     let line = rawLine.trim();
     if (!line) continue;
@@ -196,7 +227,12 @@ export function parseTrait(desc: string | null | undefined, bb: Blackboard): Tra
       const cond = cm ? cm[1] : "";
       let body = cm ? cm[2] : sentence;
       const durM = body.match(/⟦(\w*duration\w*)⟧초 (?:동안|내에)/);
-      const duration = durM ? Number(bb[durM[1]] ?? 0) : undefined;
+      // 지속 시간이 안 적힌 문장은 같은 특성의 바로 앞 지속 시간을 이어 씀 ("…있을 때마다, 추가 +X")
+      const duration = durM ? Number(bb[durM[1]] ?? 0) : cond ? lastDuration : undefined;
+      if (durM) lastDuration = duration;
+      const inlineStack = sentence.match(/최대 ⟦([^⟧]+)⟧스택까지 중첩/);
+      const afterFull: TraitEffect["afterFull"] = /스택일 때/.test(cond) ? "while" : /스택까지 중첩된 후/.test(cond) ? "reset" : undefined;
+      const sentenceStart = out.length;
       // "N초 내에 사용한 다음 배틀 스킬(혹은 궁극기)의 지속 시간 동안 주는 X 피해" → 그 스킬에만
       let onlyTypes: DmgType[] | undefined;
       const nx = body.match(/다음 ([^의]+)의 지속 시간 동안/);
@@ -209,10 +245,17 @@ export function parseTrait(desc: string | null | undefined, bb: Blackboard): Tra
           out[out.length - 1].others = 0.5;
           continue;
         }
+        // "최대 +{a*max_stack}" → 앞 효과의 최대 스택
+        const cap = part.match(/최대 \+⟦[^⟧*]+\*([^⟧%]+)%?⟧/);
+        if (cap && out.length > sentenceStart) {
+          out[out.length - 1].maxStack = Number(bb[cap[1]] ?? 1) || 1;
+          continue;
+        }
         if (!part.includes("⟦") || /초 동안 지속|초 (?:동안|내에)$/.test(part.trim())) continue;
         const value = valueOf(part, bb);
         if (value === undefined) {
-          if (/⟦atk_scale/.test(part)) out.push({ text: part.trim(), zone: null, value: 0, cond, maxStack, skip: "추가 피해 (고정 배율 타격)", self: true, others: 0 });
+          const xs = part.match(/⟦(atk_scale\w*)%?⟧/);
+          if (xs) out.push({ text: part.replace(/⟦[^⟧]+⟧/g, "N").trim(), zone: null, value: 0, cond, maxStack, self: true, others: 0, extraScale: Number(bb[xs[1]] ?? 0) });
           // "팀 내 다른 오퍼레이터는 절반의 효과를 획득함" → 바로 앞 효과를 팀원도 절반 받음
           if (/다른 오퍼레이터는 절반의 효과/.test(part) && out.length) out[out.length - 1].others = 0.5;
           continue;
@@ -228,9 +271,10 @@ export function parseTrait(desc: string | null | undefined, bb: Blackboard): Tra
           value,
           cond,
           duration,
-          maxStack,
+          maxStack: inlineStack ? Number(bb[inlineStack[1]] ?? 1) || 1 : maxStack,
           cooldown,
           gate,
+          afterFull,
         };
         out.push(eff);
         pending.push(eff);
@@ -262,12 +306,20 @@ const STATE_WORDS: Record<string, string[]> = {
   "갑옷 파괴": ["갑옷 파괴"],
   "물리 취약": ["물리 취약"],
   "아츠 취약": ["아츠 취약", "취약"],
+  "열기 취약": ["열기 취약"],
+  "전기 취약": ["전기 취약"],
+  "냉기 취약": ["냉기 취약"],
+  "자연 취약": ["자연 취약"],
   허약: ["허약"],
   "오리지늄 결정": ["오리지늄 결정"],
   연타: ["연타"],
   // 아츠 폭발: 같은 속성 부착을 다시 하면 발동 ✅ → 자기 속성 부착을 하는 오퍼레이터는 혼자 가능
   "아츠 폭발": ["아츠 폭발", "열기 부착", "전기 부착", "냉기 부착", "자연 부착"],
   "스킬 게이지": ["스킬 게이지를 회복", "스킬 게이지 회복"],
+  "전기 증폭": ["전기 증폭"],
+  "열기 증폭": ["열기 증폭"],
+  "냉기 증폭": ["냉기 증폭"],
+  "자연 증폭": ["자연 증폭"],
   치유: ["치유", "생명력을 회복", "생명력 회복"],
 };
 /** 받침에 맞는 목적격 조사 */
@@ -286,21 +338,29 @@ export interface Resolution {
 /** 조건 문장 → 이 오퍼레이터가 혼자 발동하는 빈도 (회/초). 불가면 이유 */
 export function triggerRate(cond: string, kit: OperatorKit, r: Record<"battle" | "combo" | "ult", number>): { rate: number; via: string } | { rate: 0; why: string } {
   if (!cond) return { rate: Infinity, via: "항상" };
+  // "장착자의 생명력이 80%보다 높을 때" — TODO(실측): 치유가 있는 일반적인 전투에서 유지된다고 가정 (HIGH_HP_UPTIME)
+  if (/생명력이 .*(높을|이상일) 때/.test(cond)) return { rate: Infinity, via: `생명력 높게 유지 가정 (가동 ${Math.round(HIGH_HP_UPTIME * 100)}%)` };
   if (/다른 오퍼레이터|팀 내/.test(cond) && !/장착자/.test(cond)) return { rate: 0, why: "동료가 발동해야 하는 조건" };
   // 조건에 명시된 스킬 종류
   const named = Object.entries(KIND_WORD).filter(([w]) => cond.includes(w)).map(([, k]) => k as SkillKind);
-  const rateOf = (kinds: SkillKind[]) => Math.max(0, ...kinds.map((k) => (k === "basic" ? 1 : r[k])));
+  const rateOf = (kinds: SkillKind[]) => Math.max(0, ...kinds.map((k) => (k === "basic" ? 1 / BASIC_CHAIN_SECONDS : r[k])));
   const label = (kinds: SkillKind[]) => kinds.map((k) => ({ basic: "일반 공격", battle: "배틀 스킬", combo: "연계 스킬", ult: "궁극기" })[k]).join("·");
   // 1) 스킬 사용·명중
-  if (/사용(할|했을|한|하여)? ?(때|후)|명중할 때/.test(cond) && named.length && !STATE_ORDER.some((s) => cond.includes(s))) {
-    return { rate: named.reduce<number>((s, k) => s + (k === "basic" ? 1 : r[k]), 0), via: `${label(named)} 사용` };
+  if (/사용(할|했을|한|하여)? ?(때|후)|명중할 때|피해를 (줄|준) ?(때|후)/.test(cond) && named.length && !STATE_ORDER.some((s) => cond.includes(s))) {
+    return { rate: named.reduce<number>((s, k) => s + (k === "basic" ? 1 / BASIC_CHAIN_SECONDS : r[k]), 0), via: `${label(named)} 사용` };
   }
-  // 2) 강력한 일격 (조작 중 일반 공격 마지막 타 — 자주 발생)
-  if (/강력한 일격/.test(cond)) return { rate: 1, via: "강력한 일격" };
-  // 3) 치명타가 터졌을 때
+  // 2) 강력한 일격 = 일반 공격 1세트의 마지막 타 (세트당 1회)
+  if (/강력한 일격/.test(cond)) return { rate: 1 / BASIC_CHAIN_SECONDS, via: "강력한 일격 (일반 공격 세트마다)" };
+  // 3) 치명타가 터졌을 때: 타격 빈도 × 치명타 확률
   if (/치명타 피해를 (준|줄)/.test(cond)) {
+    const cr = kit.critRate ?? 0.05;
     const kinds = named.length ? named : (["basic"] as SkillKind[]);
-    return { rate: rateOf(kinds), via: `${label(kinds)} 치명타 (치명타 발생 가정)` };
+    // 일반 공격은 타격마다, 스킬은 1회 사용에 한 번이라도 치명타가 날 확률 1 − (1 − 치명률)^타수
+    const rate = kinds.reduce<number>(
+      (s, k) => s + (k === "basic" ? ((kit.basicHits ?? 5) / BASIC_CHAIN_SECONDS) * cr : r[k] * (1 - (1 - cr) ** (kit.skillHits?.[k] ?? 1))),
+      0,
+    );
+    return { rate, via: `${label(kinds)} 치명타 (치명률 ${Math.round(cr * 100)}%)` };
   }
   // 4) 상태를 부여·소모
   const state = STATE_ORDER.find((s) => cond.includes(s));
@@ -319,7 +379,7 @@ export function triggerRate(cond: string, kit: OperatorKit, r: Record<"battle" |
   };
   const best = kinds.reduce<{ rate: number; periodic: boolean }>(
     (acc, k) => {
-      const base = k === "basic" ? 1 : r[k];
+      const base = k === "basic" ? 1 / BASIC_CHAIN_SECONDS : r[k];
       const per = periodicRate(k);
       return per > base && per > acc.rate ? { rate: per, periodic: true } : base > acc.rate ? { rate: base, periodic: false } : acc;
     },
@@ -357,14 +417,16 @@ export function effectBag(e: TraitEffect, kit: OperatorKit, value: number): Stat
     case "allAttr": b.mainPct += value; b.subPct += value; break;
     case "arts": b.artsIntensity += value; break;
     case "ultGain": b.ultGain += value; break;
+    case "heal": b.healEff += value; break;
+    case "hp": b.hpPct += value; break;
+    case "def": b.defPct += value; break;
+    case "shield": b.shieldEff += value; break;
     case "taken":
       if (!elemOk) return undefined;
       b.taken += value;
       break;
     case "dmg": {
       if (!elemOk) return undefined;
-      // TODO: 일반 공격 회전 데이터가 없어 일반 공격 피해는 아직 점수에 넣지 않음
-      if (e.types && e.types.every((t) => t === "basic")) return undefined;
       if (e.types) for (const t of e.types) b.dmg[t] += value;
       else b.dmg.all += value;
       break;
@@ -376,7 +438,7 @@ export function effectBag(e: TraitEffect, kit: OperatorKit, value: number): Stat
 
 /** 팀원(속성 무관) 기준 능력치 — 대상 비율은 따로 곱한다 */
 export function teammateBag(e: TraitEffect, value: number): StatBag | undefined {
-  if (e.zone === "dmg" && e.types?.every((t) => t === "basic")) return undefined;
+  if (e.zone === "heal" || e.zone === "hp" || e.zone === "def" || e.zone === "shield") return undefined;
   return effectBag({ ...e, elems: undefined }, { element: "물리" } as OperatorKit, value);
 }
 
@@ -393,7 +455,8 @@ export function teammateShare(e: TraitEffect, selfElement: string, pool: TeamPoo
 
 /** 동료가 만들어 주는 조건: 3인 편성 확률 × 그 동료들의 평균 발동 빈도 */
 export function poolTrigger(cond: string, pool: TeamPool): { p: number; rate: number; k: number; n: number; via: string } | undefined {
-  if (!cond || /장착자/.test(cond)) return undefined;
+  // "장착자가 전기 증폭을 획득할 때"처럼 받는 쪽 조건은 동료가 만들어 줌
+  if (!cond || (/장착자/.test(cond) && !/획득할 때|받을 때/.test(cond))) return undefined;
   const hits = pool.others
     .map((o) => ({ o, t: triggerRate(cond, o.kit, o.rates) }))
     .filter((x) => x.t.rate > 0 && Number.isFinite(x.t.rate));
@@ -438,6 +501,8 @@ export interface WeaponEval {
   applied: WeaponEffectLine[];
   /** 팀원에게 가는 효과 */
   team: TeamEffectLine[];
+  /** 추가 타격 (초당 횟수 × 공격력 배율) */
+  extraHits: { text: string; rate: number; scale: number; via: string }[];
   excluded: { text: string; reason: string }[];
 }
 
@@ -460,8 +525,8 @@ export function evaluateWeapon(w: CombatWeapon, kit: OperatorKit, baseAttrs: Rec
   const trait = w.skills.at(-1);
   const applied: WeaponEffectLine[] = [];
   const team: TeamEffectLine[] = [];
+  const extraHits: { text: string; rate: number; scale: number; via: string }[] = [];
   const excluded: { text: string; reason: string }[] = [];
-  const basicOnly = (e: TraitEffect) => e.zone === "dmg" && !!e.types?.every((t) => t === "basic");
   /** 효과 하나 반영: 본인 몫은 bag 에, 팀원 몫은 team 에 */
   const take = (e: TraitEffect, stacks: number, uptime: number, via: string) => {
     let used = false;
@@ -482,7 +547,7 @@ export function evaluateWeapon(w: CombatWeapon, kit: OperatorKit, baseAttrs: Rec
     }
     if (used) {
       if (e.self && effectBag(e, kit, 1)) applied.push({ text: e.text, uptime, value: e.value, applied: e.value * stacks, pct: isPct(e), via, target: targetOf(e), stacks, maxStack: e.maxStack });
-    } else excluded.push({ text: e.text, reason: basicOnly(e) ? "일반 공격 피해 (아직 미반영)" : "이 오퍼레이터·팀원 속성과 다름" });
+    } else excluded.push({ text: e.text, reason: "속성이 맞지 않음 → 0" });
   };
   if (trait) {
     const bb = trait.levels[levels.at(-1)! - 1]?.bb ?? {};
@@ -492,34 +557,81 @@ export function evaluateWeapon(w: CombatWeapon, kit: OperatorKit, baseAttrs: Rec
     attrs.힘 += bag.str; attrs.민첩 += bag.agi; attrs.지능 += bag.int; attrs.의지 += bag.wil;
     attrs[kit.mainAttr] += bag.main;
     // 충전 효율이 궁극기 빈도에 영향 → 조건 없는 효과를 먼저 더한 뒤 빈도 계산
-    const always = effects.filter((e) => !e.cond && !e.enemyState && !e.skip);
+    const always = effects.filter((e) => !e.cond && !e.enemyState && !e.skip && !e.extraScale);
     for (const e of always) take(e, 1, 1, "항상");
     const r = rates(kit.rotation, bag.ultGain);
+    kit = { ...kit, critRate: (kit.critRate ?? 0.05) + bag.critRate };
+    let prev: { rate: number; stacks: number; maxStack: number } | undefined;
+    /** 조건 → 빈도 (혼자 → 안 되면 동료 기대값) */
+    const resolve = (cond: string): { rate: number; p: number; via: string } | { why: string } => {
+      const t = triggerRate(cond, kit, r);
+      if (t.rate > 0) return { rate: t.rate, p: 1, via: "via" in t ? t.via : "" };
+      const pt = pool ? poolTrigger(cond, pool) : undefined;
+      if (pt) return { rate: pt.rate, p: pt.p, via: `${pt.via} · 3인 편성 시 ${Math.round(pt.p * 100)}%` };
+      return { why: "why" in t ? t.why : "발동 불가" };
+    };
+    /** 적 상태 가동률 (불균형은 가정값, 나머지는 그 상태를 만드는 빈도 × 상태 지속) */
+    const enemyUptime = (states: string): { u: number; via: string } => {
+      let u = 1;
+      const vias: string[] = [];
+      for (const st of states.split("·")) {
+        if (st === "불균형") { u = Math.min(u, STAGGER_UPTIME); vias.push(`불균형 가동 ${Math.round(STAGGER_UPTIME * 100)}% 가정`); continue; }
+        const res = resolve(`적에게 ${st}을 부여할 때`);
+        if ("why" in res) return { u: 0, via: `${st} 못 만듦` };
+        const d = STATE_DURATION[st] ?? 10;
+        u = Math.min(u, res.p * Math.min(1, res.rate * d));
+        vias.push(`${st} ${Math.round(res.p * Math.min(1, res.rate * d) * 100)}%`);
+      }
+      return { u, via: vias.join(" · ") };
+    };
     for (const e of effects) {
       if (always.includes(e)) continue;
       if (e.skip) { excluded.push({ text: e.text, reason: e.skip }); continue; }
-      if (!gateOk(e.gate, attrs)) { excluded.push({ text: e.text, reason: `${e.gate!.a} ${e.gate!.op === ">=" ? "≥" : ">"} ${e.gate!.b} 조건 불충족` }); continue; }
-      if (e.enemyState) { excluded.push({ text: e.text, reason: `적이 ${e.enemyState} 상태일 때만` }); continue; }
-      const t = triggerRate(e.cond, kit, r);
-      // 지속 시간이 없는 효과는 발동 즉시 1회성 → 지속형으로 보지 않음
-      const dur = e.duration ?? 0;
-      if (t.rate > 0) {
-        const rate = e.cooldown ? Math.min(t.rate, 1 / e.cooldown) : t.rate;
-        const stacks = dur > 0 ? Math.min(e.maxStack, rate * dur) : 0;
-        if (stacks <= 0) { excluded.push({ text: e.text, reason: "지속 시간 정보 없음" }); continue; }
-        take(e, stacks, stacks / e.maxStack, "via" in t ? t.via : "");
+      if (!gateOk(e.gate, attrs)) { excluded.push({ text: e.text, reason: `${e.gate!.a} ${e.gate!.op === ">=" ? "≥" : ">"} ${e.gate!.b} 조건 불충족 → 0` }); continue; }
+      // 적 상태에만 붙는 효과 (조건 없음) → 그 상태 가동률
+      if (e.enemyState && !e.cond) {
+        const eu = enemyUptime(e.enemyState);
+        if (eu.u <= 0) { excluded.push({ text: e.text, reason: `적이 ${e.enemyState} 상태일 때만 — ${eu.via}` }); continue; }
+        take(e, eu.u, eu.u, `적 ${eu.via}`);
         continue;
       }
-      // 혼자 못 만드는 조건 → 동료가 만들어 줄 기대값
-      const pt = pool ? poolTrigger(e.cond, pool) : undefined;
-      if (!pt) { excluded.push({ text: e.text, reason: "why" in t ? t.why : "발동 불가" }); continue; }
-      const rate = e.cooldown ? Math.min(pt.rate, 1 / e.cooldown) : pt.rate;
-      const stacks = dur > 0 ? pt.p * Math.min(e.maxStack, rate * dur) : 0;
-      if (stacks <= 0) { excluded.push({ text: e.text, reason: "지속 시간 정보 없음" }); continue; }
-      take(e, stacks, stacks / e.maxStack, `${pt.via} · 3인 편성 시 ${Math.round(pt.p * 100)}%`);
+      // 바로 앞 효과가 가득 찼을 때
+      if (e.afterFull && !prev) { excluded.push({ text: e.text, reason: "앞 효과가 발동하지 않음 → 0" }); continue; }
+      if (e.afterFull && prev) {
+        const full = prev.rate > 0 ? prev.maxStack / prev.rate : Infinity;
+        const dur = e.duration ?? 0;
+        // while: 스택마다 독립 지속 → 모두 살아 있을 확률 ≈ (평균 스택/최대)^최대 (근사) · reset: 쌓는 시간 + 유지 시간 주기
+        const u = e.afterFull === "while" ? Math.min(1, prev.stacks / prev.maxStack) ** prev.maxStack : dur > 0 ? dur / (dur + full) : 0;
+        if (u <= 0) { excluded.push({ text: e.text, reason: "앞 효과가 가득 차지 않음" }); continue; }
+        take(e, u, u, e.afterFull === "while" ? "앞 효과 최대 스택일 때" : `최대 스택 → ${dur}초 유지 후 초기화`);
+        continue;
+      }
+      const res = resolve(e.cond);
+      if ("why" in res) { excluded.push({ text: e.text, reason: res.why }); continue; }
+      const rate = e.cooldown ? Math.min(res.rate, 1 / e.cooldown) : res.rate;
+      // 추가 타격: 초당 피해에 직접 더함
+      if (e.extraScale) {
+        const perSec = Number.isFinite(rate) ? rate * res.p : 0;
+        extraHits.push({ text: e.text, rate: perSec, scale: e.extraScale, via: res.via });
+        continue;
+      }
+      const dur = e.duration ?? 0;
+      let stacks: number;
+      if (!Number.isFinite(rate)) stacks = e.maxStack * HIGH_HP_UPTIME; // 상시 조건
+      else if (dur > 0) stacks = res.p * Math.min(e.maxStack, rate * dur);
+      else if (e.maxStack > 1) {
+        // 지속 시간 없는 누적형: 뒤에 "가득 찬 뒤 N초 후 초기화"가 있으면 (쌓는 시간 평균 절반 + 유지 시간 가득) 평균
+        const reset = effects.slice(effects.indexOf(e) + 1).find((x) => x.afterFull === "reset");
+        const D = reset?.duration ?? 0;
+        const T = rate > 0 ? e.maxStack / rate : Infinity;
+        stacks = res.p * (reset && Number.isFinite(T) ? ((e.maxStack / 2) * T + e.maxStack * D) / (T + D) : e.maxStack);
+      }
+      else { excluded.push({ text: e.text, reason: "지속 시간 정보 없음" }); continue; }
+      prev = { rate: rate * res.p, stacks, maxStack: e.maxStack };
+      take(e, stacks, stacks / e.maxStack, res.via);
     }
   }
-  return { bag, atk: w.baseAtk[w.baseAtk.length - 1], levels, applied, team, excluded };
+  return { bag, atk: w.baseAtk[w.baseAtk.length - 1], levels, applied, team, extraHits, excluded };
 }
 
 const isPct = (e: TraitEffect) => e.zone !== "arts" && e.zone !== "flatAtk";
@@ -551,22 +663,31 @@ export { ELEM_OF };
 // ───────── 순위 ─────────
 
 
-/** 역할 — 무기 점수에서 "본인 피해"와 "메인 딜러 피해 증가"의 비중 */
+/** 역할 — 무기 점수에서 각 지표의 비중 (합 1) */
 export interface RoleWeight {
   /** 표시 이름 (메인 딜러 / 서브 딜러 / 서포터 …) */
   label: string;
-  /** 본인 피해 비중 α (0~1). 나머지 1−α 는 메인 딜러 피해 증가 */
+  /** 본인 피해 */
   self: number;
+  /** 메인 딜러 피해 증가 */
+  dealer: number;
+  /** 치유량 (치유 스킬이 있는 오퍼레이터만, 없으면 메인 딜러 몫으로) */
+  heal: number;
+  /** 생존(실질 생명력) */
+  survival: number;
 }
 
-/** 직업 → 역할 비중 (CLASS_INFO 역할 설명 기준). 메인 딜러는 남을 강화하는 효과가 의미 없고, 서포터는 본인 공격력이 의미 없다 */
+/**
+ * 직업 → 지표 비중 (CLASS_INFO 역할 설명 기준, 조정 가능한 가정값)
+ * 메인 딜러는 남을 강화하는 효과가 의미 없고, 서포터는 본인 공격력이 의미 없다
+ */
 export const ROLE_WEIGHT: Record<string, RoleWeight> = {
-  스트라이커: { label: "메인 딜러", self: 1 },
-  캐스터: { label: "서브 딜러", self: 0.5 },
-  가드: { label: "서브 딜러", self: 0.5 },
-  뱅가드: { label: "자원 수급", self: 0.25 },
-  서포터: { label: "서포터", self: 0 },
-  디펜더: { label: "디펜더", self: 0 },
+  스트라이커: { label: "메인 딜러", self: 1, dealer: 0, heal: 0, survival: 0 },
+  캐스터: { label: "서브 딜러", self: 0.5, dealer: 0.5, heal: 0, survival: 0 },
+  가드: { label: "서브 딜러", self: 0.5, dealer: 0.5, heal: 0, survival: 0 },
+  뱅가드: { label: "자원 수급", self: 0.25, dealer: 0.75, heal: 0, survival: 0 },
+  서포터: { label: "서포터", self: 0, dealer: 0.7, heal: 0.3, survival: 0 },
+  디펜더: { label: "디펜더", self: 0, dealer: 0.4, heal: 0.2, survival: 0.4 },
 };
 
 /** 메인 딜러 기준값 — 본인 피해 1위 무기를 낀 상태 */
@@ -587,34 +708,64 @@ export function dealerGain(line: TeamEffectLine, effect: TraitEffect | undefined
   return score(dealer.op, dealer.atk, addBag(dealer.bag, add)).overall / dealer.d - 1;
 }
 
+/** 이 오퍼레이터의 치유 스킬 빈도 (지속형은 주기) */
+function healRate(kit: OperatorKit, k: SkillKind, r: Record<"battle" | "combo" | "ult", number>): number {
+  if (k === "basic") return 0;
+  const pd = kit.periodic?.[k];
+  if (pd && /지속적으로/.test(kit.texts[k] ?? "")) return Math.max(r[k], (1 / pd.interval) * Math.min(1, pd.duration * r[k]));
+  return r[k];
+}
+
+/** 초당 치유량 지수 = Σ 빈도 × (기초 + 계수 × 능력치) × (1 + 치유 효율) */
+export function healIndex(kit: OperatorKit, attrs: Record<AttrName, number>, bag: StatBag): number {
+  const r = rates(kit.rotation, bag.ultGain);
+  let sum = 0;
+  for (const [k, list] of Object.entries(kit.heals ?? {}) as [SkillKind, { base: number; coef: number; attr?: AttrName }[]][]) {
+    const amount = list.reduce((s, h) => s + h.base + h.coef * (h.attr ? attrs[h.attr] : 0), 0);
+    sum += healRate(kit, k, r) * amount;
+  }
+  return sum * (1 + bag.healEff);
+}
+
+/** 실질 생명력 지수 = (기초 생명력 + 5 × 힘 증가) × (1 + 생명력%) × (1 + 보호 효과% — 보호를 주는 오퍼레이터만) */
+export function survivalIndex(kit: OperatorKit, bag: StatBag): number {
+  // 힘 1포인트 = 생명력 +5 ✅ (combat-mechanics §1). 레벨 90 기초 방어력이 0이라 방어력%는 무기 단독으로는 0
+  const hp = ((kit.hp ?? 0) + 5 * bag.str) * (1 + bag.hpPct);
+  const def = (kit.def ?? 0) * (1 + bag.defPct);
+  const shield = /보호/.test(Object.values(kit.texts).join("\n")) ? 1 + bag.shieldEff : 1;
+  return hp * ((def + 100) / 100) * shield;
+}
+
 export interface WeaponValueRank {
   id: string;
   name: string;
   rarity: number;
-  /** 본인 피해 */
+  /** 본인 피해 (스킬 회전) */
   score: ScoreResult;
-  /** 본인 피해 ÷ 본인 1위 무기 피해 */
-  selfRatio: number;
-  /** 메인 딜러 피해 증가율 기대값 (메인 딜러 전원 평균) */
+  /** 본인 피해 합계 = 스킬 + 이상 피해(아츠 강도) + 추가 타격 */
+  selfDamage: number;
+  /** 지표별 1위 대비 (0~1) */
+  parts: { self: number; dealer: number; heal: number; survival: number };
+  /** 메인 딜러 피해 증가율 기대값 (내부 지표) */
   dealerGain: number;
-  /** α × selfRatio + (1−α) × (1 + dealerGain) */
+  /** Σ 비중 × 지표 */
   value: number;
   /** 1위 대비 */
   relative: number;
   levels: number[];
   applied: WeaponEffectLine[];
   team: TeamEffectLine[];
+  extraHits: { text: string; rate: number; scale: number; via: string }[];
   excluded: { text: string; reason: string }[];
   bag: StatBag;
 }
 
 /**
- * 역할을 반영한 무기 점수
- *   value = α × (본인 피해 ÷ 본인 1위 무기 피해) + (1−α) × (1 + 메인 딜러 피해 증가율)
- *   - 메인 딜러(α=1): 본인 피해만. 팀원 강화 효과는 점수에서 뺀다
- *   - 서포터(α=0): 메인 딜러를 얼마나 올려 주는지만. 본인 공격력은 동점일 때만 비교
- *   - 메인 딜러 피해 증가율 = 메인 딜러 전원(스트라이커)에 대해, 효과를 그 딜러 능력치에 더했을 때 피해 증가율의 평균
- *     (속성이 맞지 않는 딜러는 0 → 속성 비율이 자연히 반영)
+ * 무기의 모든 능력치를 이 오퍼레이터에 맞춰 하나의 점수로
+ *   value = w_본인 × 본인 피해/1위 + w_딜러 × (1+메인 딜러 피해 증가)/1위 + w_치유 × 치유량/1위 + w_생존 × 실질 생명력/1위
+ *   - 본인 피해 = 스킬 회전 피해 + 일반 공격 + 이상 피해(아츠 폭발 160% / 물리 이상 120% × (1 + 아츠 강도/100)) + 추가 타격
+ *   - 메인 딜러 피해 증가 = 스트라이커 전원(각자 1위 무기)에 팀 효과를 더한 피해 증가율 평균 (속성 불일치 0)
+ *   - 비중은 ROLE_WEIGHT (치유 스킬이 없으면 치유 비중은 메인 딜러 몫으로)
  */
 export function rankWeaponsByValue(
   op: OperatorBase,
@@ -623,46 +774,66 @@ export function rankWeaponsByValue(
   weapons: [string, CombatWeapon][],
   refine = 0,
   pool?: TeamPool,
-  role: RoleWeight = { label: "메인 딜러", self: 1 },
+  role: RoleWeight = ROLE_WEIGHT.스트라이커,
   dealers: DealerRef[] = [],
 ): WeaponValueRank[] {
-  const attrs: Record<AttrName, number> = {
+  const attrs0: Record<AttrName, number> = {
     힘: op.attrs.힘 + base.str,
     민첩: op.attrs.민첩 + base.agi,
     지능: op.attrs.지능 + base.int,
     의지: op.attrs.의지 + base.wil,
   };
-  const rows = weapons.map(([id, w]) => {
-    const ev = evaluateWeapon(w, kit, attrs, refine, role.self < 1 ? pool : undefined);
-    return { id, name: w.name, rarity: w.rarity, ev, score: score(op, ev.atk, addBag(base, ev.bag)) };
-  });
-  const selfTop = Math.max(...rows.map((r) => r.score.overall)) || 1;
+  const heals = Object.keys(kit.heals ?? {}).length > 0;
+  const w = { ...role };
+  if (!heals) { w.dealer += w.heal; w.heal = 0; }
   const others = dealers.filter((d) => d.id !== kit.id);
-  const scored = rows.map((r) => {
-    const selfRatio = r.score.overall / selfTop;
+  if (!others.length) { w.self += w.dealer; w.dealer = 0; }
+  const anomalyState = kit.element === "물리" ? "물리 이상" : "아츠 폭발";
+
+  const rows = weapons.map(([id, wp]) => {
+    const ev = evaluateWeapon(wp, kit, attrs0, refine, pool);
+    const bag = addBag(base, ev.bag);
+    const sc = score(op, ev.atk, bag);
+    const r = rates(kit.rotation, bag.ultGain);
+    // 이상 피해: 자기 스킬로 이상을 일으키는 빈도 × 배율 × 공격력 × (1 + 아츠 강도/100) — 피해 보너스 적용 여부 ⚠️ 미확인 → 미적용
+    const at = triggerRate(`적에게 ${anomalyState}을 부여할 때`, kit, r);
+    const anomaly = at.rate > 0 && Number.isFinite(at.rate) ? at.rate * ANOMALY_SCALE[kit.element === "물리" ? "phys" : "arts"] * sc.atk * (1 + sc.artsIntensity / 100) : 0;
+    // 추가 타격: 일반 공격과 같은 피해 구간(속성·모든 피해, 치명, 받는 피해)
+    const unit = sc.byType.basic / (1 + sc.dmgPct.basic) * (1 + sc.dmgPct.basic - bag.dmg.basic);
+    const extra = ev.extraHits.reduce((s, x) => s + x.rate * x.scale * unit, 0);
+    const selfDamage = sc.overall + anomaly + extra;
     const gain = others.length
-      ? r.ev.team.reduce((s, l) => s + others.reduce((g, d) => g + dealerGain(l, l.effect, kit.element, d), 0) / others.length, 0)
+      ? ev.team.reduce((s, l) => s + others.reduce((g, d) => g + dealerGain(l, l.effect, kit.element, d), 0) / others.length, 0)
       : 0;
-    return { ...r, selfRatio, dealerGain: gain, value: role.self * selfRatio + (1 - role.self) * (1 + gain) };
+    return { id, name: wp.name, rarity: wp.rarity, ev, sc, selfDamage, gain, heal: heals ? healIndex(kit, sc.attrs, bag) : 0, surv: survivalIndex(kit, bag) };
   });
-  // 메인 딜러를 올려 주는 무기가 하나도 없으면(디펜더 등 — 생존 효과는 아직 미반영) 본인 피해로 대신 정렬
-  if (role.self < 1 && scored.every((r) => r.dealerGain === 0)) for (const r of scored) r.value = r.selfRatio;
-  // 동점(서포터의 팀 효과 없는 무기끼리)은 본인 피해로
-  scored.sort((a, b) => b.value - a.value || b.selfRatio - a.selfRatio);
+  const max = (f: (x: (typeof rows)[number]) => number) => Math.max(1e-9, ...rows.map(f));
+  const mSelf = max((x) => x.selfDamage);
+  const mDealer = max((x) => 1 + x.gain);
+  const mHeal = max((x) => x.heal);
+  const mSurv = max((x) => x.surv);
+  const scored = rows.map((x) => {
+    const parts = { self: x.selfDamage / mSelf, dealer: (1 + x.gain) / mDealer, heal: heals ? x.heal / mHeal : 0, survival: x.surv / mSurv };
+    const value = w.self * parts.self + w.dealer * parts.dealer + w.heal * parts.heal + w.survival * parts.survival;
+    return { ...x, parts, value };
+  });
+  scored.sort((a, b) => b.value - a.value || b.parts.self - a.parts.self);
   const top = scored[0]?.value || 1;
-  return scored.map((r) => ({
-    id: r.id,
-    name: r.name,
-    rarity: r.rarity,
-    score: r.score,
-    selfRatio: r.selfRatio,
-    dealerGain: r.dealerGain,
-    value: r.value,
-    relative: r.value / top,
-    levels: r.ev.levels,
-    applied: r.ev.applied,
-    team: r.ev.team,
-    excluded: r.ev.excluded,
-    bag: r.ev.bag,
+  return scored.map((x) => ({
+    id: x.id,
+    name: x.name,
+    rarity: x.rarity,
+    score: x.sc,
+    selfDamage: x.selfDamage,
+    parts: x.parts,
+    dealerGain: x.gain,
+    value: x.value,
+    relative: x.value / top,
+    levels: x.ev.levels,
+    applied: x.ev.applied,
+    team: x.ev.team,
+    extraHits: x.ev.extraHits,
+    excluded: x.ev.excluded,
+    bag: x.ev.bag,
   }));
 }

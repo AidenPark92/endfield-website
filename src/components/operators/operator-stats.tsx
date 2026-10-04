@@ -10,14 +10,25 @@ const ATTR_ORDER: AttrName[] = ["힘", "민첩", "지능", "의지"];
 const fmt = (n: number) => Math.floor(n).toLocaleString("ko-KR"); // TODO: 인게임 표시가 내림인지 반올림인지 확인
 
 /** 레벨별 기본 능력치 — 레벨을 바꾸면 수치가 바로 바뀜 */
-export function OperatorStatsPanel({ stats, milestones }: { stats?: OperatorStats; milestones?: StatMilestones }) {
+export function OperatorStatsPanel({
+  stats,
+  milestones,
+  scaleMax,
+}: {
+  stats?: OperatorStats;
+  milestones?: StatMilestones;
+  /** 막대 기준값 = 전체 오퍼레이터 레벨 90 능력치 최댓값 (레벨·캐릭터끼리 비교 가능하게 고정) */
+  scaleMax: number;
+}) {
   const [level, setLevel] = useState(MAX_LEVEL);
   // 레벨별 곡선(게임 테이블)이 있으면 모든 레벨, 없으면 공식 위키 6개 레벨만
   const s = stats ? statsAt(stats, level) : milestones ? milestoneStatsAt(milestones, level) : undefined;
   const mainAttr = stats?.mainAttr ?? milestones?.mainAttr;
   const subAttr = stats?.subAttr ?? milestones?.subAttr;
   if (!s) return null;
-  const attrMax = Math.max(...ATTR_ORDER.map((a) => s.attrs[a]));
+  // 레벨 90 값 (막대 뒤 옅은 표시 — 얼마나 더 오르는지)
+  const full = stats ? statsAt(stats, MAX_LEVEL) : milestones ? milestoneStatsAt(milestones, MAX_LEVEL) : undefined;
+  const w = (v: number) => `${Math.min(100, (v / scaleMax) * 100)}%`;
 
   return (
     <div className="border bg-card">
@@ -68,10 +79,13 @@ export function OperatorStatsPanel({ stats, milestones }: { stats?: OperatorStat
             <li key={a} className="flex items-center gap-2 text-sm">
               <span className="w-10 shrink-0 font-medium">{a}</span>
               <span className="w-8 shrink-0 text-[10px] font-semibold text-accent-strong">{role}</span>
-              <span className="relative h-2 flex-1 bg-muted">
+              <span className="relative h-2 flex-1 bg-muted" title={full ? `레벨 90: ${fmt(full.attrs[a])}` : undefined}>
+                {full && level < MAX_LEVEL && (
+                  <span className="absolute inset-y-0 left-0 border-r border-foreground/40 bg-foreground/10" style={{ width: w(full.attrs[a]) }} />
+                )}
                 <span
-                  className={cn("absolute inset-y-0 left-0", role ? "bg-foreground" : "bg-muted-foreground/40")}
-                  style={{ width: `${(s.attrs[a] / attrMax) * 100}%` }}
+                  className={cn("absolute inset-y-0 left-0 transition-[width]", role === "주" ? "bg-accent" : role ? "bg-foreground" : "bg-muted-foreground/50")}
+                  style={{ width: w(s.attrs[a]) }}
                 />
               </span>
               <span className="w-12 shrink-0 text-right font-mono text-base font-semibold tabular-nums">{fmt(s.attrs[a])}</span>
@@ -82,7 +96,7 @@ export function OperatorStatsPanel({ stats, milestones }: { stats?: OperatorStat
 
       <p className="border-t px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
         치명타 확률 {Math.round(s.critRate * 100)}% · 치명타 피해 {Math.round(s.critDmg * 100)}% (기본값). 무기·장비·잠재·재능 보너스는
-        포함하지 않은 캐릭터 기본치예요. 능력치 보너스 = 1 + 0.5%×주 능력치 + 0.2%×보조 능력치.
+        포함하지 않은 캐릭터 기본치예요. 막대 끝 = 전체 오퍼레이터 레벨 90 능력치 최댓값({fmt(scaleMax)}), 옅은 부분 = 이 오퍼레이터의 레벨 90 값. 능력치 보너스 = 1 + 0.5%×주 능력치 + 0.2%×보조 능력치.
       </p>
     </div>
   );
