@@ -22,6 +22,9 @@ data/                     게임 데이터 (JSON) — 계산은 여기 값만 �
   operator-profiles.json  직업·기본 정보·특기/취미·스킬 이름 + 사이트에서 쓴 스토리 요약 (원문은 위키 링크)
   operator-images.json    캐릭터 이미지 매핑 (전신 / 얼굴)
   raw/                    위키에서 수집한 원본
+docs/combat/               전투 메커니즘 기준 문서 (데미지 계산기·측정 수치화는 여기 기준)
+  combat-mechanics.md     전투 구조 · 아츠/물리 이상 수치 · 데미지 공식 (출처·신뢰도 표기)
+  combat-verification.md  미확인 수치 인게임 측정 방법
 scripts/build-data.mjs    raw → data/*.json 정규화
 scripts/build-operator-images.py  src/images/캐릭터 → public/operators (전신 720px, 얼굴 200px) + data/operator-images.json
 scripts/build-weapon-images.py  src/images/무기 → public/weapons (아이콘 webp, 회전 영상 webm/mp4, 포스터) + data/weapon-images.json
