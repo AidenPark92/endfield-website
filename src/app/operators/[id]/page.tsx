@@ -185,8 +185,8 @@ function Info({ k, v }: { k: string; v?: string }) {
 function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
     <section>
-      <div className="mb-2 flex items-baseline gap-2">
-        <h2 className="text-base font-bold">{title}</h2>
+      <div className="mb-2 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+        <h2 className="shrink-0 text-lg font-bold">{title}</h2>
         {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
       </div>
       {children}

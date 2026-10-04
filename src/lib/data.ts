@@ -65,7 +65,12 @@ export function getCombatCharacter(id: string): CombatCharacter | undefined {
     mainAttr: c.mainAttr,
     subAttr: c.subAttr,
     critRate: c.critRate,
-    skillGroups: c.skillGroups,
+    // 게임 텍스트에 설명이 없는 스킬(결 연계 스킬)은 공식 위키 설명으로 채움
+    skillGroups: c.skillGroups.map((g) =>
+      g.desc
+        ? g
+        : { ...g, desc: opDetails[id]?.skills.filter((w) => w.type === g.type).map((w) => `[${w.name}]\n${w.description}`).join("\n\n") || null },
+    ),
     potentials: c.potentials,
     talents: { attributes: c.talents.attributes, passives: c.talents.passives },
   };

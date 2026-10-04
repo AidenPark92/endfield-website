@@ -74,7 +74,7 @@ export function OperatorStatsPanel({ stats, milestones }: { stats?: OperatorStat
                   style={{ width: `${(s.attrs[a] / attrMax) * 100}%` }}
                 />
               </span>
-              <span className="w-10 shrink-0 text-right font-mono tabular-nums">{fmt(s.attrs[a])}</span>
+              <span className="w-12 shrink-0 text-right font-mono text-base font-semibold tabular-nums">{fmt(s.attrs[a])}</span>
             </li>
           );
         })}
@@ -91,8 +91,8 @@ export function OperatorStatsPanel({ stats, milestones }: { stats?: OperatorStat
 function Stat({ k, v, hint, strong }: { k: string; v: string; hint?: string; strong?: boolean }) {
   return (
     <div className="p-3">
-      <dt className="text-[11px] text-muted-foreground">{k}</dt>
-      <dd className={cn("font-mono text-lg tabular-nums", strong && "font-bold")}>{v}</dd>
+      <dt className="text-xs text-muted-foreground">{k}</dt>
+      <dd className={cn("font-mono text-2xl font-semibold tabular-nums", strong && "font-bold text-accent-strong")}>{v}</dd>
       {hint && <dd className="text-[10px] text-muted-foreground">{hint}</dd>}
     </div>
   );
