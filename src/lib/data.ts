@@ -156,12 +156,48 @@ function rotationOf(id: string): Rotation | undefined {
     // 연계 스킬이 주는 궁극기 에너지 (스킬 데이터 usp, 없으면 공통 10 ✅)
     comboEnergy: Number(combo[0].bb.usp ?? 10),
     weight: {
-      battle: damageWeight(battle.flatMap((l) => l.display ?? [])),
-      combo: damageWeight(combo.flatMap((l) => l.display ?? [])),
-      ult: damageWeight(ult.flatMap((l) => l.display ?? [])),
+      battle: damageWeight(keep(id, "배틀 스킬", battle)),
+      combo: damageWeight(keep(id, "연계 스킬", combo)),
+      ult: damageWeight(keep(id, "궁극기", ult)),
       basic: basicWeight(id),
     },
+    moved: movedOf(id, { battle, combo, ult }),
   };
+}
+
+const KIND_OF_TYPE: Record<string, "battle" | "combo" | "ult"> = { "배틀 스킬": "battle", "연계 스킬": "combo", 궁극기: "ult" };
+
+/** 스킬 설명의 "X…로 간주" → [이름, 대상 종류] (공식 위키 설명) */
+function considered(id: string, type: string): { name: string; to: "battle" | "combo" | "ult" | "anomaly" }[] {
+  const out: { name: string; to: "battle" | "combo" | "ult" | "anomaly" }[] = [];
+  for (const sk of opDetails[id]?.skills.filter((x) => x.type === type) ?? []) {
+    for (const line of sk.description.split("\n")) {
+      const m = line.match(/(강타|아츠 폭발|물리 이상|배틀 스킬|연계 스킬|궁극기)(?:의)? ?(?:피해)?로 간주/);
+      if (!m) continue;
+      const name = line.match(/^([^:\s]+)\s*:/)?.[1] ?? line.match(/^([^\s]+?)(?:이|가|은|는)\s/)?.[1];
+      if (!name) continue;
+      const to = KIND_OF_TYPE[m[1]] ?? "anomaly";
+      if (to !== KIND_OF_TYPE[type]) out.push({ name, to });
+    }
+  }
+  return out;
+}
+
+/** 간주 피해를 뺀 표시 항목 */
+function keep(id: string, type: string, levels: RawLevel[]) {
+  const names = considered(id, type).map((c) => c.name);
+  return levels.flatMap((l) => l.display ?? []).filter((d) => !names.some((n) => d.label.startsWith(n)));
+}
+
+function movedOf(id: string, lv: Record<"battle" | "combo" | "ult", RawLevel[]>): Rotation["moved"] {
+  const out: NonNullable<Rotation["moved"]> = [];
+  for (const [type, from] of Object.entries(KIND_OF_TYPE)) {
+    for (const c of considered(id, type)) {
+      const w = damageWeight(lv[from].flatMap((l) => l.display ?? []).filter((d) => d.label.startsWith(c.name)));
+      if (w > 0) out.push({ from, to: c.to, weight: w, name: c.name });
+    }
+  }
+  return out;
 }
 
 /** 스킬 표의 피해 배율 항목 수 (타수 근사) */

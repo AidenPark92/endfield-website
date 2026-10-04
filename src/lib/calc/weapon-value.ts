@@ -67,8 +67,11 @@ export const STATE_DURATION: Record<string, number> = {
   "아츠 부착": 20, "열기 부착": 20, "전기 부착": 20, "냉기 부착": 20, "자연 부착": 20,
   "방어 불능": 20, 동결: 5.75, 감전: 12, 부식: 15, 연소: 10, "갑옷 파괴": 12, "물리 취약": 12, "아츠 취약": 12,
 };
-/** 이상 피해 배율: 아츠 폭발 160% ✅, 띄우기·넘어뜨리기 120% ✅ (물리 이상 대표값) */
-export const ANOMALY_SCALE = { arts: 1.6, phys: 1.2 };
+/**
+ * 이상 피해 배율 (combat-mechanics §5·6): 아츠 폭발 160% ✅, 강타 150% + 150% × 소모 스택 ✅, 갑옷 파괴 50% + 50% × 스택 ✅, 띄우기·넘어뜨리기 120% ✅
+ * 스택은 최대 4 소모로 계산 (가정)
+ */
+export const ANOMALY_SCALE = { 아츠폭발: 1.6, 강타: 1.5 + 1.5 * 4, "갑옷 파괴": 0.5 + 0.5 * 4, 띄우기: 1.2 };
 
 /** 팀원 수 (4인 편성) */
 export const TEAMMATES = 3;
@@ -788,7 +791,11 @@ export function rankWeaponsByValue(
   if (!heals) { w.dealer += w.heal; w.heal = 0; }
   const others = dealers.filter((d) => d.id !== kit.id);
   if (!others.length) { w.self += w.dealer; w.dealer = 0; }
-  const anomalyState = kit.element === "물리" ? "물리 이상" : "아츠 폭발";
+  // 이 오퍼레이터가 스스로 일으키는 이상: 물리는 강타 > 갑옷 파괴 > 띄우기·넘어뜨리기, 아츠는 아츠 폭발
+  const anomalyKinds: [string, number][] =
+    kit.element === "물리"
+      ? [["강타", ANOMALY_SCALE.강타], ["갑옷 파괴", ANOMALY_SCALE["갑옷 파괴"]], ["물리 이상", ANOMALY_SCALE.띄우기]]
+      : [["아츠 폭발", ANOMALY_SCALE.아츠폭발]];
 
   const rows = weapons.map(([id, wp]) => {
     const ev = evaluateWeapon(wp, kit, attrs0, refine, pool);
@@ -796,8 +803,17 @@ export function rankWeaponsByValue(
     const sc = score(op, ev.atk, bag);
     const r = rates(kit.rotation, bag.ultGain);
     // 이상 피해: 자기 스킬로 이상을 일으키는 빈도 × 배율 × 공격력 × (1 + 아츠 강도/100) — 피해 보너스 적용 여부 ⚠️ 미확인 → 미적용
-    const at = triggerRate(`적에게 ${anomalyState}을 부여할 때`, kit, r);
-    const anomaly = at.rate > 0 && Number.isFinite(at.rate) ? at.rate * ANOMALY_SCALE[kit.element === "물리" ? "phys" : "arts"] * sc.atk * (1 + sc.artsIntensity / 100) : 0;
+    // 이상 피해 = 공격력 × 배율 × (1 + 아츠 강도/100) — 피해 보너스·치명 적용 여부 ⚠️ 미확인 → 미적용
+    const ai = 1 + sc.artsIntensity / 100;
+    let eventRate = 0;
+    let eventScale = 0;
+    for (const [st, scale] of anomalyKinds) {
+      const at = triggerRate(`적에게 ${st}을 부여할 때`, kit, r);
+      if (at.rate > 0 && Number.isFinite(at.rate)) { eventRate = at.rate; eventScale = scale; break; }
+    }
+    // "강타 피해로 간주" 같은 스킬 피해는 이상 피해 구간으로
+    const movedAnomaly = (kit.rotation.moved ?? []).filter((m) => m.to === "anomaly").reduce((s2, m) => s2 + r[m.from] * m.weight, 0);
+    const anomaly = (eventRate * eventScale + movedAnomaly) * sc.atk * ai;
     // 추가 타격: 일반 공격과 같은 피해 구간(속성·모든 피해, 치명, 받는 피해)
     const unit = sc.byType.basic / (1 + sc.dmgPct.basic) * (1 + sc.dmgPct.basic - bag.dmg.basic);
     const extra = ev.extraHits.reduce((s, x) => s + x.rate * x.scale * unit, 0);

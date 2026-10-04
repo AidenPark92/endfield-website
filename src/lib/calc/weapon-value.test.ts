@@ -148,3 +148,12 @@ describe("모든 능력치 반영", () => {
     }
   });
 });
+
+describe("간주 피해 · 이상 피해", () => {
+  it("미브: 개천(강타 피해로 간주)은 이상 피해 → 아츠 강도 무기(환상통)가 스킬 피해 무기(헤라펜거)보다 위, 게임 추천 3종이 1~3위", { timeout: 120000 }, () => {
+    const r = getBuildRecommendation(operators.find((o) => o.name === "미브")!.id)!;
+    const names = r.weapons.map((w) => w.name);
+    expect(names.indexOf("환상통")).toBeLessThan(names.indexOf("헤라펜거"));
+    expect(new Set(names.slice(0, 3))).toEqual(new Set(["적영", "모범", "환상통"]));
+  });
+});

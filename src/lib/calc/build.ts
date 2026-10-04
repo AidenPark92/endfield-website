@@ -225,6 +225,11 @@ export interface Rotation {
     /** 일반 공격 1세트(최대 단계) 피해 배율 합 — 처형·낙하 제외 */
     basic?: number;
   };
+  /**
+   * "~로 간주" 피해: 스킬 설명에 다른 종류로 간주한다고 적힌 부분(미브 개천 = 강타 피해, 카뮤 추적 = 연계 스킬)
+   * from 스킬의 빈도로 쓰고, to 종류의 피해 보너스를 받음. to = "anomaly" 면 이상 피해(아츠 강도)로
+   */
+  moved?: { from: "battle" | "combo" | "ult"; to: DmgType | "anomaly"; weight: number; name: string }[];
 }
 
 /**
@@ -285,7 +290,8 @@ export function score(op: OperatorBase, weaponAtk: number, bag: StatBag): ScoreR
     // 피해 배율 정보가 없으면 세 종류를 같은 크기로
     const weight = (t: "battle" | "combo" | "ult") => (totalW > 0 ? w[t] : 1);
     const basic = op.rotation.weight.basic ? (op.rotation.weight.basic / BASIC_CHAIN_SECONDS) * byType.basic : 0;
-    const overall = (["battle", "combo", "ult"] as const).reduce((s, t) => s + r[t] * weight(t) * byType[t], 0) + basic;
+    const moved = (op.rotation.moved ?? []).reduce((s, m) => (m.to === "anomaly" ? s : s + r[m.from] * m.weight * byType[m.to]), 0);
+    const overall = (["battle", "combo", "ult"] as const).reduce((s, t) => s + r[t] * weight(t) * byType[t], 0) + basic + moved;
     return { atk, attrBonus, critRate, critDmg, byType, overall, rates: r, attrs, dmgPct, artsIntensity: bag.artsIntensity };
   }
   const overall = DMG_TYPES.reduce((s, t) => s + byType[t], 0) / DMG_TYPES.length;
