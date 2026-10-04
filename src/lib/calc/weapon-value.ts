@@ -19,7 +19,7 @@
 //   - 일반 공격 피해 (일반 공격 회전 속도 데이터 없음) — TODO
 import type { Blackboard } from "@/types/combat";
 import type { CombatWeapon } from "@/types/build";
-import { addBag, emptyBag, bagFromKey, rates, score, BASIC_CHAIN_SECONDS, ELEM_OF, type DmgType, type OperatorBase, type Rotation, type ScoreResult, type StatBag } from "./build";
+import { addBag, emptyBag, bagFromKey, rates, score, BASIC_CHAIN_SECONDS, INCLUDE_BASIC_ATTACK, ELEM_OF, type DmgType, type OperatorBase, type Rotation, type ScoreResult, type StatBag } from "./build";
 import type { AttrName } from "@/types/game";
 
 export type SkillKind = "basic" | "battle" | "combo" | "ult";
@@ -71,6 +71,8 @@ export const STATE_DURATION: Record<string, number> = {
  * 이상 피해 배율 (combat-mechanics §5·6): 아츠 폭발 160% ✅, 강타 150% + 150% × 소모 스택 ✅, 갑옷 파괴 50% + 50% × 스택 ✅, 띄우기·넘어뜨리기 120% ✅
  * 스택은 최대 4 소모로 계산 (가정)
  */
+/** 이상 피해 레벨 계수 (레벨 90): 물리 이상 1 + (Lv−1)/392, 아츠 폭발·반응·쇄빙 1 + (Lv−1)/196 📘 combat-mechanics §7 */
+export const ANOMALY_LEVEL = { phys: 1 + 89 / 392, arts: 1 + 89 / 196 };
 export const ANOMALY_SCALE = { 아츠폭발: 1.6, 강타: 1.5 + 1.5 * 4, "갑옷 파괴": 0.5 + 0.5 * 4, 띄우기: 1.2 };
 
 /** 팀원 수 (4인 편성) */
@@ -430,6 +432,7 @@ export function effectBag(e: TraitEffect, kit: OperatorKit, value: number): Stat
       break;
     case "dmg": {
       if (!elemOk) return undefined;
+      if (!INCLUDE_BASIC_ATTACK && e.types?.every((t) => t === "basic")) return undefined;
       if (e.types) for (const t of e.types) b.dmg[t] += value;
       else b.dmg.all += value;
       break;
@@ -550,7 +553,11 @@ export function evaluateWeapon(w: CombatWeapon, kit: OperatorKit, baseAttrs: Rec
     }
     if (used) {
       if (e.self && effectBag(e, kit, 1)) applied.push({ text: e.text, uptime, value: e.value, applied: e.value * stacks, pct: isPct(e), via, target: targetOf(e), stacks, maxStack: e.maxStack });
-    } else excluded.push({ text: e.text, reason: "속성이 맞지 않음 → 0" });
+    } else
+      excluded.push({
+        text: e.text,
+        reason: !INCLUDE_BASIC_ATTACK && e.zone === "dmg" && e.types?.every((t) => t === "basic") ? "일반 공격 피해 — 일반 공격 시간 실측 전이라 미반영" : "속성이 맞지 않음 → 0",
+      });
   };
   if (trait) {
     const bb = trait.levels[levels.at(-1)! - 1]?.bb ?? {};
@@ -813,7 +820,7 @@ export function rankWeaponsByValue(
     }
     // "강타 피해로 간주" 같은 스킬 피해는 이상 피해 구간으로
     const movedAnomaly = (kit.rotation.moved ?? []).filter((m) => m.to === "anomaly").reduce((s2, m) => s2 + r[m.from] * m.weight, 0);
-    const anomaly = (eventRate * eventScale + movedAnomaly) * sc.atk * ai;
+    const anomaly = (eventRate * eventScale + movedAnomaly) * sc.atk * ai * (kit.element === "물리" ? ANOMALY_LEVEL.phys : ANOMALY_LEVEL.arts);
     // 추가 타격: 일반 공격과 같은 피해 구간(속성·모든 피해, 치명, 받는 피해)
     const unit = sc.byType.basic / (1 + sc.dmgPct.basic) * (1 + sc.dmgPct.basic - bag.dmg.basic);
     const extra = ev.extraHits.reduce((s, x) => s + x.rate * x.scale * unit, 0);

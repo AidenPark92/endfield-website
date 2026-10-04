@@ -237,6 +237,11 @@ export interface Rotation {
  * 비조작 오퍼레이터도 자동 일반 공격을 하므로(combat-mechanics §1) 모든 오퍼레이터에 같은 가정 적용
  */
 export const BASIC_CHAIN_SECONDS = 4;
+/**
+ * 일반 공격 피해를 점수에 넣을지 — 1세트 시간이 실측되지 않아 기본값은 넣지 않음 (데이터 규칙: 미확인 값은 기본 미적용)
+ * 4초 가정으로 넣으면 일반 공격이 피해의 70%까지 차지해 공격력%·피해% 무기가 과대평가됨 (미브 사례)
+ */
+export const INCLUDE_BASIC_ATTACK = false;
 
 export const SP_REGEN_INTERVAL = 12.5;
 export const BATTLE_ULT_ENERGY = 6.5;
@@ -289,7 +294,7 @@ export function score(op: OperatorBase, weaponAtk: number, bag: StatBag): ScoreR
     const totalW = w.battle + w.combo + w.ult;
     // 피해 배율 정보가 없으면 세 종류를 같은 크기로
     const weight = (t: "battle" | "combo" | "ult") => (totalW > 0 ? w[t] : 1);
-    const basic = op.rotation.weight.basic ? (op.rotation.weight.basic / BASIC_CHAIN_SECONDS) * byType.basic : 0;
+    const basic = INCLUDE_BASIC_ATTACK && op.rotation.weight.basic ? (op.rotation.weight.basic / BASIC_CHAIN_SECONDS) * byType.basic : 0;
     const moved = (op.rotation.moved ?? []).reduce((s, m) => (m.to === "anomaly" ? s : s + r[m.from] * m.weight * byType[m.to]), 0);
     const overall = (["battle", "combo", "ult"] as const).reduce((s, t) => s + r[t] * weight(t) * byType[t], 0) + basic + moved;
     return { atk, attrBonus, critRate, critDmg, byType, overall, rates: r, attrs, dmgPct, artsIntensity: bag.artsIntensity };
