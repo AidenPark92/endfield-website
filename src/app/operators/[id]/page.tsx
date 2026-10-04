@@ -26,7 +26,6 @@ const statLabel = new Map(
   (["base", "extra", "skill"] as const).flatMap((c) => essenceStats[c].map((s) => [`${c}:${s.id}`, s.label] as const)),
 );
 const labelOf = (c: StatCategory, id: string) => statLabel.get(`${c}:${id}`) ?? id;
-const SKILL_ORDER = ["일반 공격", "배틀 스킬", "연계 스킬", "궁극기"];
 
 export default async function OperatorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -115,20 +114,6 @@ export default async function OperatorPage({ params }: { params: Promise<{ id: s
                 </li>
               ))}
               {p.specialties.length + p.hobbies.length === 0 && <li className="text-sm text-muted-foreground">공개된 정보가 없어요.</li>}
-            </ul>
-          </Section>
-
-          {/* 스킬 */}
-          <Section title="스킬">
-            <ul className="divide-y border bg-card">
-              {[...p.skills]
-                .sort((a, b) => SKILL_ORDER.indexOf(a.type) - SKILL_ORDER.indexOf(b.type))
-                .map((s) => (
-                  <li key={s.type} className="flex items-center gap-3 px-3 py-2.5">
-                    <span className="w-16 shrink-0 text-[11px] font-semibold text-muted-foreground">{s.type}</span>
-                    <span className="font-semibold">{s.name}</span>
-                  </li>
-                ))}
             </ul>
           </Section>
 

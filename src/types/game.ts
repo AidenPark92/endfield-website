@@ -69,7 +69,6 @@ export interface OperatorProfile {
   birthday: string;
   race: string;
   cv: { ko: string; ja: string; en: string; zh: string };
-  skills: { type: string; name: string }[];
   specialties: { name: string; title: string }[];
   hobbies: { name: string; title: string }[];
   /** 위키 소개를 바탕으로 사이트에서 쓴 요약 */

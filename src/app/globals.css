@@ -101,6 +101,8 @@
   }
   html {
     color-scheme: light;
+    /* 필터로 목록 길이가 바뀌어도 스크롤바 자리를 항상 비워 둬서 가운데 영역이 좌우로 흔들리지 않게 */
+    scrollbar-gutter: stable;
   }
   html.dark {
     color-scheme: dark;

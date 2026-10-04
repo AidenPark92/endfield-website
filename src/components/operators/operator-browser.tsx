@@ -75,11 +75,19 @@ export function OperatorBrowser({ operators }: { operators: Operator[] }) {
           <span className="ml-auto text-xs text-muted-foreground">
             <b className="font-mono text-sm text-foreground">{list.length}</b> / {operators.length}명
           </span>
-          {filtered && (
-            <button onClick={reset} className="inline-flex h-8 cursor-pointer items-center gap-1 px-2 text-xs hover:bg-muted">
-              <RotateCcw className="size-3.5" /> 초기화
-            </button>
-          )}
+          {/* 버튼 자리를 항상 차지하게 두고 숨기기만 해서, 필터를 걸 때 줄 배치가 바뀌지 않게 */}
+          <button
+            onClick={reset}
+            disabled={!filtered}
+            aria-hidden={!filtered}
+            tabIndex={filtered ? 0 : -1}
+            className={cn(
+              "inline-flex h-8 cursor-pointer items-center gap-1 px-2 text-xs hover:bg-muted",
+              !filtered && "invisible",
+            )}
+          >
+            <RotateCcw className="size-3.5" /> 초기화
+          </button>
         </div>
 
         <FilterRow label="속성">
@@ -116,7 +124,8 @@ export function OperatorBrowser({ operators }: { operators: Operator[] }) {
       </div>
 
       {/* 목록 */}
-      <ul className="mt-5 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
+      {/* 결과 수가 줄어도 페이지 높이가 급격히 줄지 않게 최소 높이 확보 (content-start: 카드가 위로 붙도록) */}
+      <ul className="mt-5 grid min-h-[70dvh] content-start grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
         {list.map((o) => (
           <li key={o.id}>
             <Link
