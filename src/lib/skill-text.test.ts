@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { effectBlackboard, evalExpr, formatValue, renderTemplate } from "./skill-text";
 import combatJson from "@data/combat/characters.json";
+import { getCombatCharacter } from "@/lib/data";
 import type { CombatCharacter } from "@/types/combat";
 
 const chars = (combatJson as unknown as { characters: Record<string, CombatCharacter> }).characters;
@@ -92,5 +93,29 @@ describe("combat/characters.json 무결성", () => {
     expect(disp("4", "견천하", "combo_skill", 7)[0].value).toBe("192%");
     expect(disp("8", "돌려가며 썰기!", "attack2", 8)[0].value).toBe("57%");
     expect(disp("10", "썬더랜스 · 결전의 떨림", "ultimate_skill", 7)[0].value).toBe("675%");
+  });
+});
+
+describe("형태 스킬 (결: 진결 · 지혜 / 진결 · 의지)", () => {
+  const c = getCombatCharacter("1040")!;
+  const byType = (t: string) => c.skillGroups.find((g) => g.type === t)!;
+  it("배틀·연계·궁극기는 형태 2개, 일반 공격은 없음", () => {
+    expect(byType("일반 공격").forms).toBeUndefined();
+    for (const t of ["배틀 스킬", "연계 스킬", "궁극기"]) expect(byType(t).forms?.map((f) => f.name)).toEqual(["진결 · 지혜", "진결 · 의지"]);
+  });
+  it("형태별 수치가 다르다 (배틀 스킬 M3 피해 배율 500% / 300%, 연계 쿨타임 12초 / 18초)", () => {
+    const val = (t: string, form: number, label: string) => byType(t).forms![form].rows.find((r) => r.label === label)!.values[11];
+    expect(val("배틀 스킬", 0, "피해 배율")).toBe("500%");
+    expect(val("배틀 스킬", 1, "피해 배율")).toBe("300%");
+    expect(val("연계 스킬", 0, "쿨타임")).toBe("12초");
+    expect(val("연계 스킬", 1, "쿨타임")).toBe("18초");
+  });
+  it("게임 데이터 쪽 형태별 배율 키와 일치 (atk_scale_wisd 5 = 500%, atk_scale_will 3 = 300%)", () => {
+    const bb = byType("배틀 스킬").skills[0].levels[11].bb;
+    expect(bb.atk_scale_wisd).toBe(5);
+    expect(bb.atk_scale_will).toBe(3);
+  });
+  it("기본 형태는 레벨 90 기본 능력치로 정한다", () => {
+    expect(["진결 · 지혜", "진결 · 의지"]).toContain(c.defaultForm);
   });
 });

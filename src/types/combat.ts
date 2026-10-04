@@ -34,12 +34,26 @@ export interface CombatSkill {
   levels: SkillLevel[];
 }
 
+/** 능력치 조건에 따라 스킬 형태가 바뀌는 오퍼레이터(결: 진결 · 지혜 / 진결 · 의지)의 형태별 정보 */
+export interface SkillForm {
+  /** 예: "진결 · 지혜" */
+  name: string;
+  /** 예: "지능 수치 ≥ 의지 수치, 진결 · 지혜 활성화됨." */
+  condition: string;
+  /** 형태별 설명 (조건 줄 제외) */
+  desc: string;
+  /** 형태별 레벨 1~12 수치 (공식 위키 표 기준) */
+  rows: { label: string; values: string[] }[];
+}
+
 export interface SkillGroup {
   type: "일반 공격" | "배틀 스킬" | "연계 스킬" | "궁극기";
   groupId: string;
   name: string | null;
   desc: string | null;
   skills: CombatSkill[];
+  /** 형태가 둘 이상인 스킬만 */
+  forms?: SkillForm[];
 }
 
 export interface CombatPotential {
@@ -79,4 +93,6 @@ export interface CombatCharacter {
   skillGroups: SkillGroup[];
   potentials: CombatPotential[];
   talents: { attributes: CombatAttrNode[]; passives: CombatPassive[] };
+  /** 형태 스킬이 있을 때 기본 능력치(레벨 90, 무기·장비 제외) 기준 기본 형태 이름 */
+  defaultForm?: string;
 }

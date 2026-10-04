@@ -24,6 +24,10 @@ export function CombatPanel({ data }: { data: CombatCharacter }) {
   const [tab, setTab] = useState<Tab>("skills");
   const [groupIdx, setGroupIdx] = useState(0);
   const [level, setLevel] = useState(MAX_LEVEL);
+  // 형태 스킬(결): 형태는 능력치로 정해져 모든 스킬에 함께 적용되므로 패널 단위로 한 번만 고른다
+  const formNames = useMemo(() => data.skillGroups.find((g) => g.forms)?.forms?.map((f) => f.name) ?? [], [data.skillGroups]);
+  const formConditions = useMemo(() => data.skillGroups.find((g) => g.forms)?.forms?.map((f) => f.condition) ?? [], [data.skillGroups]);
+  const [form, setForm] = useState(data.defaultForm ?? formNames[0]);
   // 일반 공격 → 배틀 → 연계 → 궁극기 순서 (결처럼 형태가 둘인 스킬은 나란히)
   const groups = useMemo(() => [...data.skillGroups].sort((a, b) => ORDER.indexOf(a.type) - ORDER.indexOf(b.type)), [data.skillGroups]);
   const group = groups[groupIdx];
@@ -58,6 +62,33 @@ export function CombatPanel({ data }: { data: CombatCharacter }) {
 
       {tab === "skills" && (
         <>
+          {formNames.length > 1 && (
+            <div className="border-b bg-muted/40 p-3">
+              <p className="mb-2 text-xs text-muted-foreground">
+                이 오퍼레이터는 <b className="text-foreground">능력치에 따라 배틀·연계·궁극기 스킬 형태가 바뀌어요.</b> 형태를 고르면 모든 스킬 수치가 바뀝니다. (실제 형태는 무기·장비를 포함한 능력치로 정해져요 · 형태별 수치는 공식 위키 표 기준)
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="스킬 형태">
+                {formNames.map((f, i) => (
+                  <button
+                    key={f}
+                    role="radio"
+                    aria-checked={form === f}
+                    onClick={() => setForm(f)}
+                    className={cn(
+                      "flex cursor-pointer flex-col items-start border-2 px-3 py-2 text-left transition-colors",
+                      form === f ? "border-foreground bg-background" : "border-transparent bg-card hover:border-border",
+                    )}
+                  >
+                    <span className="flex items-center gap-2 text-base font-bold">
+                      {f}
+                      {data.defaultForm === f && <span className="bg-accent px-1.5 py-0.5 text-[10px] font-bold text-accent-foreground">기본 능력치 기준</span>}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{formConditions[i]?.replace(/,?\s*[^,]*활성화됨\.?$/, "")}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           {/* 스킬 선택: 하나씩 크게 */}
           <div className="grid grid-cols-2 gap-px border-b bg-border sm:grid-cols-4" role="tablist" aria-label="스킬">
             {groups.map((g, i) => {
@@ -81,7 +112,7 @@ export function CombatPanel({ data }: { data: CombatCharacter }) {
               );
             })}
           </div>
-          <SkillDetail group={group} level={level} setLevel={setLevel} />
+          <SkillDetail group={group} level={level} setLevel={setLevel} form={form} />
         </>
       )}
       {tab === "talents" && <Talents data={data} />}
@@ -99,8 +130,9 @@ interface Row {
   values: string[];
 }
 
-function SkillDetail({ group, level, setLevel }: { group: SkillGroup; level: number; setLevel: (n: number) => void }) {
+function SkillDetail({ group, level, setLevel, form }: { group: SkillGroup; level: number; setLevel: (n: number) => void; form?: string }) {
   const tone = TYPE_TONE[group.type];
+  const activeForm = group.forms ? (group.forms.find((f) => f.name === form) ?? group.forms[0]) : undefined;
 
   // 레벨 1~12 전체 표 + 현재 레벨 설명용 값
   const { rows, bb } = useMemo(() => {
@@ -125,8 +157,10 @@ function SkillDetail({ group, level, setLevel }: { group: SkillGroup; level: num
       });
     const bb: Blackboard = {};
     for (const s of group.skills) Object.assign(bb, (s.levels[level - 1] ?? s.levels.at(-1))?.bb);
-    return { rows: [...map].map(([label, values]) => ({ label, values })) as Row[], bb };
-  }, [group, level]);
+    // 형태 스킬은 형태별로 나뉜 표(공식 위키)를 쓴다
+    const rows: Row[] = activeForm ? activeForm.rows : [...map].map(([label, values]) => ({ label, values }));
+    return { rows, bb };
+  }, [group, level, activeForm]);
 
   const isMain = (label: string) => /배율/.test(label);
   const main = rows.filter((r) => isMain(r.label));
@@ -139,7 +173,10 @@ function SkillDetail({ group, level, setLevel }: { group: SkillGroup; level: num
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <span className={cn("px-2 py-0.5 text-xs font-bold", tone.badge)}>{group.type}</span>
-          <h3 className="mt-1.5 text-2xl font-bold tracking-tight">{group.name}</h3>
+          <h3 className="mt-1.5 text-2xl font-bold tracking-tight">
+            {group.name}
+            {activeForm && <span className="ml-2 align-middle text-base font-semibold text-muted-foreground">({activeForm.name})</span>}
+          </h3>
         </div>
         <LevelControl level={level} setLevel={setLevel} />
       </div>
@@ -161,7 +198,7 @@ function SkillDetail({ group, level, setLevel }: { group: SkillGroup; level: num
       )}
 
       {/* 설명 */}
-      <Rich template={group.desc} bb={bb} className="max-w-3xl text-[15px] leading-7 whitespace-pre-line" />
+      <Rich template={activeForm?.desc ?? group.desc} bb={bb} className="max-w-3xl text-[15px] leading-7 whitespace-pre-line" />
 
       {/* 레벨별 표 */}
       {rows.some(changes) && (
