@@ -175,9 +175,13 @@ function zoneOnly(phrase: string): Omit<ZoneInfo, "self" | "others" | "othersDif
   if (/생명력/.test(surv) && !/공격력|피해/.test(statWord ?? "")) return { zone: "hp" };
   if (/방어력/.test(surv)) return { zone: "def" };
   if (/보호/.test(surv) && !/공격력|피해/.test(statWord ?? "")) return { zone: "shield" };
-  const enemyState = /상태의 적에게 주는/.test(phrase)
-    ? (["불균형", ...STATE_ORDER].filter((t) => phrase.includes(t)).join("·") || "특정")
+  // "X 상태의 적에게 / 목표에 주는", "X을 부착한 적에게 주는" → 적이 그 상태일 때만
+  const enemyM = phrase.match(/(\S+(?: \S+)?)\s*(?:상태의|상태인|을 부착한|를 부착한|이 부착된|가 부착된)\s*(?:적|목표)(?:에게|에)\s*주는/);
+  const enemyState = enemyM
+    ? ["불균형", ...STATE_ORDER].filter((t) => phrase.includes(t)).join("·") || enemyM[1].replace(/^(장착자가|자신이|플루라이트가)\s*/, "")
     : undefined;
+  // "해당 강력한 일격이 주는 피해" 처럼 특정 공격 1회에만 붙는 효과
+  if (/^\s*해당 .*(이|가) 주는/.test(phrase)) return { zone: null, skip: "특정 공격 1회에만 붙는 효과" };
   if (/궁극기 충전 효율/.test(phrase)) return { zone: "ultGain" };
   if (/오리지늄 아츠 강도/.test(phrase)) return { zone: "arts" };
   if (/치명타 확률/.test(phrase)) return { zone: "crit", enemyState };
@@ -192,7 +196,7 @@ function zoneOnly(phrase: string): Omit<ZoneInfo, "self" | "others" | "othersDif
     if (/모든 스킬/.test(phrase)) types.push("battle", "combo", "ult");
     for (const [w, k] of Object.entries(KIND_WORD)) if (phrase.includes(w) && k !== "basic") types.push(k);
     if (phrase.includes("일반 공격")) types.push("basic");
-    const taken = /(목표|적)(가|이) 받는/.test(phrase);
+    const taken = /(목표|적)(가|이)? ?받는|^\s*받는 /.test(phrase);
     return { zone: taken ? "taken" : "dmg", elems: elems.length ? elems : undefined, types: types.length ? [...new Set(types)] : undefined, enemyState };
   }
   return { zone: null, skip: "피해와 무관한 효과" };
@@ -384,6 +388,10 @@ export function triggerRate(cond: string, kit: OperatorKit, r: Record<"battle" |
       0,
     );
     return { rate, via: `${label(kinds)} 치명타 (치명률 ${Math.round(cr * 100)}%)` };
+  }
+  // 3-2) "스킬이 적에게 명중할 때마다" 처럼 종류 없이 스킬 전체 (상태 조건이 없을 때)
+  if (!named.length && /스킬(이|을|로)/.test(cond) && /명중|사용|피해를 (줄|준)/.test(cond) && !STATE_ORDER.some((x) => cond.includes(x))) {
+    return { rate: r.battle + r.combo + r.ult, via: "스킬 사용" };
   }
   // 4) 상태를 부여·소모 — "강타, 갑옷 파괴" · "감전 혹은 부식"처럼 여러 상태면 하나라도 되면 됨 (가장 잦은 것)
   const found = STATE_ORDER.filter((x) => cond.includes(x)).filter((x, _, arr) => !arr.some((o) => o !== x && o.includes(x)));

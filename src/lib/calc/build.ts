@@ -42,7 +42,13 @@ export interface StatBag {
   hpPct: number;
   defPct: number;
   shieldEff: number;
+  /** 스킬 종류별로만 붙는 치명타 확률·피해 (오퍼레이터 자체 버프: 로시 궁극기 치명 피해, 이본 궁극기 모드 치명 스택) */
+  critBy: Record<CritScope, number>;
+  critDmgBy: Record<CritScope, number>;
 }
+
+export type CritScope = "battle" | "combo" | "ult" | "ultMode";
+const zeroScope = (): Record<CritScope, number> => ({ battle: 0, combo: 0, ult: 0, ultMode: 0 });
 
 export const emptyBag = (): StatBag => ({
   str: 0,
@@ -65,10 +71,16 @@ export const emptyBag = (): StatBag => ({
   hpPct: 0,
   defPct: 0,
   shieldEff: 0,
+  critBy: zeroScope(),
+  critDmgBy: zeroScope(),
 });
 
 export function addBag(a: StatBag, b: StatBag): StatBag {
-  const r = { ...a, dmg: { ...a.dmg } };
+  const r = { ...a, dmg: { ...a.dmg }, critBy: { ...a.critBy }, critDmgBy: { ...a.critDmgBy } };
+  for (const k of Object.keys(r.critBy) as CritScope[]) {
+    r.critBy[k] += b.critBy?.[k] ?? 0;
+    r.critDmgBy[k] += b.critDmgBy?.[k] ?? 0;
+  }
   for (const k of ["str", "agi", "int", "wil", "main", "sub", "mainPct", "subPct", "atkPct", "flatAtk", "critRate", "critDmg", "artsIntensity", "ultGain", "taken", "healEff", "hpPct", "defPct", "shieldEff"] as const) r[k] += b[k];
   for (const k of Object.keys(r.dmg) as (keyof StatBag["dmg"])[]) r.dmg[k] += b.dmg[k];
   return r;
@@ -287,7 +299,9 @@ export function score(op: OperatorBase, weaponAtk: number, bag: StatBag): ScoreR
   const types: DmgType[] = ["basic", "battle", "combo", "ult"];
   const dmgPct = Object.fromEntries(types.map((t) => [t, elemDmg + bag.dmg[t]])) as Record<DmgType, number>;
   const taken = 1 + bag.taken;
-  const byType = Object.fromEntries(types.map((t) => [t, atk * (1 + dmgPct[t]) * crit * taken])) as Record<DmgType, number>;
+  const critOf = (k: CritScope | "basic") =>
+    k === "basic" ? crit : 1 + Math.min(1, critRate + (bag.critBy?.[k] ?? 0)) * (critDmg + (bag.critDmgBy?.[k] ?? 0));
+  const byType = Object.fromEntries(types.map((t) => [t, atk * (1 + dmgPct[t]) * critOf(t) * taken])) as Record<DmgType, number>;
   if (op.rotation) {
     const r = rates(op.rotation, bag.ultGain);
     const w = op.rotation.weight;
@@ -296,7 +310,7 @@ export function score(op: OperatorBase, weaponAtk: number, bag: StatBag): ScoreR
     const weight = (t: "battle" | "combo" | "ult") => (totalW > 0 ? w[t] : 1);
     const basic = INCLUDE_BASIC_ATTACK && op.rotation.weight.basic ? (op.rotation.weight.basic / BASIC_CHAIN_SECONDS) * byType.basic : 0;
     // 궁극기 모드 안의 피해(synced)는 "궁극기 사용 시" 버프(dmg.ultMode)를 가동률 없이 전부 받음
-    const ultModeMult = (1 + dmgPct.basic + bag.dmg.ultMode) / (1 + dmgPct.basic);
+    const ultModeMult = ((1 + dmgPct.basic + bag.dmg.ultMode) / (1 + dmgPct.basic)) * (critOf("ultMode") / crit);
     const moved = (op.rotation.moved ?? []).reduce(
       (s, m) => (m.to === "anomaly" ? s : s + r[m.from] * m.weight * byType[m.to] * (m.synced ? ultModeMult : 1)),
       0,

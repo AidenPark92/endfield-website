@@ -15,7 +15,7 @@ import type { CombatWeapon, GearPiece, GearSuit } from "@/types/build";
 import { addBag, rates, score, synergy, talentBag, gearBag, suitBag, SP_REGEN_INTERVAL, BASIC_CHAIN_SECONDS, type GearRank, type OperatorBase, type StatBag, type Rotation, type Synergy } from "@/lib/calc/build";
 import { splitTerms } from "@/lib/glossary";
 import type { Blackboard, CombatCharacter, SkillForm, SkillGroup } from "@/types/combat";
-import { damageWeight, rankGearByValue, rankWeaponsByValue, ROLE_WEIGHT, STAGGER_UPTIME, type DealerRef, type OperatorKit, type RoleWeight, type TeamPool, type WeaponValueRank } from "@/lib/calc/weapon-value";
+import { damageWeight, evaluateSuitEffect, rankGearByValue, rankWeaponsByValue, ROLE_WEIGHT, STAGGER_UPTIME, type DealerRef, type OperatorKit, type RoleWeight, type TeamPool, type WeaponValueRank } from "@/lib/calc/weapon-value";
 import { comboRequirement, rankTeams, type ComboRequirement, type TeamCandidate, type TeamEval } from "@/lib/calc/team";
 import type { AttrName, EssenceRegion, EssenceStats, Operator, OperatorDetails, OperatorProfile, OperatorStats, Weapon } from "@/types/game";
 import { buildWeaponUsers } from "@/lib/weapon-users";
@@ -337,6 +337,8 @@ function buildKit(id: string): OperatorKit | undefined {
 
 export interface BuildRecommendation {
   role: RoleWeight;
+  /** 계산에 넣은 오퍼레이터 자체 버프 (재능·스킬 표) */
+  selfBuffs: string[];
   /** 치유 스킬이 있는지 (치유 비중 적용 여부) */
   heals: boolean;
   weapons: (WeaponValueRank & {
@@ -368,7 +370,7 @@ export function getBuildRecommendation(id: string): BuildRecommendation | undefi
   const op = operators.find((o) => o.id === id);
   const base = operatorBase(id);
   if (!op || !base) return undefined;
-  const talents = talentBag(combatChars[id].talents.attributes);
+  const talents = addBag(talentBag(combatChars[id].talents.attributes), selfKitBag(id));
   const candidates = Object.entries(combatWeapons).filter(([wid]) => weapons.find((w) => w.id === wid)?.type === op.weaponType);
   const kit = operatorKit(id);
   if (!kit) return undefined;
@@ -402,7 +404,7 @@ export function getBuildRecommendation(id: string): BuildRecommendation | undefi
   const topWeapon = ranked[0] ? combatWeapons[ranked[0].id] : undefined;
   const withWeapon = ranked[0] ? addBag(talents, ranked[0].bag) : talents;
   const gear = topWeapon ? gearOf(ranked[0].id, withWeapon) : [];
-  return { weapons: ranked, role, heals: Object.keys(kit.heals ?? {}).length > 0, gear, synergy: synergy(id, synergyIndex(), findTerms) };
+  return { weapons: ranked, role, selfBuffs: describeBag(selfKitBag(id)), heals: Object.keys(kit.heals ?? {}).length > 0, gear, synergy: synergy(id, synergyIndex(), findTerms) };
 }
 
 const candidatesFor = (id: string) => {
@@ -417,6 +419,106 @@ function gearSetBag(g: GearRank | undefined) {
   for (const p of g.pieces) bag = addBag(bag, gearBag(gearPieces[p.id]));
   if (gearSuits[g.suitId]) bag = addBag(bag, suitBag(gearSuits[g.suitId]));
   return bag;
+}
+
+/** 공식 위키의 숫자가 들어간 문장 → 템플릿 + 값 ("공격력 +8%, 10초" → "공격력 +{v0:0%}, {duration1}초") */
+export function templatize(text: string): { desc: string; bb: Record<string, number> } {
+  const bb: Record<string, number> = {};
+  let i = 0;
+  const desc = text
+    .replace(/\+(\d+(?:\.\d+)?)%/g, (_, v: string) => {
+      const k = `v${i++}`;
+      bb[k] = Number(v) / 100;
+      return `+{${k}:0%}`;
+    })
+    .replace(/\+(\d+(?:\.\d+)?)(?![\d.%])/g, (_, v: string) => {
+      const k = `f${i++}`;
+      bb[k] = Number(v);
+      return `+{${k}:0}`;
+    })
+    .replace(/(\d+(?:\.\d+)?)초/g, (_, v: string) => {
+      const k = `duration${i++}`;
+      bb[k] = Number(v);
+      return `{${k}}초`;
+    })
+    .replace(/최대 (\d+)스택/g, (_, v: string) => {
+      const k = `max_stack${i++}`;
+      bb[k] = Number(v);
+      return `최대 {${k}}스택`;
+    });
+  return { desc, bb };
+}
+
+const kitBagCache = new Map<string, StatBag>();
+/**
+ * 오퍼레이터 자체 버프 (무기·장비와 무관하게 늘 갖고 있는 것)
+ * - 오퍼레이터 재능(공식 위키 마지막 단계 문장)을 무기 특성 해석기로 평가 — 본인 몫만
+ * - 스킬 표의 "치명타 확률/치명타 피해/공격력 증가 %": 지속 시간이 있으면 그 스킬 빈도 × 지속 가동률로 전체에,
+ *   없으면 그 스킬 피해에만. 궁극기의 "1스택마다 증가하는 치명타 확률"(최대 N) · "최대 중첩 시 … 치명타 피해"는 궁극기 모드에 (평균 절반)
+ */
+function selfKitBag(id: string): StatBag {
+  const hit = kitBagCache.get(id);
+  if (hit) return hit;
+  let bag = talentBag([]);
+  const kit = operatorKit(id);
+  const base = operatorBase(id);
+  if (!kit || !base) return bag;
+  for (const t of opDetails[id]?.talents.filter((x) => x.category === "오퍼레이터 재능") ?? []) {
+    const last = t.stages.at(-1);
+    if (!last?.effect) continue;
+    const { desc, bb } = templatize(last.effect);
+    bag = addBag(bag, evaluateSuitEffect(desc, bb, kit, base.attrs).bag);
+  }
+  const r = rates(kit.rotation, 0);
+  const KIND: Record<string, "battle" | "combo" | "ult"> = { "배틀 스킬": "battle", "연계 스킬": "combo", 궁극기: "ult" };
+  const synced = kit.rotation.moved?.some((m) => m.synced);
+  for (const sk of opDetails[id]?.skills ?? []) {
+    const k = KIND[sk.type];
+    if (!k) continue;
+    const val = (re: RegExp) => {
+      const p = sk.params.find((x) => re.test(x.label) && x.values?.length);
+      return p ? Number(p.values!.at(-1)) : undefined;
+    };
+    const dur = val(/지속 시간\(초\)/);
+    const add = talentBag([]);
+    const up = dur ? Math.min(1, r[k] * dur) : 1;
+    const cr = val(/^치명타 확률 증가$/);
+    const cd = val(/^치명타 피해 증가$/);
+    const atk = val(/^공격력 증가$/);
+    if (dur) {
+      if (cr) add.critRate += (cr / 100) * up;
+      if (cd) add.critDmg += (cd / 100) * up;
+      if (atk) add.atkPct += (atk / 100) * up;
+    } else {
+      if (cr) add.critBy[k] += cr / 100;
+      if (cd) add.critDmgBy[k] += cd / 100;
+    }
+    const perStack = val(/1스택마다 증가하는 치명타 확률/);
+    const maxStack = val(/최대 중첩 스택 수치/);
+    const fullCd = val(/최대 중첩 시 증가하는 치명타 피해/);
+    const scope = k === "ult" && synced ? "ultMode" : k;
+    if (perStack) add.critBy[scope] += (perStack / 100) * ((maxStack ?? 1) / 2);
+    if (fullCd) add.critDmgBy[scope] += (fullCd / 100) * 0.5;
+    bag = addBag(bag, add);
+  }
+  kitBagCache.set(id, bag);
+  return bag;
+}
+
+/** 능력치 묶음 → 사람이 읽는 목록 */
+function describeBag(b: StatBag): string[] {
+  const pc = (v: number) => `${+(v * 100).toFixed(1)}%`;
+  const out: string[] = [];
+  const SCOPE: Record<string, string> = { battle: "배틀 스킬", combo: "연계 스킬", ult: "궁극기", ultMode: "궁극기 모드" };
+  if (b.atkPct) out.push(`공격력 +${pc(b.atkPct)}`);
+  if (b.critRate) out.push(`치명타 확률 +${pc(b.critRate)}`);
+  if (b.critDmg) out.push(`치명타 피해 +${pc(b.critDmg)}`);
+  if (b.dmg.all) out.push(`주는 피해 +${pc(b.dmg.all)}`);
+  for (const [k, v] of Object.entries(b.critBy)) if (v) out.push(`${SCOPE[k]} 치명타 확률 +${pc(v)}`);
+  for (const [k, v] of Object.entries(b.critDmgBy)) if (v) out.push(`${SCOPE[k]} 치명타 피해 +${pc(v)}`);
+  if (b.taken) out.push(`적이 받는 피해 +${pc(b.taken)}`);
+  if (b.artsIntensity) out.push(`아츠 강도 +${Math.round(b.artsIntensity)}`);
+  return out;
 }
 
 /** 직업 → 역할 비중 */
@@ -435,7 +537,7 @@ function mainDealers(): DealerRef[] {
       const op = operatorBase(o.id);
       const kit = operatorKit(o.id);
       if (!op || !kit) return [];
-      const talents = talentBag(combatChars[o.id].talents.attributes);
+      const talents = addBag(talentBag(combatChars[o.id].talents.attributes), selfKitBag(o.id));
       const top0 = rankWeaponsByValue(op, kit, talents, candidatesFor(o.id))[0];
       if (!top0) return [];
       // 딜러 기준도 추천 장비까지 낀 상태

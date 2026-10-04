@@ -160,3 +160,18 @@ describe("간주 피해 · 이상 피해", () => {
     expect(r.gear[0].suitName).toBe("고검의 잔향");
   });
 });
+
+describe("오퍼레이터 자체 버프", () => {
+  it("위키 숫자 문장 → 템플릿", async () => {
+    const { templatize } = await import("@/lib/data");
+    const t = templatize("매번 스킬이 적에게 명중할 때마다 공격력 +8%, 10초 동안 지속, 해당 효과는 최대 5스택까지 중첩됩니다.");
+    expect(Object.values(t.bb)).toEqual([0.08, 10, 5]);
+    expect(parseTrait(t.desc, t.bb)[0]).toMatchObject({ zone: "atk", value: 0.08, duration: 10, maxStack: 5 });
+  });
+  it("로시 연계 치명 버프 · 이본 궁극기 모드 치명 스택 · 진천우 재능 공격력", { timeout: 120000 }, () => {
+    const buffs = (n: string) => getBuildRecommendation(operators.find((o) => o.name === n)!.id)!.selfBuffs.join(" ");
+    expect(buffs("로시")).toContain("치명타 확률 +25%");
+    expect(buffs("이본")).toContain("궁극기 모드 치명타 확률");
+    expect(buffs("진천우")).toContain("공격력 +");
+  });
+});

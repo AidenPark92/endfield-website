@@ -68,6 +68,11 @@ export function BuildPanel({
             {rec.role.self === 0 && " 본인 공격력은 의미가 없어서 같은 점수일 때만 비교해요."}
           </span>
         </div>
+        {rec.selfBuffs.length > 0 && (
+          <p className="border-b px-4 py-2 text-xs text-muted-foreground">
+            계산에 넣은 오퍼레이터 자체 버프(재능·스킬, 가동률 반영): <span className="text-foreground">{rec.selfBuffs.join(" · ")}</span>
+          </p>
+        )}
         <ol className="divide-y">
           {shownWeapons.map((w) => {
             const rank = rec.weapons.indexOf(w) + 1;
