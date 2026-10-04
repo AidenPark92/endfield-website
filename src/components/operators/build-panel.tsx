@@ -32,7 +32,7 @@ export function BuildPanel({
     ...rec.weapons.slice(5).filter((w) => w.official), // 게임 추천 무기는 순위 밖이어도 보여 줌
   ];
   const topGear = rec.gear.slice(0, 3);
-  // 서포터는 "메인 딜러 피해 증가"를 1위 대비로 보여 줌 (본인 피해는 의미 없음)
+  // 점수 표시: 서포터는 내부 지표(메인 딜러 피해 증가)를 1위 대비로 환산 — 수치 자체는 화면에 쓰지 않음
   const maxGain = Math.max(0, ...rec.weapons.map((w) => w.dealerGain));
   const shown = (w: (typeof rec.weapons)[number]) => (rec.role.self === 0 && maxGain > 0 ? w.dealerGain / maxGain : w.relative);
 
@@ -51,7 +51,7 @@ export function BuildPanel({
       <section className="border bg-card">
         <header className="flex flex-wrap items-baseline justify-between gap-2 border-b px-4 py-3">
           <h3 className="text-lg font-bold">추천 무기</h3>
-          <p className="text-xs text-muted-foreground">1위 = 100%{rec.role.self === 0 ? " · 메인 딜러 피해 증가 기준" : rec.role.self === 1 ? " · 본인 피해 기준" : " · 본인 + 메인 딜러 가중 합"}</p>
+          <p className="text-xs text-muted-foreground">1위 = 100%</p>
         </header>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b bg-muted/40 px-4 py-2 text-sm">
           <span className="bg-foreground px-2 py-0.5 text-xs font-semibold text-background">{rec.role.label}</span>
@@ -89,13 +89,7 @@ export function BuildPanel({
                 <div className="col-span-2 sm:col-span-1">
                   <div className="flex items-baseline justify-between text-xs">
                     <span className="text-muted-foreground">
-                      {rec.role.self < 1 && (
-                        <>
-                          메인 딜러 피해{" "}
-                          <b className={cn("font-mono", w.dealerGain > 0 ? "text-emerald-700 dark:text-emerald-300" : "text-foreground")}>+{pct(w.dealerGain, 1)}</b> ·{" "}
-                        </>
-                      )}
-                      본인 피해 <b className="font-mono text-foreground">{pct(w.selfRatio, 0)}</b> · 공격력 {Math.floor(w.score.atk)}
+                      공격력 <b className="font-mono text-foreground">{Math.floor(w.score.atk)}</b> · 치명 {pct(w.score.critRate, 0)}
                     </span>
                     <b className="font-mono text-base">{pct(shown(w))}</b>
                   </div>
