@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight, BookOpen, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { essenceStats, operators, weapons } from "@/lib/data";
-import { ELEMENT_BG, ELEMENT_TEXT, RARITY_BG } from "@/lib/operator-meta";
+import { CLASS_ICON, ELEMENT_BG, ELEMENT_ICON, ELEMENT_TEXT, RARITY_BG } from "@/lib/operator-meta";
 import { essenceImage } from "@/lib/essence-images";
 import type { StatCategory, Weapon } from "@/types/game";
 import { EssenceSlots } from "@/components/essence/essence-slots";
@@ -56,10 +56,15 @@ export default async function OperatorPage({ params }: { params: Promise<{ id: s
             <h1 className="mt-1 text-4xl font-bold tracking-tight">{op.name}</h1>
             <div className="mt-3 flex flex-wrap gap-1.5">
               <Tag>
-                <span className={cn("size-2 rounded-full", ELEMENT_BG[op.element])} />
+                <TagIcon src={ELEMENT_ICON[op.element]} fallback={ELEMENT_BG[op.element]} />
                 <span className={ELEMENT_TEXT[op.element]}>{op.element}</span>
               </Tag>
-              {p && <Tag>{p.class}</Tag>}
+              {p && (
+                <Tag>
+                  <TagIcon src={CLASS_ICON[p.class]} />
+                  {p.class}
+                </Tag>
+              )}
               <Tag>{op.weaponType}</Tag>
               <Tag>{op.faction}</Tag>
             </div>
@@ -152,6 +157,12 @@ export default async function OperatorPage({ params }: { params: Promise<{ id: s
 
 function Tag({ children }: { children: React.ReactNode }) {
   return <span className="inline-flex h-7 items-center gap-1.5 border bg-background px-2.5 text-xs font-medium">{children}</span>;
+}
+
+/** 태그 앞 속성·직업 아이콘 (아이콘이 없으면 색 점으로 대체) */
+function TagIcon({ src, fallback }: { src?: string; fallback?: string }) {
+  if (!src) return fallback ? <span className={cn("size-2 rounded-full", fallback)} /> : null;
+  return <Image src={src} alt="" width={20} height={20} unoptimized className="-ml-1 size-5" />;
 }
 
 function Info({ k, v }: { k: string; v?: string }) {

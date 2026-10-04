@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { RotateCcw, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { CLASSES, ELEMENTS, ELEMENT_BG, RARITY_BG } from "@/lib/operator-meta";
+import { CLASSES, CLASS_ICON, ELEMENTS, ELEMENT_ICON, RARITY_BG } from "@/lib/operator-meta";
 import type { Operator, WeaponType } from "@/types/game";
 
 const WEAPON_TYPES: WeaponType[] = ["한손검", "양손검", "장병기", "권총", "아츠 유닛"];
@@ -85,7 +85,7 @@ export function OperatorBrowser({ operators }: { operators: Operator[] }) {
         <FilterRow label="속성">
           {ELEMENTS.map((e) => (
             <Chip key={e} active={elements.has(e)} onClick={() => setElements(toggle(elements, e))}>
-              <span className={cn("size-2 rounded-full", ELEMENT_BG[e])} />
+              <Image src={ELEMENT_ICON[e]} alt="" width={16} height={16} unoptimized className="size-4" />
               {e}
             </Chip>
           ))}
@@ -93,6 +93,7 @@ export function OperatorBrowser({ operators }: { operators: Operator[] }) {
         <FilterRow label="직업">
           {CLASSES.map((c) => (
             <Chip key={c} active={classes.has(c)} onClick={() => setClasses(toggle(classes, c))}>
+              <Image src={CLASS_ICON[c]} alt="" width={16} height={16} unoptimized className="size-4" />
               {c}
             </Chip>
           ))}
@@ -134,8 +135,14 @@ export function OperatorBrowser({ operators }: { operators: Operator[] }) {
                   />
                 )}
                 <span className={cn("absolute inset-x-0 bottom-0 h-1", RARITY_BG[o.rarity])} />
-                <span className={cn("absolute top-1.5 left-1.5 grid size-5 place-items-center text-[10px] font-bold text-white", ELEMENT_BG[o.element])}>
-                  {o.element[0]}
+                {/* 속성 · 직업 아이콘 */}
+                <span className="absolute top-1.5 left-1.5 flex flex-col gap-0.5">
+                  {ELEMENT_ICON[o.element] && (
+                    <Image src={ELEMENT_ICON[o.element]} alt={o.element} title={o.element} width={20} height={20} unoptimized className="size-5" />
+                  )}
+                  {o.profile && (
+                    <Image src={CLASS_ICON[o.profile.class]} alt={o.profile.class} title={o.profile.class} width={20} height={20} unoptimized className="size-5" />
+                  )}
                 </span>
                 <span className="absolute top-1.5 right-1.5 bg-black/60 px-1 font-mono text-[10px] text-white">{o.rarity}★</span>
               </span>
