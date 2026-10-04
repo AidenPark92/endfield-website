@@ -3,10 +3,10 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { RotateCcw, Search } from "lucide-react";
+import { ChevronDown, Info, RotateCcw, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { CLASSES, CLASS_ICON, ELEMENTS, ELEMENT_ICON, RARITY_BG } from "@/lib/operator-meta";
-import type { Operator, WeaponType } from "@/types/game";
+import { CLASSES, CLASS_ICON, CLASS_INFO, ELEMENTS, ELEMENT_ICON, RARITY_BG } from "@/lib/operator-meta";
+import type { Operator, OperatorClass, WeaponType } from "@/types/game";
 
 const WEAPON_TYPES: WeaponType[] = ["한손검", "양손검", "장병기", "권총", "아츠 유닛"];
 const RARITIES = [6, 5, 4] as const;
@@ -21,6 +21,7 @@ export function OperatorBrowser({ operators }: { operators: Operator[] }) {
   const [weaponTypes, setWeaponTypes] = useState<Multi>(new Set());
   const [rarities, setRarities] = useState<Multi>(new Set());
   const [faction, setFaction] = useState("전체");
+  const [classGuide, setClassGuide] = useState(false);
 
   const factions = useMemo(() => ["전체", ...new Set(operators.map((o) => o.faction))], [operators]);
   const q = query.trim();
@@ -100,12 +101,22 @@ export function OperatorBrowser({ operators }: { operators: Operator[] }) {
         </FilterRow>
         <FilterRow label="직업">
           {CLASSES.map((c) => (
-            <Chip key={c} active={classes.has(c)} onClick={() => setClasses(toggle(classes, c))}>
+            <Chip key={c} active={classes.has(c)} onClick={() => setClasses(toggle(classes, c))} title={`${CLASS_INFO[c].role} — ${CLASS_INFO[c].desc}`}>
               <Image src={CLASS_ICON[c]} alt="" width={16} height={16} unoptimized className="size-4" />
               {c}
             </Chip>
           ))}
+          <button
+            onClick={() => setClassGuide((v) => !v)}
+            aria-expanded={classGuide}
+            aria-controls="class-guide"
+            className="inline-flex h-8 cursor-pointer items-center gap-1 px-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <Info className="size-3.5" /> 직업 설명
+            <ChevronDown className={cn("size-3.5 transition-transform", classGuide && "rotate-180")} />
+          </button>
         </FilterRow>
+        {classGuide && <ClassGuide selected={classes} onPick={(c) => setClasses(toggle(classes, c))} />}
         <FilterRow label="무기">
           {WEAPON_TYPES.map((w) => (
             <Chip key={w} active={weaponTypes.has(w)} onClick={() => setWeaponTypes(toggle(weaponTypes, w))}>
@@ -170,6 +181,42 @@ export function OperatorBrowser({ operators }: { operators: Operator[] }) {
   );
 }
 
+/** 직업군 안내 — 카드를 누르면 그 직업으로 필터 */
+function ClassGuide({ selected, onPick }: { selected: Multi; onPick: (c: OperatorClass) => void }) {
+  return (
+    <div id="class-guide" className="border-t pt-2.5">
+      <ul className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
+        {CLASSES.map((c) => {
+          const info = CLASS_INFO[c];
+          const active = selected.has(c);
+          return (
+            <li key={c}>
+              <button
+                onClick={() => onPick(c)}
+                aria-pressed={active}
+                className={cn(
+                  "flex h-full w-full cursor-pointer items-start gap-2.5 border p-2.5 text-left transition-colors",
+                  active ? "border-foreground bg-muted" : "bg-background hover:bg-muted/60",
+                )}
+              >
+                <Image src={CLASS_ICON[c]} alt="" width={32} height={32} unoptimized className="size-8 shrink-0" />
+                <span className="min-w-0">
+                  <span className="flex flex-wrap items-baseline gap-x-1.5">
+                    <b className="text-sm">{c}</b>
+                    <span className="font-mono text-[10px] text-muted-foreground uppercase">{info.en}</span>
+                    <span className="text-[11px] font-semibold text-accent-strong">{info.role}</span>
+                  </span>
+                  <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">{info.desc}</span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 function toggle(s: Multi, v: string): Multi {
   const n = new Set(s);
   if (n.has(v)) n.delete(v);
@@ -186,10 +233,11 @@ function FilterRow({ label, children }: { label: string; children: React.ReactNo
   );
 }
 
-function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+function Chip({ active, onClick, title, children }: { active: boolean; onClick: () => void; title?: string; children: React.ReactNode }) {
   return (
     <button
       onClick={onClick}
+      title={title}
       aria-pressed={active}
       className={cn(
         "inline-flex h-8 cursor-pointer items-center gap-1.5 border px-2.5 text-xs font-medium transition-colors",

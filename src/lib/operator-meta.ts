@@ -41,3 +41,13 @@ export const CLASS_ICON: Record<OperatorClass, string> = {
 };
 
 export const RARITY_BG: Record<number, string> = { 6: "bg-rarity-6", 5: "bg-rarity-5", 4: "bg-rarity-4", 3: "bg-rarity-3" };
+
+/** 직업군 설명 (사용자 제공 자료 기준 — 게임 수치 아님) */
+export const CLASS_INFO: Record<OperatorClass, { en: string; role: string; desc: string }> = {
+  뱅가드: { en: "Vanguard", role: "자원 수급 · 유틸", desc: "전투 스킬 사용에 필요한 자원(코스트/게이지)을 수급하고 유틸리티를 제공해요." },
+  가드: { en: "Guard", role: "서브 딜러 · 디버퍼", desc: "적에게 방어 불능(방불) 스택이나 물리 디버프를 부여해요." },
+  캐스터: { en: "Caster", role: "아츠 서브 딜러", desc: "아츠 피해와 아츠 관련 디버프·스택을 쌓아 적의 약점을 공략해요." },
+  스트라이커: { en: "Striker", role: "메인 딜러", desc: "각종 스택을 활용해 강력한 피해를 입혀요." },
+  서포터: { en: "Supporter", role: "힐 · 버프", desc: "아군의 체력 회복과 각종 유틸리티 버프를 담당해요." },
+  디펜더: { en: "Defender", role: "탱커", desc: "적의 강력한 패턴을 무시하거나 버티며 진형을 지켜요." },
+};
