@@ -9,6 +9,7 @@ import { CLASS_ICON, ELEMENT_BG, ELEMENT_ICON, ELEMENT_TEXT, RARITY_BG } from "@
 import { essenceImage } from "@/lib/essence-images";
 import type { StatCategory, Weapon } from "@/types/game";
 import { EssenceSlots } from "@/components/essence/essence-slots";
+import { OperatorStatsPanel } from "@/components/operators/operator-stats";
 
 export function generateStaticParams() {
   return operators.map((o) => ({ id: o.id }));
@@ -100,6 +101,17 @@ export default async function OperatorPage({ params }: { params: Promise<{ id: s
           )}
         </div>
       </section>
+
+      {/* 기본 능력치 (게임 데이터 테이블) */}
+      <div className="mt-6">
+        <Section title="기본 능력치" hint="레벨을 바꿔 보세요 · 무기·장비 제외 기본치">
+          {op.stats ? (
+            <OperatorStatsPanel stats={op.stats} />
+          ) : (
+            <p className="border bg-card p-4 text-sm text-muted-foreground">아직 능력치 데이터가 없는 캐릭터예요. 데이터가 들어오면 바로 표시돼요.</p>
+          )}
+        </Section>
+      </div>
 
       {p && (
         <div className="mt-6 grid gap-6 lg:grid-cols-2">

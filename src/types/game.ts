@@ -58,6 +58,25 @@ export interface Operator {
   /** 작은 초상화 (public/operators/face) */
   face?: string;
   profile?: OperatorProfile;
+  /** 레벨별 기본 능력치 (data/operator-stats.json) — 추출 이후 출시 캐릭터는 없음 */
+  stats?: OperatorStats;
+}
+
+export type AttrName = "힘" | "민첩" | "지능" | "의지";
+
+/** 게임 테이블에서 추출한 캐릭터 기본치 (무기·장비·잠재·재능 미포함). 배열 인덱스 0 = 레벨 1 */
+export interface OperatorStats {
+  charId: string;
+  mainAttr: AttrName;
+  subAttr: AttrName;
+  critRate: number;
+  hp: number[];
+  atk: number[];
+  def: number[];
+  str: number[];
+  agi: number[];
+  int: number[];
+  wil: number[];
 }
 
 export type OperatorClass = "가드" | "캐스터" | "스트라이커" | "뱅가드" | "디펜더" | "서포터";
