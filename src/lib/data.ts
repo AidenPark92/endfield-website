@@ -15,6 +15,7 @@ import type { CombatWeapon, GearPiece, GearSuit } from "@/types/build";
 import { addBag, rankGear, rankWeapons, synergy, talentBag, weaponBag, type GearRank, type OperatorBase, type Synergy, type WeaponRank } from "@/lib/calc/build";
 import { splitTerms } from "@/lib/glossary";
 import type { CombatCharacter, SkillForm, SkillGroup } from "@/types/combat";
+import { comboRequirement, rankTeams, type ComboRequirement, type TeamCandidate, type TeamEval } from "@/lib/calc/team";
 import type { EssenceRegion, EssenceStats, Operator, OperatorDetails, OperatorProfile, OperatorStats, Weapon } from "@/types/game";
 import { buildWeaponUsers } from "@/lib/weapon-users";
 
@@ -136,19 +137,18 @@ export interface BuildRecommendation {
   synergy: Synergy;
 }
 
+let synergyCache: Record<string, { comboDesc: string | null; tags: string[] }> | undefined;
 const synergyIndex = () =>
-  Object.fromEntries(
-    Object.entries(combatChars).map(([oid, c]) => [
-      oid,
-      {
-        comboDesc: (() => {
-          const g = getCombatCharacter(oid)?.skillGroups.find((g) => g.type === "연계 스킬");
-          return g?.forms ? g.forms.map((f) => f.desc).join("\n") : (g?.desc ?? null);
-        })(),
-        tags: ((c as unknown as { battleTags?: { name: string }[] }).battleTags ?? []).map((t) => t.name),
-      },
-    ]),
-  );
+  (synergyCache ??= Object.fromEntries(
+    Object.entries(combatChars).map(([oid, c]) => {
+      const groups = getCombatCharacter(oid)?.skillGroups ?? [];
+      const g = groups.find((g) => g.type === "연계 스킬");
+      const tags = ((c as unknown as { battleTags?: { name: string }[] }).battleTags ?? []).map((t) => t.name);
+      // 오리지늄 결정은 전투 태그 '제어' 중에서도 관리자만 만든다 → 스킬 설명에 직접 나오는 경우만 인정
+      if (tags.includes("제어") && JSON.stringify(groups).includes("오리지늄 결정")) tags.push("오리지늄 결정");
+      return [oid, { comboDesc: g?.forms ? g.forms.map((f) => f.desc).join("\n") : (g?.desc ?? null), tags }];
+    }),
+  ));
 const findTerms = (text: string) => splitTerms(text).filter((p) => p.term).map((p) => p.term!);
 
 /** 오퍼레이터 추천 빌드 — 레벨 90 · 잠재 0 · 무기 재련 0 · 재능 배열 완료 기준 (빌드 시 미리 계산) */
@@ -168,4 +168,39 @@ export function getBuildRecommendation(id: string): BuildRecommendation | undefi
   const withWeapon = topWeapon ? addBag(talents, weaponBag(topWeapon).bag) : talents;
   const gear = rankGear(base, topWeapon?.baseAtk.at(-1) ?? 0, withWeapon, Object.entries(gearPieces), Object.entries(gearSuits));
   return { weapons: ranked, gear, synergy: synergy(id, synergyIndex(), findTerms) };
+}
+
+// ───────── 베스트 조합 (연계 시너지) ─────────
+
+export interface BestTeam extends TeamEval {
+  /** 직업 구성 (중복 제외 수) */
+  classes: number;
+  healer: boolean;
+}
+
+let teamCache: BestTeam[] | undefined;
+/** 모든 4인 조합을 연계 시너지로 평가 (빌드 시 1회) */
+export function allTeams(): BestTeam[] {
+  if (teamCache) return teamCache;
+  const idx = synergyIndex();
+  const pool: TeamCandidate[] = operators
+    .filter((o) => idx[o.id])
+    .map((o) => ({ id: o.id, group: o.name.replace(/\s*\(.*\)$/, ""), comboDesc: idx[o.id].comboDesc, tags: idx[o.id].tags }));
+  const reqs = new Map(pool.map((m) => [m.id, comboRequirement(m.comboDesc, findTerms)]));
+  const classOf = (id: string) => operators.find((o) => o.id === id)?.profile?.class;
+  const classes = (ids: string[]) => new Set(ids.map(classOf)).size;
+  const healer = (ids: string[]) => ids.some((id) => idx[id]?.tags.includes("치유"));
+  // 동점이면 치유 담당 있음 > 직업이 다양함 순
+  const ranked = rankTeams(pool, (id) => reqs.get(id)!, (ids) => (healer(ids) ? 10 : 0) + classes(ids));
+  return (teamCache = ranked.map((t) => ({ ...t, classes: classes(t.ids), healer: healer(t.ids) })));
+}
+
+/** 이 오퍼레이터가 들어간 베스트 조합 */
+export function bestTeamsFor(id: string, n = 3): BestTeam[] {
+  return allTeams().filter((t) => t.ids.includes(id)).slice(0, n);
+}
+
+/** 연계 발동 조건 요약 (화면 표시용) */
+export function comboRequirementOf(id: string): ComboRequirement {
+  return comboRequirement(synergyIndex()[id]?.comboDesc ?? null, findTerms);
 }

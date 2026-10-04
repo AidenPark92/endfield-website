@@ -336,7 +336,7 @@ export function rankGear(
 // ───────── 연계 시너지 ─────────
 
 /** 연계 조건에 나오는 용어 → 그 상태를 만들어 주는 전투 태그 */
-const REQUIREMENT_TAGS: Record<string, string[]> = {
+export const REQUIREMENT_TAGS: Record<string, string[]> = {
   "열기 부착": ["열기 부착"],
   "냉기 부착": ["냉기 부착"],
   "전기 부착": ["전기 부착"],
@@ -357,7 +357,7 @@ const REQUIREMENT_TAGS: Record<string, string[]> = {
   "물리 취약": ["물리 취약"],
   불균형: ["불균형"],
   "불균형 지점": ["불균형"],
-  "오리지늄 결정": ["제어"],
+  "오리지늄 결정": ["오리지늄 결정"],
 };
 /** 조작 캐릭터 혼자 만들 수 있는 조건 */
 const SELF_CONDITIONS = ["강력한 일격", "처형"];

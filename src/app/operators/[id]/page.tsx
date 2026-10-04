@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight, BookOpen, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { essenceStats, gearSuits, getBuildRecommendation, getCombatCharacter, operators, weapons } from "@/lib/data";
+import { essenceStats, gearSuits, getBuildRecommendation, bestTeamsFor, getCombatCharacter, operators, weapons } from "@/lib/data";
 import { CLASS_ICON, ELEMENT_BG, ELEMENT_ICON, ELEMENT_TEXT, RARITY_BG } from "@/lib/operator-meta";
 import { essenceImage } from "@/lib/essence-images";
 import type { StatCategory, Weapon } from "@/types/game";
@@ -124,7 +124,11 @@ export default async function OperatorPage({ params }: { params: Promise<{ id: s
             <BuildPanel
               rec={build}
               suits={gearSuits}
-              mates={Object.fromEntries(operators.map((o) => [o.id, { id: o.id, name: o.name, face: o.face }]))}
+              mates={Object.fromEntries(
+                operators.map((o) => [o.id, { id: o.id, name: o.name, face: o.face, element: o.element, cls: o.profile?.class }]),
+              )}
+              teams={bestTeamsFor(op.id, 3)}
+              opId={op.id}
             />
           </Section>
         </div>

@@ -7,24 +7,25 @@ import { DMG_TYPE_LABEL, DMG_TYPES } from "@/lib/calc/build";
 import type { BuildRecommendation } from "@/lib/data";
 import type { GearSuit } from "@/types/build";
 import { RARITY_BG } from "@/lib/operator-meta";
+import { TeamCard, type TeamMate, type TeamView } from "@/components/teams/team-card";
 
 const SLOT = ["방어구", "장갑", "부품 I", "부품 II"];
 const pct = (v: number, d = 1) => `${(v * 100).toFixed(d)}%`;
 
-interface Mate {
-  id: string;
-  name: string;
-  face?: string;
-}
+type Mate = TeamMate;
 
 export function BuildPanel({
   rec,
   suits,
   mates,
+  teams,
+  opId,
 }: {
   rec: BuildRecommendation;
   suits: Record<string, GearSuit>;
   mates: Record<string, Mate>;
+  teams: TeamView[];
+  opId: string;
 }) {
   const shownWeapons = [
     ...rec.weapons.slice(0, 5),
@@ -137,6 +138,27 @@ export function BuildPanel({
           </Link>
         </p>
       </section>
+
+      {/* 베스트 조합 */}
+      {teams.length > 0 && (
+        <section className="border bg-card">
+          <header className="flex flex-wrap items-baseline justify-between gap-2 border-b px-4 py-3">
+            <h3 className="text-lg font-bold">베스트 조합</h3>
+            <p className="text-xs text-muted-foreground">연계 스킬이 서로 이어지는 4인 조합 · 캐릭터 성능(딜량)은 제외</p>
+          </header>
+          <div className="grid gap-3 p-4 lg:grid-cols-3">
+            {teams.map((t, i) => (
+              <TeamCard key={t.ids.join("-")} team={t} mates={mates} rank={i + 1} focus={opId} />
+            ))}
+          </div>
+          <p className="border-t px-4 py-2 text-xs text-muted-foreground">
+            <Link href={`/teams?op=${opId}`} className="font-semibold text-foreground underline underline-offset-2">
+              조합 더 보기 →
+            </Link>{" "}
+            점수 = 연계 발동 가능 인원 × 10 + 동료 연결 점수
+          </p>
+        </section>
+      )}
 
       {/* 연계 시너지 */}
       <section className="border bg-card">
