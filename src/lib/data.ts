@@ -15,7 +15,7 @@ import type { CombatWeapon, GearPiece, GearSuit } from "@/types/build";
 import { addBag, rankGear, rates, synergy, talentBag, SP_REGEN_INTERVAL, type GearRank, type OperatorBase, type Rotation, type Synergy } from "@/lib/calc/build";
 import { splitTerms } from "@/lib/glossary";
 import type { CombatCharacter, SkillForm, SkillGroup } from "@/types/combat";
-import { damageWeight, rankWeaponsByValue, type OperatorKit, type TeamPool, type WeaponValueRank } from "@/lib/calc/weapon-value";
+import { damageWeight, rankWeaponsByValue, ROLE_WEIGHT, type DealerRef, type OperatorKit, type RoleWeight, type TeamPool, type WeaponValueRank } from "@/lib/calc/weapon-value";
 import { comboRequirement, rankTeams, type ComboRequirement, type TeamCandidate, type TeamEval } from "@/lib/calc/team";
 import type { EssenceRegion, EssenceStats, Operator, OperatorDetails, OperatorProfile, OperatorStats, Weapon } from "@/types/game";
 import { buildWeaponUsers } from "@/lib/weapon-users";
@@ -189,6 +189,7 @@ function buildKit(id: string): OperatorKit | undefined {
       .join("\n")
       .replace(/<[^>]*>/g, "");
   return {
+    id,
     element: base.element,
     mainAttr: base.mainAttr,
     subAttr: base.subAttr,
@@ -199,6 +200,7 @@ function buildKit(id: string): OperatorKit | undefined {
 }
 
 export interface BuildRecommendation {
+  role: RoleWeight;
   weapons: (WeaponValueRank & { official: "skill" | "attribute" | null; image?: string })[];
   gear: GearRank[];
   synergy: Synergy;
@@ -227,7 +229,8 @@ export function getBuildRecommendation(id: string): BuildRecommendation | undefi
   const candidates = Object.entries(combatWeapons).filter(([wid]) => weapons.find((w) => w.id === wid)?.type === op.weaponType);
   const kit = operatorKit(id);
   if (!kit) return undefined;
-  const ranked = rankWeaponsByValue(base, kit, talents, candidates, 0, teamPool(id)).map((r) => ({
+  const role = roleOf(id);
+  const ranked = rankWeaponsByValue(base, kit, talents, candidates, 0, teamPool(id), role, role.self < 1 ? mainDealers() : []).map((r) => ({
     ...r,
     official: op.recommendedWeapons.skill.includes(r.id) ? ("skill" as const) : op.recommendedWeapons.attribute.includes(r.id) ? ("attribute" as const) : null,
     image: weapons.find((w) => w.id === r.id)?.image,
@@ -236,7 +239,36 @@ export function getBuildRecommendation(id: string): BuildRecommendation | undefi
   const topWeapon = ranked[0] ? combatWeapons[ranked[0].id] : undefined;
   const withWeapon = ranked[0] ? addBag(talents, ranked[0].bag) : talents;
   const gear = rankGear(base, topWeapon?.baseAtk.at(-1) ?? 0, withWeapon, Object.entries(gearPieces), Object.entries(gearSuits));
-  return { weapons: ranked, gear, synergy: synergy(id, synergyIndex(), findTerms) };
+  return { weapons: ranked, role, gear, synergy: synergy(id, synergyIndex(), findTerms) };
+}
+
+const candidatesFor = (id: string) => {
+  const op = operators.find((o) => o.id === id);
+  return Object.entries(combatWeapons).filter(([wid]) => weapons.find((w) => w.id === wid)?.type === op?.weaponType);
+};
+
+/** 직업 → 역할 비중 */
+export function roleOf(id: string): RoleWeight {
+  const cls = operators.find((o) => o.id === id)?.profile?.class;
+  return (cls && ROLE_WEIGHT[cls]) || { label: "메인 딜러", self: 1 };
+}
+
+let dealerCache: DealerRef[] | undefined;
+/** 메인 딜러(스트라이커) 전원의 기준 상태 — 각자 본인 피해 1위 무기 착용 */
+function mainDealers(): DealerRef[] {
+  if (dealerCache) return dealerCache;
+  dealerCache = operators
+    .filter((o) => o.profile?.class === "스트라이커")
+    .flatMap((o) => {
+      const op = operatorBase(o.id);
+      const kit = operatorKit(o.id);
+      if (!op || !kit) return [];
+      const talents = talentBag(combatChars[o.id].talents.attributes);
+      const top = rankWeaponsByValue(op, kit, talents, candidatesFor(o.id))[0];
+      if (!top) return [];
+      return [{ id: o.id, op, kit, bag: addBag(talents, top.bag), atk: combatWeapons[top.id].baseAtk.at(-1) ?? 0, d: top.score.overall }];
+    });
+  return dealerCache;
 }
 
 // ───────── 베스트 조합 (연계 시너지) ─────────

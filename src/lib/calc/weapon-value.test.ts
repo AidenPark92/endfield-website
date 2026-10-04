@@ -85,12 +85,20 @@ describe("팀 시너지", () => {
     );
     expect(fx.map((e) => [e.self, e.others])).toEqual([[true, 1], [false, 1], [true, 1], [true, 0.5]]);
   });
-  it("실데이터: 질베르타 사명의 길·자이히 기사도 정신은 시너지 포함 1위 (게임 추천과 일치)", { timeout: 120000 }, () => {
-    for (const [name, weapon] of [["질베르타", "사명의 길"], ["자이히", "기사도 정신"]]) {
-      const w = getBuildRecommendation(operators.find((o) => o.name === name)!.id)!.weapons;
-      expect(w[0].name, name).toBe(weapon);
-      expect(w[0].teamPart).toBeGreaterThan(0);
-      expect(w[0].selfPart + w[0].teamPart).toBeCloseTo(1);
+  it("메인 딜러: 팀원 강화 효과는 점수에서 제외", { timeout: 120000 }, () => {
+    const r = getBuildRecommendation(operators.find((o) => o.name === "레바테인")!.id)!;
+    expect(r.role.self).toBe(1);
+    for (const w of r.weapons) {
+      expect(w.team).toEqual([]);
+      expect(w.dealerGain).toBe(0);
+    }
+  });
+  it("서포터: 메인 딜러를 올려 주는 무기가 1위 (리노 전성기 · 아델리아 바다와 별의 꿈 · 안탈 O.B.J. 아츠 아이덴티티 — 게임 추천과 일치)", { timeout: 120000 }, () => {
+    for (const [name, weapon] of [["리노", "전성기"], ["아델리아", "바다와 별의 꿈"], ["안탈", "O.B.J. 아츠 아이덴티티"]]) {
+      const r = getBuildRecommendation(operators.find((o) => o.name === name)!.id)!;
+      expect(r.role.self, name).toBe(0);
+      expect(r.weapons[0].name, name).toBe(weapon);
+      expect(r.weapons[0].dealerGain, name).toBeGreaterThan(0);
     }
   });
 });

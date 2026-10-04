@@ -27,6 +27,7 @@ const KIND_WORD: Record<string, SkillKind> = { "일반 공격": "basic", "배틀
 
 /** 무기 평가에 필요한 오퍼레이터 정보 */
 export interface OperatorKit {
+  id?: string;
   element: string;
   mainAttr: AttrName;
   subAttr: AttrName;
@@ -375,6 +376,8 @@ export function poolTrigger(cond: string, pool: TeamPool): { p: number; rate: nu
 }
 
 export interface TeamEffectLine extends WeaponEffectLine {
+  /** 원본 효과 (메인 딜러 속성 판정용) */
+  effect?: TraitEffect;
   /** 팀원 기준 능력치 (가동률·절반 반영) */
   bag: StatBag;
   /** 효과를 받는 팀원 비율 */
@@ -441,7 +444,7 @@ export function evaluateWeapon(w: CombatWeapon, kit: OperatorKit, baseAttrs: Rec
       const tb = teammateBag(e, e.value * stacks * e.others);
       const share = teammateShare(e, kit.element, pool);
       if (tb && share > 0) {
-        team.push({ text: e.text, uptime, value: e.value * e.others, applied: e.value * stacks * e.others, pct: isPct(e), via, target: targetOf(e), bag: tb, share });
+        team.push({ text: e.text, uptime, value: e.value * e.others, applied: e.value * stacks * e.others, pct: isPct(e), via, target: targetOf(e), bag: tb, share, effect: e });
         used = true;
       }
     }
@@ -516,21 +519,56 @@ export { ELEM_OF };
 // ───────── 순위 ─────────
 
 
+/** 역할 — 무기 점수에서 "본인 피해"와 "메인 딜러 피해 증가"의 비중 */
+export interface RoleWeight {
+  /** 표시 이름 (메인 딜러 / 서브 딜러 / 서포터 …) */
+  label: string;
+  /** 본인 피해 비중 α (0~1). 나머지 1−α 는 메인 딜러 피해 증가 */
+  self: number;
+}
+
+/** 직업 → 역할 비중 (CLASS_INFO 역할 설명 기준). 메인 딜러는 남을 강화하는 효과가 의미 없고, 서포터는 본인 공격력이 의미 없다 */
+export const ROLE_WEIGHT: Record<string, RoleWeight> = {
+  스트라이커: { label: "메인 딜러", self: 1 },
+  캐스터: { label: "서브 딜러", self: 0.5 },
+  가드: { label: "서브 딜러", self: 0.5 },
+  뱅가드: { label: "자원 수급", self: 0.25 },
+  서포터: { label: "서포터", self: 0 },
+  디펜더: { label: "디펜더", self: 0 },
+};
+
+/** 메인 딜러 기준값 — 본인 피해 1위 무기를 낀 상태 */
+export interface DealerRef {
+  id: string;
+  op: OperatorBase;
+  kit: OperatorKit;
+  bag: StatBag;
+  atk: number;
+  d: number;
+}
+
+/** 팀 효과 하나가 메인 딜러 1명의 피해를 몇 % 올리는지 (속성이 안 맞으면 0) */
+export function dealerGain(line: TeamEffectLine, effect: TraitEffect | undefined, selfElement: string, dealer: DealerRef): number {
+  if (effect?.othersDiffElem && dealer.kit.element === selfElement) return 0;
+  const add = effect ? effectBag({ ...effect }, dealer.kit, line.applied) : undefined;
+  if (!add) return 0;
+  return score(dealer.op, dealer.atk, addBag(dealer.bag, add)).overall / dealer.d - 1;
+}
+
 export interface WeaponValueRank {
   id: string;
   name: string;
   rarity: number;
   /** 본인 피해 */
   score: ScoreResult;
-  /** 팀 시너지 (팀원 3명 피해 증가 기대값, 본인 피해와 같은 단위) */
-  teamGain: number;
-  /** 본인 + 팀 시너지 */
-  total: number;
-  /** 1위 대비 (본인 + 시너지) */
+  /** 본인 피해 ÷ 본인 1위 무기 피해 */
+  selfRatio: number;
+  /** 메인 딜러 피해 증가율 기대값 (메인 딜러 전원 평균) */
+  dealerGain: number;
+  /** α × selfRatio + (1−α) × (1 + dealerGain) */
+  value: number;
+  /** 1위 대비 */
   relative: number;
-  /** relative 중 본인 몫 / 시너지 몫 */
-  selfPart: number;
-  teamPart: number;
   levels: number[];
   applied: WeaponEffectLine[];
   team: TeamEffectLine[];
@@ -539,8 +577,12 @@ export interface WeaponValueRank {
 }
 
 /**
- * 같은 무기 종류 전체를 (본인 피해 + 팀 시너지) 초당 기대치로 비교.
- * 팀원 1명의 기준 피해 = 이 오퍼레이터가 본인 피해 1위 무기를 낀 피해 (모든 무기에 같은 기준 → 공정 비교)
+ * 역할을 반영한 무기 점수
+ *   value = α × (본인 피해 ÷ 본인 1위 무기 피해) + (1−α) × (1 + 메인 딜러 피해 증가율)
+ *   - 메인 딜러(α=1): 본인 피해만. 팀원 강화 효과는 점수에서 뺀다
+ *   - 서포터(α=0): 메인 딜러를 얼마나 올려 주는지만. 본인 공격력은 동점일 때만 비교
+ *   - 메인 딜러 피해 증가율 = 메인 딜러 전원(스트라이커)에 대해, 효과를 그 딜러 능력치에 더했을 때 피해 증가율의 평균
+ *     (속성이 맞지 않는 딜러는 0 → 속성 비율이 자연히 반영)
  */
 export function rankWeaponsByValue(
   op: OperatorBase,
@@ -549,6 +591,8 @@ export function rankWeaponsByValue(
   weapons: [string, CombatWeapon][],
   refine = 0,
   pool?: TeamPool,
+  role: RoleWeight = { label: "메인 딜러", self: 1 },
+  dealers: DealerRef[] = [],
 ): WeaponValueRank[] {
   const attrs: Record<AttrName, number> = {
     힘: op.attrs.힘 + base.str,
@@ -557,32 +601,32 @@ export function rankWeaponsByValue(
     의지: op.attrs.의지 + base.wil,
   };
   const rows = weapons.map(([id, w]) => {
-    const ev = evaluateWeapon(w, kit, attrs, refine, pool);
+    const ev = evaluateWeapon(w, kit, attrs, refine, role.self < 1 ? pool : undefined);
     return { id, name: w.name, rarity: w.rarity, ev, score: score(op, ev.atk, addBag(base, ev.bag)) };
   });
-  // 팀원 기준: 본인 피해 1위 무기
-  const ref = [...rows].sort((a, b) => b.score.overall - a.score.overall)[0];
-  const refBag = ref ? addBag(base, ref.ev.bag) : base;
-  const refAtk = ref?.ev.atk ?? 0;
-  const dRef = ref?.score.overall ?? 0;
-  const gainOf = (lines: TeamEffectLine[]) =>
-    lines.reduce((s, l) => s + TEAMMATES * l.share * (score(op, refAtk, addBag(refBag, l.bag)).overall - dRef), 0);
+  const selfTop = Math.max(...rows.map((r) => r.score.overall)) || 1;
+  const others = dealers.filter((d) => d.id !== kit.id);
   const scored = rows.map((r) => {
-    const teamGain = gainOf(r.ev.team);
-    return { ...r, teamGain, total: r.score.overall + teamGain };
+    const selfRatio = r.score.overall / selfTop;
+    const gain = others.length
+      ? r.ev.team.reduce((s, l) => s + others.reduce((g, d) => g + dealerGain(l, l.effect, kit.element, d), 0) / others.length, 0)
+      : 0;
+    return { ...r, selfRatio, dealerGain: gain, value: role.self * selfRatio + (1 - role.self) * (1 + gain) };
   });
-  scored.sort((a, b) => b.total - a.total);
-  const top = scored[0]?.total || 1;
+  // 메인 딜러를 올려 주는 무기가 하나도 없으면(디펜더 등 — 생존 효과는 아직 미반영) 본인 피해로 대신 정렬
+  if (role.self < 1 && scored.every((r) => r.dealerGain === 0)) for (const r of scored) r.value = r.selfRatio;
+  // 동점(서포터의 팀 효과 없는 무기끼리)은 본인 피해로
+  scored.sort((a, b) => b.value - a.value || b.selfRatio - a.selfRatio);
+  const top = scored[0]?.value || 1;
   return scored.map((r) => ({
     id: r.id,
     name: r.name,
     rarity: r.rarity,
     score: r.score,
-    teamGain: r.teamGain,
-    total: r.total,
-    relative: r.total / top,
-    selfPart: r.score.overall / top,
-    teamPart: r.teamGain / top,
+    selfRatio: r.selfRatio,
+    dealerGain: r.dealerGain,
+    value: r.value,
+    relative: r.value / top,
     levels: r.ev.levels,
     applied: r.ev.applied,
     team: r.ev.team,
