@@ -8,6 +8,8 @@ import { STAGGER_UPTIME } from "@/lib/calc/weapon-value";
 import type { BuildRecommendation } from "@/lib/data";
 import type { GearSuit } from "@/types/build";
 import { RARITY_BG } from "@/lib/operator-meta";
+import { GearIcon } from "@/components/gear/gear-icon";
+import { gearImages } from "@/lib/data";
 import { TeamCard, type TeamMate, type TeamView } from "@/components/teams/team-card";
 
 const SLOT = ["방어구", "장갑", "부품 I", "부품 II"];
@@ -189,20 +191,24 @@ export function BuildPanel({
             const effect = suit?.effects.find((e) => e.pieces === 3) ?? suit?.effects[0];
             return (
               <article key={g.suitId} className="flex flex-col bg-background p-4">
-                <div className="flex items-baseline justify-between gap-2">
-                  <h4 className="text-lg font-bold">
+                <div className="flex items-center gap-3">
+                  <GearIcon src={gearImages.suits[g.suitId]} size={48} />
+                  <h4 className="min-w-0 flex-1 text-lg leading-tight font-bold">
                     <span className={cn("mr-1.5 font-mono", i === 0 && "text-accent-strong")}>{i + 1}</span>
                     {g.suitName}
                   </h4>
                   <b className="font-mono">{pct(g.relative)}</b>
                 </div>
-                <ul className="mt-3 space-y-1 text-sm">
+                <ul className="mt-3 space-y-1.5 text-sm">
                   {g.pieces.map((p, j) => (
-                    <li key={p.id + j} className="flex gap-2">
-                      <span className="w-12 shrink-0 text-xs text-muted-foreground">{SLOT[j]}</span>
-                      <span className={cn(!p.inSuit && "text-muted-foreground")}>
-                        {p.name}
-                        {!p.inSuit && <span className="ml-1 border px-1 text-[10px]">세트 외</span>}
+                    <li key={p.id + j} className="flex items-center gap-2">
+                      <GearIcon src={gearImages.pieces[p.id]} size={36} className={cn(!p.inSuit && "opacity-70")} />
+                      <span className="min-w-0">
+                        <span className="block text-[11px] leading-4 text-muted-foreground">{SLOT[j]}</span>
+                        <span className={cn("block leading-5", !p.inSuit && "text-muted-foreground")}>
+                          {p.name}
+                          {!p.inSuit && <span className="ml-1 border px-1 text-[10px]">세트 외</span>}
+                        </span>
                       </span>
                     </li>
                   ))}

@@ -4,9 +4,11 @@ import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Rich } from "@/components/rich-text";
+import { GearIcon } from "@/components/gear/gear-icon";
 import type { GearPiece, GearSuit } from "@/types/build";
 
 type AttrTypes = Record<string, { name: string; kind: string }>;
+type GearImages = { pieces: Record<string, string>; suits: Record<string, string> };
 const SLOTS = ["방어구", "장갑", "부품"];
 /** 피해·전투 관련 옵션 (필터 칩) */
 const STAT_FILTERS: { label: string; types: number[] }[] = [
@@ -29,7 +31,17 @@ function fmt(v: number, kind: string) {
 }
 
 /** 장비 전체 — 세트별 카드 + 세트 없는 장비, 부위·옵션·검색 필터, 단조 단계 선택 */
-export function GearBrowser({ pieces, suits, attrTypes }: { pieces: Record<string, GearPiece>; suits: Record<string, GearSuit>; attrTypes: AttrTypes }) {
+export function GearBrowser({
+  pieces,
+  suits,
+  attrTypes,
+  images,
+}: {
+  pieces: Record<string, GearPiece>;
+  suits: Record<string, GearSuit>;
+  attrTypes: AttrTypes;
+  images: GearImages;
+}) {
   const [q, setQ] = useState("");
   const [slot, setSlot] = useState<number | null>(null);
   const [stat, setStat] = useState<string | null>(null);
@@ -113,13 +125,16 @@ export function GearBrowser({ pieces, suits, attrTypes }: { pieces: Record<strin
           return (
             <section key={sid} className="flex flex-col border bg-card">
               <header className="border-b px-4 py-3">
-                <div className="flex items-baseline gap-2">
-                  <h2 className="text-xl font-bold">{s.name}</h2>
-                  <span className="font-mono text-xs text-muted-foreground">T{s.tier} · {list.length}종</span>
+                <div className="flex items-center gap-3">
+                  <GearIcon src={images.suits[sid]} size={52} />
+                  <div className="flex min-w-0 items-baseline gap-2">
+                    <h2 className="text-xl font-bold">{s.name}</h2>
+                    <span className="font-mono text-xs text-muted-foreground">T{s.tier} · {list.length}종</span>
+                  </div>
                 </div>
                 {eff && <Rich template={eff.desc} bb={eff.bb} className="mt-2 text-[14px] leading-6 whitespace-pre-line" />}
               </header>
-              <PieceList list={list} forge={forge} attrTypes={attrTypes} />
+              <PieceList list={list} forge={forge} attrTypes={attrTypes} images={images.pieces} />
             </section>
           );
         })}
@@ -131,7 +146,7 @@ export function GearBrowser({ pieces, suits, attrTypes }: { pieces: Record<strin
           <header className="border-b px-4 py-3">
             <h2 className="text-xl font-bold">세트 없는 장비</h2>
           </header>
-          <PieceList list={groups.bySuit.get(null)!} forge={forge} attrTypes={attrTypes} />
+          <PieceList list={groups.bySuit.get(null)!} forge={forge} attrTypes={attrTypes} images={images.pieces} />
         </section>
       )}
       {total === 0 && <p className="py-12 text-center text-sm text-muted-foreground">조건에 맞는 장비가 없어요.</p>}
@@ -139,17 +154,20 @@ export function GearBrowser({ pieces, suits, attrTypes }: { pieces: Record<strin
   );
 }
 
-function PieceList({ list, forge, attrTypes }: { list: [string, GearPiece][]; forge: number; attrTypes: AttrTypes }) {
+function PieceList({ list, forge, attrTypes, images }: { list: [string, GearPiece][]; forge: number; attrTypes: AttrTypes; images: Record<string, string> }) {
   const sorted = [...list].sort((a, b) => a[1].partType - b[1].partType || b[1].minWearLv - a[1].minWearLv || (a[1].name ?? "").localeCompare(b[1].name ?? "", "ko"));
   return (
     <ul className="divide-y">
       {sorted.map(([id, p]) => (
-        <li key={id} className="grid gap-1 px-4 py-2.5 sm:grid-cols-[minmax(0,13rem)_1fr] sm:gap-4">
-          <div className="min-w-0">
-            <p className="truncate font-semibold">{p.name}</p>
-            <p className="text-[11px] text-muted-foreground">
-              {SLOTS[p.partType] ?? "-"} · Lv.{p.minWearLv}
-            </p>
+        <li key={id} className="grid gap-1.5 px-4 py-2.5 sm:grid-cols-[minmax(0,16rem)_1fr] sm:items-center sm:gap-4">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <GearIcon src={images[id]} />
+            <div className="min-w-0">
+              <p className="truncate font-semibold">{p.name}</p>
+              <p className="text-[11px] text-muted-foreground">
+                {SLOTS[p.partType] ?? "-"} · Lv.{p.minWearLv}
+              </p>
+            </div>
           </div>
           <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
             {p.attrs.map((a, i) => {

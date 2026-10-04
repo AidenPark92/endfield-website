@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { gearPieces, gearSuits } from "@/lib/data";
+import { gearImages, gearPieces, gearSuits } from "@/lib/data";
 import { GearBrowser } from "@/components/gear/gear-browser";
 import attrTypesJson from "@data/combat/attr-types.json";
 
@@ -19,7 +19,7 @@ export default function GearPage() {
           단계를 바꿔 볼 수 있어요.
         </p>
       </header>
-      <GearBrowser pieces={gearPieces} suits={gearSuits} attrTypes={attrTypesJson.attrTypes} />
+      <GearBrowser pieces={gearPieces} suits={gearSuits} attrTypes={attrTypesJson.attrTypes} images={gearImages} />
     </div>
   );
 }

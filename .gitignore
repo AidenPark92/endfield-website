@@ -50,3 +50,5 @@ src/images/무기/*.gif
 
 # 캐릭터 원본 일러스트 (약 100MB) — 변환본(public/operators)만 저장소에 올림
 src/images/캐릭터/
+# 장비 원본 PNG(35MB) — public/gear/*.webp 로 변환해서 사용 (scripts/build-gear-images.py)
+src/images/장비/

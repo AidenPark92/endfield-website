@@ -11,6 +11,7 @@ import operatorDetailsJson from "@data/operator-details.json";
 import combatCharactersJson from "@data/combat/characters.json";
 import combatWeaponsJson from "@data/combat/weapons.json";
 import gearJson from "@data/combat/gear.json";
+import gearImagesJson from "@data/gear-images.json";
 import type { CombatWeapon, GearPiece, GearSuit } from "@/types/build";
 import { addBag, rates, score, synergy, talentBag, gearBag, suitBag, SP_REGEN_INTERVAL, BASIC_CHAIN_SECONDS, type GearRank, type OperatorBase, type StatBag, type Rotation, type Synergy } from "@/lib/calc/build";
 import { splitTerms } from "@/lib/glossary";
@@ -121,6 +122,11 @@ function defaultForm(id: string): string | undefined {
 export const combatWeapons = (combatWeaponsJson as unknown as { weapons: Record<string, CombatWeapon> }).weapons;
 export const gearPieces = (gearJson as unknown as { pieces: Record<string, GearPiece> }).pieces;
 export const gearSuits = (gearJson as unknown as { suits: Record<string, GearSuit> }).suits;
+/** 장비 아이콘 (scripts/build-gear-images.py 생성) — pieces: 장비 id → 경로, suits: 세트 id → 대표(방어구) 이미지 */
+export const gearImages: { pieces: Record<string, string>; suits: Record<string, string> } = {
+  pieces: gearImagesJson.pieces,
+  suits: gearImagesJson.suits,
+};
 
 function operatorBase(id: string): OperatorBase | undefined {
   const c = combatChars[id];
