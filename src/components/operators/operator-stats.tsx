@@ -2,17 +2,21 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { BREAK_LEVELS, MAX_LEVEL, statsAt } from "@/lib/calc/operator-stats";
-import type { AttrName, OperatorStats } from "@/types/game";
+import { BREAK_LEVELS, MAX_LEVEL, milestoneStatsAt, statsAt } from "@/lib/calc/operator-stats";
+import type { AttrName, OperatorStats, StatMilestones } from "@/types/game";
 
 const QUICK_LEVELS = [1, ...BREAK_LEVELS, MAX_LEVEL];
 const ATTR_ORDER: AttrName[] = ["힘", "민첩", "지능", "의지"];
 const fmt = (n: number) => Math.floor(n).toLocaleString("ko-KR"); // TODO: 인게임 표시가 내림인지 반올림인지 확인
 
 /** 레벨별 기본 능력치 — 레벨을 바꾸면 수치가 바로 바뀜 */
-export function OperatorStatsPanel({ stats }: { stats: OperatorStats }) {
+export function OperatorStatsPanel({ stats, milestones }: { stats?: OperatorStats; milestones?: StatMilestones }) {
   const [level, setLevel] = useState(MAX_LEVEL);
-  const s = statsAt(stats, level);
+  // 레벨별 곡선(게임 테이블)이 있으면 모든 레벨, 없으면 공식 위키 6개 레벨만
+  const s = stats ? statsAt(stats, level) : milestones ? milestoneStatsAt(milestones, level) : undefined;
+  const mainAttr = stats?.mainAttr ?? milestones?.mainAttr;
+  const subAttr = stats?.subAttr ?? milestones?.subAttr;
+  if (!s) return null;
   const attrMax = Math.max(...ATTR_ORDER.map((a) => s.attrs[a]));
 
   return (
@@ -21,7 +25,7 @@ export function OperatorStatsPanel({ stats }: { stats: OperatorStats }) {
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b p-3">
         <span className="text-xs text-muted-foreground">레벨</span>
         <b className="w-8 font-mono text-lg tabular-nums">{level}</b>
-        <input
+        {stats && <input
           type="range"
           min={1}
           max={MAX_LEVEL}
@@ -29,7 +33,8 @@ export function OperatorStatsPanel({ stats }: { stats: OperatorStats }) {
           onChange={(e) => setLevel(Number(e.target.value))}
           aria-label="레벨"
           className="min-w-32 flex-1 cursor-pointer accent-foreground"
-        />
+        />}
+        {!stats && <span className="flex-1 text-[11px] text-muted-foreground">공식 위키 기준 6개 레벨 값만 있어요</span>}
         <div className="flex gap-1">
           {QUICK_LEVELS.map((lv) => (
             <button
@@ -51,14 +56,14 @@ export function OperatorStatsPanel({ stats }: { stats: OperatorStats }) {
       <dl className="grid grid-cols-2 divide-x border-b sm:grid-cols-4">
         <Stat k="생명력" v={fmt(s.hp)} />
         <Stat k="기본 공격력" v={fmt(s.atk)} />
-        <Stat k="능력치 보너스" v={`×${s.attrBonus.toFixed(3)}`} hint={`주 ${stats.mainAttr} · 보조 ${stats.subAttr}`} />
+        <Stat k="능력치 보너스" v={`×${s.attrBonus.toFixed(3)}`} hint={`주 ${mainAttr} · 보조 ${subAttr}`} />
         <Stat k="공격력 (능력치 반영)" v={fmt(s.atkWithAttr)} strong />
       </dl>
 
       {/* 능력치 */}
       <ul className="space-y-1.5 p-3">
         {ATTR_ORDER.map((a) => {
-          const role = a === stats.mainAttr ? "주" : a === stats.subAttr ? "보조" : null;
+          const role = a === mainAttr ? "주" : a === subAttr ? "보조" : null;
           return (
             <li key={a} className="flex items-center gap-2 text-sm">
               <span className="w-10 shrink-0 font-medium">{a}</span>

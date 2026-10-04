@@ -8,7 +8,10 @@ export const metadata: Metadata = {
 };
 
 export default function OperatorsPage() {
-  const list = [...operators].sort((a, b) => b.rarity - a.rarity || a.name.localeCompare(b.name, "ko"));
+  // 목록 화면엔 능력치가 필요 없으니 클라이언트로 보내는 데이터에서 뺀다
+  const list = [...operators]
+    .sort((a, b) => b.rarity - a.rarity || a.name.localeCompare(b.name, "ko"))
+    .map((o) => ({ ...o, stats: undefined, statMilestones: undefined }));
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
       <header className="mb-6 border-b pb-6">

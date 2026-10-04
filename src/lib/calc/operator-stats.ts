@@ -1,6 +1,6 @@
 // 오퍼레이터 기본 능력치 계산 (순수 함수)
 // 공식 출처: docs/combat/combat-mechanics.md §1·§7 — 능력치 보너스 = 1 + 0.005×주 능력치 + 0.002×보조 능력치 (✅)
-import type { AttrName, OperatorStats } from "@/types/game";
+import type { AttrName, OperatorStats, StatMilestones } from "@/types/game";
 
 export const MAX_LEVEL = 90;
 /** 돌파 단계가 바뀌는 레벨 (돌파 전·후 기본치는 같음) */
@@ -53,6 +53,29 @@ export function statsAt(s: OperatorStats, level: number): StatsAtLevel {
     attrBonus: bonus,
     atkWithAttr: s.atk[i] * bonus,
     critRate: s.critRate,
+    critDmg: BASE_CRIT_DMG,
+  };
+}
+
+/** 공식 위키 6개 레벨(1/20/40/60/80/90) 값만 있을 때. 그 사이 레벨은 추측하지 않고 undefined */
+export function milestoneStatsAt(m: StatMilestones, level: number): StatsAtLevel | undefined {
+  const i = m.levels.indexOf(level);
+  if (i < 0) return undefined;
+  const attrs: Record<AttrName, number> = { 힘: m.str[i], 민첩: m.agi[i], 지능: m.int[i], 의지: m.wil[i] };
+  const main = attrs[m.mainAttr];
+  const sub = attrs[m.subAttr];
+  const bonus = attrBonus(main, sub);
+  return {
+    level,
+    hp: m.hp[i],
+    atk: m.atk[i],
+    def: 0, // TODO: 위키 레벨 표에 방어력 없음 — 게임 테이블 기준 오퍼레이터 기본 방어력은 0
+    attrs,
+    main,
+    sub,
+    attrBonus: bonus,
+    atkWithAttr: m.atk[i] * bonus,
+    critRate: 0.05, // combat-mechanics §7 기본 치명률
     critDmg: BASE_CRIT_DMG,
   };
 }

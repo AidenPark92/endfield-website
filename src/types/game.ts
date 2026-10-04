@@ -58,8 +58,10 @@ export interface Operator {
   /** 작은 초상화 (public/operators/face) */
   face?: string;
   profile?: OperatorProfile;
-  /** 레벨별 기본 능력치 (data/operator-stats.json) — 추출 이후 출시 캐릭터는 없음 */
+  /** 레벨별 기본 능력치 곡선 (data/operator-stats.json, 게임 테이블) — 추출 이후 출시 캐릭터는 없음 */
   stats?: OperatorStats;
+  /** 레벨 1/20/40/60/80/90 능력치 (data/operator-details.json, 공식 위키) — 전원 있음 */
+  statMilestones?: StatMilestones;
 }
 
 export type AttrName = "힘" | "민첩" | "지능" | "의지";
@@ -103,4 +105,58 @@ export interface EssenceRegion {
   area: string;
   extra: string[];
   skill: string[];
+}
+
+/** 공식 위키 '레벨 증가' 표 — 레벨 1/20/40/60/80/90 */
+export interface StatMilestones {
+  levels: number[];
+  mainAttr: AttrName;
+  subAttr: AttrName;
+  str: number[];
+  agi: number[];
+  int: number[];
+  wil: number[];
+  atk: number[];
+  hp: number[];
+}
+
+export interface MaterialCount {
+  item: string;
+  count: number;
+}
+
+/** 스킬 랭크별 수치 한 줄 — 숫자로 읽히면 values + unit, 위키 표기 오류 등으로 못 읽으면 raw */
+export interface SkillParam {
+  label: string;
+  values?: number[];
+  unit?: string;
+  raw?: string[];
+}
+
+export type SkillType = "일반 공격" | "배틀 스킬" | "연계 스킬" | "궁극기";
+
+export interface OperatorSkill {
+  type: SkillType;
+  name: string;
+  description: string;
+  /** RANK1~RANK9, 마스터리I~III */
+  ranks: string[];
+  params: SkillParam[];
+  materials: { rank: string; materials: MaterialCount[] }[];
+}
+
+export interface OperatorTalent {
+  category: "재능 배열" | "오퍼레이터 재능" | "인프라 스킬" | "정예화" | "장비 조합";
+  name: string;
+  stages: { label: string; effect: string; conditions: string[]; materials: MaterialCount[] }[];
+}
+
+/** 공식 위키 오퍼레이터 상세 (data/operator-details.json) — 데미지·육성 계산의 원본 */
+export interface OperatorDetails {
+  name: string;
+  stats: StatMilestones;
+  levelMaterials: { from: number; to: number; materials: MaterialCount[] }[];
+  skills: OperatorSkill[];
+  talents: OperatorTalent[];
+  potentials: { level: number; name: string; effect: string }[];
 }
