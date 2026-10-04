@@ -8,6 +8,8 @@ import operatorImagesJson from "@data/operator-images.json";
 import operatorProfilesJson from "@data/operator-profiles.json";
 import operatorStatsJson from "@data/operator-stats.json";
 import operatorDetailsJson from "@data/operator-details.json";
+import combatCharactersJson from "@data/combat/characters.json";
+import type { CombatCharacter } from "@/types/combat";
 import type { EssenceRegion, EssenceStats, Operator, OperatorDetails, OperatorProfile, OperatorStats, Weapon } from "@/types/game";
 import { buildWeaponUsers } from "@/lib/weapon-users";
 
@@ -47,3 +49,24 @@ export const operators: Operator[] = (operatorsJson.operators as Operator[]).map
 
 /** 무기 id → 그 무기를 추천받는 오퍼레이터 (위키 '게임 내 추천' 기준) */
 export const weaponUsers = buildWeaponUsers(operators);
+
+const combatChars = (combatCharactersJson as unknown as { characters: Record<string, CombatCharacter & Record<string, unknown>> }).characters;
+export const combatCharactersMeta = combatCharactersJson._meta;
+
+/** 게임 데이터 기반 전투 정보(스킬 레벨별 수치·잠재·재능). 화면에 필요한 부분만 잘라서 돌려준다 */
+export function getCombatCharacter(id: string): CombatCharacter | undefined {
+  const c = combatChars[id];
+  if (!c) return undefined;
+  return {
+    charId: c.charId,
+    name: c.name,
+    rarity: c.rarity,
+    element: c.element,
+    mainAttr: c.mainAttr,
+    subAttr: c.subAttr,
+    critRate: c.critRate,
+    skillGroups: c.skillGroups,
+    potentials: c.potentials,
+    talents: { attributes: c.talents.attributes, passives: c.talents.passives },
+  };
+}

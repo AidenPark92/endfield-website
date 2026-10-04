@@ -4,12 +4,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight, BookOpen, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { essenceStats, operators, weapons } from "@/lib/data";
+import { essenceStats, getCombatCharacter, operators, weapons } from "@/lib/data";
 import { CLASS_ICON, ELEMENT_BG, ELEMENT_ICON, ELEMENT_TEXT, RARITY_BG } from "@/lib/operator-meta";
 import { essenceImage } from "@/lib/essence-images";
 import type { StatCategory, Weapon } from "@/types/game";
 import { EssenceSlots } from "@/components/essence/essence-slots";
 import { OperatorStatsPanel } from "@/components/operators/operator-stats";
+import { CombatPanel } from "@/components/operators/combat-panel";
 
 export function generateStaticParams() {
   return operators.map((o) => ({ id: o.id }));
@@ -33,6 +34,7 @@ export default async function OperatorPage({ params }: { params: Promise<{ id: s
   const op = operators.find((o) => o.id === id);
   if (!op) notFound();
   const p = op.profile;
+  const combat = getCombatCharacter(op.id);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6">
@@ -112,6 +114,15 @@ export default async function OperatorPage({ params }: { params: Promise<{ id: s
           )}
         </Section>
       </div>
+
+      {/* 전투 데이터 (스킬 레벨별 수치 · 재능 · 잠재) */}
+      {combat && (
+        <div className="mt-6">
+          <Section title="전투 데이터" hint="스킬 레벨을 바꾸면 설명과 수치가 함께 바뀌어요 · 게임 데이터 기준">
+            <CombatPanel data={combat} />
+          </Section>
+        </div>
+      )}
 
       {p && (
         <div className="mt-6 grid gap-6 lg:grid-cols-2">

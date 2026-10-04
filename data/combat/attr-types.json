@@ -1,0 +1,183 @@
+{
+ "_meta": {
+  "note": "게임 attrType 번호. 이름은 endfieldtools 표시명 번역(미확인 항목은 '미확인 N'). kind: flat/ratio(0.1=10%)/mult(1=변화 없음)"
+ },
+ "attrTypes": {
+  "0": {
+   "name": "기본",
+   "kind": "flat"
+  },
+  "1": {
+   "name": "생명력",
+   "kind": "flat"
+  },
+  "2": {
+   "name": "공격력",
+   "kind": "flat"
+  },
+  "3": {
+   "name": "방어력",
+   "kind": "flat"
+  },
+  "4": {
+   "name": "받는 물리 피해",
+   "kind": "mult"
+  },
+  "5": {
+   "name": "받는 열기 피해",
+   "kind": "mult"
+  },
+  "6": {
+   "name": "받는 전기 피해",
+   "kind": "mult"
+  },
+  "7": {
+   "name": "받는 냉기 피해",
+   "kind": "mult"
+  },
+  "9": {
+   "name": "치명타 확률",
+   "kind": "ratio"
+  },
+  "10": {
+   "name": "치명타 피해",
+   "kind": "ratio"
+  },
+  "13": {
+   "name": "공격 속도 배수",
+   "kind": "mult"
+  },
+  "17": {
+   "name": "일반 공격 피해",
+   "kind": "ratio"
+  },
+  "25": {
+   "name": "미확인 25",
+   "kind": "mult"
+  },
+  "26": {
+   "name": "불균형 효율",
+   "kind": "mult"
+  },
+  "28": {
+   "name": "궁극기 피해",
+   "kind": "ratio"
+  },
+  "29": {
+   "name": "치유 효과",
+   "kind": "ratio"
+  },
+  "30": {
+   "name": "받는 치유 효과",
+   "kind": "ratio"
+  },
+  "32": {
+   "name": "배틀 스킬 피해",
+   "kind": "ratio"
+  },
+  "33": {
+   "name": "연계 스킬 피해",
+   "kind": "ratio"
+  },
+  "35": {
+   "name": "열기 폭발 피해",
+   "kind": "ratio"
+  },
+  "36": {
+   "name": "전기 폭발 피해",
+   "kind": "ratio"
+  },
+  "37": {
+   "name": "냉기 폭발 피해",
+   "kind": "ratio"
+  },
+  "38": {
+   "name": "자연 폭발 피해",
+   "kind": "ratio"
+  },
+  "39": {
+   "name": "힘",
+   "kind": "flat"
+  },
+  "40": {
+   "name": "민첩",
+   "kind": "flat"
+  },
+  "41": {
+   "name": "지능",
+   "kind": "flat"
+  },
+  "42": {
+   "name": "의지",
+   "kind": "flat"
+  },
+  "44": {
+   "name": "궁극기 에너지 획득",
+   "kind": "ratio"
+  },
+  "47": {
+   "name": "연계 스킬 쿨타임",
+   "kind": "mult"
+  },
+  "48": {
+   "name": "받는 자연 피해",
+   "kind": "mult"
+  },
+  "49": {
+   "name": "미확인 49",
+   "kind": "mult"
+  },
+  "50": {
+   "name": "물리 피해",
+   "kind": "ratio"
+  },
+  "51": {
+   "name": "열기 피해",
+   "kind": "ratio"
+  },
+  "52": {
+   "name": "전기 피해",
+   "kind": "ratio"
+  },
+  "53": {
+   "name": "냉기 피해",
+   "kind": "ratio"
+  },
+  "54": {
+   "name": "자연 피해",
+   "kind": "ratio"
+  },
+  "55": {
+   "name": "받는 에테르 피해",
+   "kind": "mult"
+  },
+  "56": {
+   "name": "열기 이상 피해",
+   "kind": "ratio"
+  },
+  "57": {
+   "name": "전기 이상 피해",
+   "kind": "ratio"
+  },
+  "58": {
+   "name": "냉기 이상 피해",
+   "kind": "ratio"
+  },
+  "59": {
+   "name": "자연 이상 피해",
+   "kind": "ratio"
+  },
+  "60": {
+   "name": "받는 에테르 피해 2",
+   "kind": "mult"
+  },
+  "61": {
+   "name": "불균형 상태 적에게 주는 피해",
+   "kind": "ratio"
+  },
+  "87": {
+   "name": "오리지늄 아츠 강도",
+   "kind": "flat"
+  }
+ }
+}

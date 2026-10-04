@@ -21,16 +21,21 @@ data/                     게임 데이터 (JSON) — 계산은 여기 값만 �
   operators.json          오퍼레이터 33명 + 게임 내 추천 무기
   operator-profiles.json  직업·기본 정보·특기/취미·스킬 이름 + 사이트에서 쓴 스토리 요약 (원문은 위키 링크)
   operator-images.json    캐릭터 이미지 매핑 (전신 / 얼굴)
-  operator-stats.json     레벨별 기본 능력치 (생명력·공격력·힘/민첩/지능/의지) — 게임 데이터 테이블 추출
+  operator-stats.json     레벨 1~90 기본 능력치 (생명력·공격력·힘/민첩/지능/의지) — build-combat-data.py 가 생성
+  combat/                 데미지 계산 원본 (게임 클라이언트 데이터 기반, endfieldtools.dev localdb)
+    characters.json       스킬 레벨 1~12 수치(blackboard)·잠재·재능·돌파 재료
+    weapons.json          무기 레벨별 기초 공격력·스킬 3종 레벨별 수치·돌파/재련
+    gear.json             장비 부위 옵션(단조 단계별)·세트 효과
+    attr-types.json       attrType 번호 → 이름
   operator-details.json   공식 위키 상세: 스킬 랭크별 배율·SP·쿨타임·궁 에너지, 재능, 잠재, 정예화·레벨·스킬 재료 (데미지·육성 계산 원본)
-  raw/                    위키에서 수집한 원본 (operators_wiki_raw.json = 오퍼레이터 상세 페이지 표 전체)
+  raw/                    수집 원본 (operators_wiki_raw.json = 공식 위키 표, endfieldtools/bundle.json.gz = 게임 데이터 묶음)
 docs/combat/               전투 메커니즘 기준 문서 (데미지 계산기·측정 수치화는 여기 기준)
   combat-mechanics.md     전투 구조 · 아츠/물리 이상 수치 · 데미지 공식 (출처·신뢰도 표기)
   combat-verification.md  미확인 수치 인게임 측정 방법
 scripts/build-data.mjs    raw → data/*.json 정규화
 scripts/build-operator-images.py  src/images/캐릭터 → public/operators (전신 720px, 얼굴 200px) + data/operator-images.json
 scripts/build-operator-details.py  data/raw/operators_wiki_raw.json → data/operator-details.json
-scripts/build-operator-stats.py  게임 데이터 테이블(EndFieldGameData) → data/operator-stats.json
+scripts/build-combat-data.py  data/raw/endfieldtools → data/combat/*.json + data/operator-stats.json
 scripts/build-weapon-images.py  src/images/무기 → public/weapons (아이콘 webp, 회전 영상 webm/mp4, 포스터) + data/weapon-images.json
 src/
   app/                    페이지 (서버 컴포넌트 기본)
