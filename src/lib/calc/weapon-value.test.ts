@@ -33,10 +33,10 @@ describe("고유 특성 해석", () => {
   it("% 없는 공격력은 고정 공격력", () => {
     expect(parseTrait("공격력 +{atk_up:0}", { atk_up: 33.6 })[0].zone).toBe("flatAtk");
   });
-  it("능력치 조건 구간 · 다른 동료 전용 효과", () => {
+  it("능력치 조건 구간 · 팀원 전용 효과", () => {
     const fx = parseTrait("장착자의 지능 수치 ≥ 의지 수치: 장착자가 자신의 스킬로 아츠 부착을 부여할 경우, 주는 아츠 피해 +{a:0.0%}, {duration:0}초 동안 지속.\n장착자가 궁극기를 사용할 때, 팀 내의 다른 오퍼레이터가 주는 아츠 피해 +{b:0.0%}, {duration:0}초 동안 지속.", { a: 0.56, b: 0.1, duration: 20 });
     expect(fx[0].gate).toEqual({ a: "지능", op: ">=", b: "의지" });
-    expect(fx[1].skip).toBe("다른 동료에게만 주는 효과");
+    expect([fx[1].self, fx[1].others]).toEqual([false, 1]); // 팀원 전용 → 팀 시너지로
   });
   it("중첩 안내 줄은 앞 효과에 적용", () => {
     const fx = parseTrait("장착자가 배틀 스킬을 사용할 때, 공격력 +{atk_up:0.0%}, {duration:0}초 동안 지속.\n같은 이름의 효과는 최대 {max_stack:0}스택까지 중첩되며", { atk_up: 0.1, duration: 30, max_stack: 3 });
@@ -67,6 +67,30 @@ describe("실데이터", () => {
       const w = getBuildRecommendation(o.id)!.weapons;
       expect(w[0].relative, o.name).toBe(1);
       for (let i = 1; i < w.length; i++) expect(w[i].relative).toBeLessThanOrEqual(w[i - 1].relative);
+    }
+  });
+});
+
+describe("팀 시너지", () => {
+  it("3인 편성에 조건 제공자가 1명 이상 있을 확률", async () => {
+    const { atLeastOne } = await import("./weapon-value");
+    expect(atLeastOne(10, 0)).toBe(0);
+    expect(atLeastOne(10, 1)).toBeCloseTo(0.3); // 1 − C(9,3)/C(10,3)
+    expect(atLeastOne(10, 8)).toBe(1);
+  });
+  it("효과 대상: 팀 전체 / 다른 팀원 / 적이 받는 피해 / 절반", () => {
+    const fx = parseTrait(
+      "장착자가 궁극기를 사용할 때, 팀 전체의 공격력 +{a:0.0%}, 팀 내의 다른 오퍼레이터가 주는 아츠 피해 +{b:0.0%}, 목표가 받는 아츠 피해 +{c:0.0%}, {duration:0}초 동안 지속.\n장착자가 방어 불능 스택 수치를 소모한 후, 자신의 공격력 +{d:0.0%}, 팀 내 다른 오퍼레이터는 절반의 효과를 획득함, {duration:0}초 동안 지속.",
+      { a: 0.1, b: 0.2, c: 0.3, d: 0.4, duration: 15 },
+    );
+    expect(fx.map((e) => [e.self, e.others])).toEqual([[true, 1], [false, 1], [true, 1], [true, 0.5]]);
+  });
+  it("실데이터: 질베르타 사명의 길·자이히 기사도 정신은 시너지 포함 1위 (게임 추천과 일치)", { timeout: 120000 }, () => {
+    for (const [name, weapon] of [["질베르타", "사명의 길"], ["자이히", "기사도 정신"]]) {
+      const w = getBuildRecommendation(operators.find((o) => o.name === name)!.id)!.weapons;
+      expect(w[0].name, name).toBe(weapon);
+      expect(w[0].teamPart).toBeGreaterThan(0);
+      expect(w[0].selfPart + w[0].teamPart).toBeCloseTo(1);
     }
   });
 });

@@ -12,10 +12,10 @@ import combatCharactersJson from "@data/combat/characters.json";
 import combatWeaponsJson from "@data/combat/weapons.json";
 import gearJson from "@data/combat/gear.json";
 import type { CombatWeapon, GearPiece, GearSuit } from "@/types/build";
-import { addBag, rankGear, rankWeapons, synergy, talentBag, weaponBag, SP_REGEN_INTERVAL, type GearRank, type OperatorBase, type Rotation, type Synergy } from "@/lib/calc/build";
+import { addBag, rankGear, rates, synergy, talentBag, SP_REGEN_INTERVAL, type GearRank, type OperatorBase, type Rotation, type Synergy } from "@/lib/calc/build";
 import { splitTerms } from "@/lib/glossary";
 import type { CombatCharacter, SkillForm, SkillGroup } from "@/types/combat";
-import { damageWeight, rankWeaponsByValue, type OperatorKit, type WeaponValueRank } from "@/lib/calc/weapon-value";
+import { damageWeight, rankWeaponsByValue, type OperatorKit, type TeamPool, type WeaponValueRank } from "@/lib/calc/weapon-value";
 import { comboRequirement, rankTeams, type ComboRequirement, type TeamCandidate, type TeamEval } from "@/lib/calc/team";
 import type { EssenceRegion, EssenceStats, Operator, OperatorDetails, OperatorProfile, OperatorStats, Weapon } from "@/types/game";
 import { buildWeaponUsers } from "@/lib/weapon-users";
@@ -159,8 +159,26 @@ function rotationOf(id: string): Rotation | undefined {
   };
 }
 
+/** 팀원 후보 = 이 오퍼레이터와 같은 캐릭터(관리자 남/여)를 뺀 전체 */
+function teamPool(id: string): TeamPool {
+  const group = (oid: string) => operators.find((o) => o.id === oid)?.name.replace(/\s*\(.*\)$/, "");
+  const others = operators
+    .filter((o) => o.id !== id && group(o.id) !== group(id))
+    .flatMap((o) => {
+      const k = operatorKit(o.id);
+      return k ? [{ id: o.id, element: k.element, kit: k, rates: rates(k.rotation, 0) }] : [];
+    });
+  return { others };
+}
+
+const kitCache = new Map<string, OperatorKit | undefined>();
 /** 무기 평가용 오퍼레이터 정보 (스킬 설명 · 전투 태그) */
 function operatorKit(id: string): OperatorKit | undefined {
+  if (!kitCache.has(id)) kitCache.set(id, buildKit(id));
+  return kitCache.get(id);
+}
+
+function buildKit(id: string): OperatorKit | undefined {
   const base = operatorBase(id);
   const cc = getCombatCharacter(id);
   if (!base?.rotation || !cc) return undefined;
@@ -208,7 +226,8 @@ export function getBuildRecommendation(id: string): BuildRecommendation | undefi
   const talents = talentBag(combatChars[id].talents.attributes);
   const candidates = Object.entries(combatWeapons).filter(([wid]) => weapons.find((w) => w.id === wid)?.type === op.weaponType);
   const kit = operatorKit(id);
-  const ranked = (kit ? rankWeaponsByValue(base, kit, talents, candidates) : rankWeapons(base, talents, candidates).map((r) => ({ ...r, applied: [], excluded: [], bag: weaponBag(combatWeapons[r.id]).bag }))).map((r) => ({
+  if (!kit) return undefined;
+  const ranked = rankWeaponsByValue(base, kit, talents, candidates, 0, teamPool(id)).map((r) => ({
     ...r,
     official: op.recommendedWeapons.skill.includes(r.id) ? ("skill" as const) : op.recommendedWeapons.attribute.includes(r.id) ? ("attribute" as const) : null,
     image: weapons.find((w) => w.id === r.id)?.image,

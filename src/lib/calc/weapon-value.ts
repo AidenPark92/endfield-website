@@ -1,4 +1,11 @@
-// 무기 가치 평가 — 고유 특성의 조건부 효과까지, "이 오퍼레이터 혼자서" 발동할 수 있는 만큼 반영 (순수 함수)
+// 무기 가치 평가 — 고유 특성의 조건부 효과 + 팀 시너지 효과까지 반영 (순수 함수)
+//
+// 무기 점수 = 본인 피해 기대치 + 팀 시너지 기대치  (특정 조합이 아니라 "아무 팀원 3명"의 기대값)
+//   팀 시너지 = Σ_효과 3명 × 대상 팀원 비율 × (팀원 1명의 피해 증가분)
+//     - 팀원 1명의 기준 피해 = 이 오퍼레이터가 개인 1위 무기를 낀 피해 기대치 (정규화 기준, 모두 같은 몫이라고 가정)
+//     - 대상 팀원 비율 = 나머지 오퍼레이터 중 효과를 받는 속성의 비율 (예: "아츠 피해" → 물리가 아닌 오퍼레이터 비율)
+//     - 동료가 만들어야 하는 조건 → 그 상태를 만들 수 있는 오퍼레이터 k명, 3명 편성 시 1명 이상 있을 확률 P = 1 − C(n−k,3)/C(n,3)
+//       가동률 = P × min(1, 그 동료들의 평균 발동 빈도 × 지속 시간)
 //
 // 정규화 공식 (docs: build-recommendation.md)
 //   피해 기대 지수(초당) = Σ_{배틀·연계·궁극기} 초당 사용 횟수 × 피해 배율 × 공격력 × (1+피해%) × (1+치명률×치명피해) × (1+받는 피해%)
@@ -8,7 +15,6 @@
 //   무기 점수 = 지수 ÷ 1위 지수 (100% = 1위)
 //
 // 반영하지 않는 것 (⚠️ 이유를 화면에 표시)
-//   - 다른 동료가 만들어야 하는 조건, 다른 동료에게만 주는 효과 (조합 효과는 베스트 조합에서 따로)
 //   - 적 상태(불균형 등)에만 붙는 조건, 생존(치유·보호·방어력) 효과, 추가 피해(고정 배율 타격)
 //   - 일반 공격 피해 (일반 공격 회전 속도 데이터 없음) — TODO
 import type { Blackboard } from "@/types/combat";
@@ -28,6 +34,23 @@ export interface OperatorKit {
   /** 스킬 종류별 설명 (형태가 있으면 모두 이어 붙임) */
   texts: Record<SkillKind, string>;
   tags: string[];
+}
+
+/** 팀원 후보 (이 오퍼레이터를 뺀 전체 오퍼레이터) — 특정 조합이 아닌 기대값 계산용 */
+export interface TeamPool {
+  others: { id: string; element: string; kit: OperatorKit; rates: Record<"battle" | "combo" | "ult", number> }[];
+}
+
+/** 팀원 수 (4인 편성) */
+export const TEAMMATES = 3;
+
+/** n명 중 k명이 조건을 만들 수 있을 때, 무작위 3명 편성에 1명 이상 들어갈 확률 */
+export function atLeastOne(n: number, k: number, pick = TEAMMATES): number {
+  if (k <= 0 || n <= 0) return 0;
+  if (n - k < pick) return 1;
+  let none = 1;
+  for (let i = 0; i < pick; i++) none *= (n - k - i) / (n - i);
+  return 1 - none;
 }
 
 // ───────── 특성 문장 파싱 ─────────
@@ -54,6 +77,12 @@ export interface TraitEffect {
   gate?: { a: AttrName; op: ">=" | ">"; b: AttrName };
   /** 반영하지 않는 이유 (파싱 단계에서 확정) */
   skip?: string;
+  /** 장착자 본인이 받는지 */
+  self: boolean;
+  /** 다른 팀원이 받는 비율 (0 = 없음, 0.5 = 절반) */
+  others: number;
+  /** 자신과 속성이 다른 팀원만 */
+  othersDiffElem?: boolean;
 }
 
 const ELEM_WORDS = ["물리", "열기", "전기", "냉기", "자연", "아츠"];
@@ -76,8 +105,21 @@ function valueOf(part: string, bb: Blackboard): number | undefined {
 }
 
 /** "+수치" 앞의 말로 어떤 능력치인지 */
-function zoneOf(phrase: string): Pick<TraitEffect, "zone" | "elems" | "types" | "enemyState" | "skip"> {
-  if (/자신과 속성이 다른 오퍼레이터|팀 내의? (다른|기타) 오퍼레이터|다른 오퍼레이터는/.test(phrase)) return { zone: null, skip: "다른 동료에게만 주는 효과" };
+type ZoneInfo = Pick<TraitEffect, "zone" | "elems" | "types" | "enemyState" | "skip" | "self" | "others" | "othersDiffElem">;
+
+/** 누가 받는 효과인지: 본인 / 팀 전체 / 다른 팀원 / 속성이 다른 팀원. 적이 받는 피해 증가는 팀 전체에 이득 */
+function scopeOf(phrase: string): Pick<TraitEffect, "self" | "others" | "othersDiffElem"> {
+  if (/자신과 속성이 다른 오퍼레이터/.test(phrase)) return { self: false, others: 1, othersDiffElem: true };
+  if (/팀 내의? (다른|기타) 오퍼레이터|다른 오퍼레이터/.test(phrase)) return { self: false, others: 1 };
+  if (/팀 전체|(목표|적)(가|이) 받는/.test(phrase)) return { self: true, others: 1 };
+  return { self: true, others: 0 };
+}
+
+function zoneOf(phrase: string): ZoneInfo {
+  return { ...zoneOnly(phrase), ...scopeOf(phrase) };
+}
+
+function zoneOnly(phrase: string): Omit<ZoneInfo, "self" | "others" | "othersDiffElem"> {
   if (/치유|생명력|방어력|보호/.test(phrase)) return { zone: null, skip: "생존 효과 (피해 계산 밖)" };
   const enemyState = /상태의 적에게 주는/.test(phrase)
     ? (["불균형", ...STATE_ORDER].filter((t) => phrase.includes(t)).join("·") || "특정")
@@ -151,10 +193,16 @@ export function parseTrait(desc: string | null | undefined, bb: Blackboard): Tra
         body = body.slice(body.indexOf(nx[0]) + nx[0].length);
       }
       for (const part of body.split(/,\s*/)) {
+        if (/다른 오퍼레이터는 절반의 효과/.test(part) && out.length) {
+          out[out.length - 1].others = 0.5;
+          continue;
+        }
         if (!part.includes("⟦") || /초 동안 지속|초 (?:동안|내에)$/.test(part.trim())) continue;
         const value = valueOf(part, bb);
         if (value === undefined) {
-          if (/⟦atk_scale/.test(part)) out.push({ text: part.trim(), zone: null, value: 0, cond, maxStack, skip: "추가 피해 (고정 배율 타격)" });
+          if (/⟦atk_scale/.test(part)) out.push({ text: part.trim(), zone: null, value: 0, cond, maxStack, skip: "추가 피해 (고정 배율 타격)", self: true, others: 0 });
+          // "팀 내 다른 오퍼레이터는 절반의 효과를 획득함" → 바로 앞 효과를 팀원도 절반 받음
+          if (/다른 오퍼레이터는 절반의 효과/.test(part) && out.length) out[out.length - 1].others = 0.5;
           continue;
         }
         const phrase = part.slice(0, Math.max(part.indexOf("+"), 0)) || part;
@@ -296,6 +344,43 @@ export function effectBag(e: TraitEffect, kit: OperatorKit, value: number): Stat
   return b;
 }
 
+/** 팀원(속성 무관) 기준 능력치 — 대상 비율은 따로 곱한다 */
+export function teammateBag(e: TraitEffect, value: number): StatBag | undefined {
+  if (e.zone === "dmg" && e.types?.every((t) => t === "basic")) return undefined;
+  return effectBag({ ...e, elems: undefined }, { element: "물리" } as OperatorKit, value);
+}
+
+/** 팀원 중 효과를 받는 비율 (속성 조건) */
+export function teammateShare(e: TraitEffect, selfElement: string, pool: TeamPool): number {
+  if (!pool.others.length) return 0;
+  const ok = pool.others.filter((o) => {
+    if (e.othersDiffElem && o.element === selfElement) return false;
+    if ((e.zone === "dmg" || e.zone === "taken") && e.elems) return e.elems.includes(o.element) || (o.element !== "물리" && e.elems.includes("아츠"));
+    return true;
+  });
+  return ok.length / pool.others.length;
+}
+
+/** 동료가 만들어 주는 조건: 3인 편성 확률 × 그 동료들의 평균 발동 빈도 */
+export function poolTrigger(cond: string, pool: TeamPool): { p: number; rate: number; k: number; n: number; via: string } | undefined {
+  if (!cond || /장착자/.test(cond)) return undefined;
+  const hits = pool.others
+    .map((o) => ({ o, t: triggerRate(cond, o.kit, o.rates) }))
+    .filter((x) => x.t.rate > 0 && Number.isFinite(x.t.rate));
+  if (!hits.length) return undefined;
+  const n = pool.others.length;
+  const k = hits.length;
+  const rate = hits.reduce((s, x) => s + x.t.rate, 0) / k;
+  return { p: atLeastOne(n, k), rate, k, n, via: `동료 ${n}명 중 ${k}명이 가능` };
+}
+
+export interface TeamEffectLine extends WeaponEffectLine {
+  /** 팀원 기준 능력치 (가동률·절반 반영) */
+  bag: StatBag;
+  /** 효과를 받는 팀원 비율 */
+  share: number;
+}
+
 export interface WeaponEffectLine {
   text: string;
   /** 반영 비율 0~1 (중첩형은 평균 스택 ÷ 최대 스택) */
@@ -307,6 +392,8 @@ export interface WeaponEffectLine {
   /** % 수치인지 (아츠 강도·고정 공격력은 false) */
   pct: boolean;
   via: string;
+  /** 누가 받는지 */
+  target: "본인" | "팀 전체" | "팀원" | "적";
 }
 
 export interface WeaponEval {
@@ -314,11 +401,16 @@ export interface WeaponEval {
   atk: number;
   levels: number[];
   applied: WeaponEffectLine[];
+  /** 팀원에게 가는 효과 */
+  team: TeamEffectLine[];
   excluded: { text: string; reason: string }[];
 }
 
+const targetOf = (e: TraitEffect): WeaponEffectLine["target"] =>
+  e.zone === "taken" ? "적" : e.self && e.others ? "팀 전체" : e.others ? "팀원" : "본인";
+
 /** 무기 하나의 기대 능력치 — 능력치 스킬 2개(키 기준) + 고유 특성(문장 해석) */
-export function evaluateWeapon(w: CombatWeapon, kit: OperatorKit, baseAttrs: Record<AttrName, number>, refine = 0): WeaponEval {
+export function evaluateWeapon(w: CombatWeapon, kit: OperatorKit, baseAttrs: Record<AttrName, number>, refine = 0, pool?: TeamPool): WeaponEval {
   const last = w.breakthroughs.at(-1)!;
   const extra = refine > 0 ? w.potentials.find((p) => p.level === refine)?.skillLevelExtraBounds : undefined;
   const levels = w.skills.map((_, i) => Math.min(9, last.skillLevelBounds[i].upperBound + (extra?.[i]?.upperBound ?? 0)));
@@ -332,7 +424,31 @@ export function evaluateWeapon(w: CombatWeapon, kit: OperatorKit, baseAttrs: Rec
   });
   const trait = w.skills.at(-1);
   const applied: WeaponEffectLine[] = [];
+  const team: TeamEffectLine[] = [];
   const excluded: { text: string; reason: string }[] = [];
+  const basicOnly = (e: TraitEffect) => e.zone === "dmg" && !!e.types?.every((t) => t === "basic");
+  /** 효과 하나 반영: 본인 몫은 bag 에, 팀원 몫은 team 에 */
+  const take = (e: TraitEffect, stacks: number, uptime: number, via: string) => {
+    let used = false;
+    if (e.self) {
+      const add = effectBag(e, kit, e.value * stacks);
+      if (add) {
+        bag = addBag(bag, add);
+        used = true;
+      }
+    }
+    if (e.others > 0 && pool) {
+      const tb = teammateBag(e, e.value * stacks * e.others);
+      const share = teammateShare(e, kit.element, pool);
+      if (tb && share > 0) {
+        team.push({ text: e.text, uptime, value: e.value * e.others, applied: e.value * stacks * e.others, pct: isPct(e), via, target: targetOf(e), bag: tb, share });
+        used = true;
+      }
+    }
+    if (used) {
+      if (e.self && effectBag(e, kit, 1)) applied.push({ text: e.text, uptime, value: e.value, applied: e.value * stacks, pct: isPct(e), via, target: targetOf(e) });
+    } else excluded.push({ text: e.text, reason: basicOnly(e) ? "일반 공격 피해 (아직 미반영)" : "이 오퍼레이터·팀원 속성과 다름" });
+  };
   if (trait) {
     const bb = trait.levels[levels.at(-1)! - 1]?.bb ?? {};
     const effects = parseTrait(trait.desc, bb);
@@ -342,11 +458,7 @@ export function evaluateWeapon(w: CombatWeapon, kit: OperatorKit, baseAttrs: Rec
     attrs[kit.mainAttr] += bag.main;
     // 충전 효율이 궁극기 빈도에 영향 → 조건 없는 효과를 먼저 더한 뒤 빈도 계산
     const always = effects.filter((e) => !e.cond && !e.enemyState && !e.skip);
-    for (const e of always) {
-      const add = effectBag(e, kit, e.value);
-      if (add) { bag = addBag(bag, add); applied.push({ text: e.text, uptime: 1, value: e.value, applied: e.value, pct: isPct(e), via: "항상" }); }
-      else excluded.push({ text: e.text, reason: e.types?.every((t) => t === "basic") ? "일반 공격 피해 (아직 미반영)" : "이 오퍼레이터 속성과 다름" });
-    }
+    for (const e of always) take(e, 1, 1, "항상");
     const r = rates(kit.rotation, bag.ultGain);
     for (const e of effects) {
       if (always.includes(e)) continue;
@@ -354,19 +466,25 @@ export function evaluateWeapon(w: CombatWeapon, kit: OperatorKit, baseAttrs: Rec
       if (!gateOk(e.gate, attrs)) { excluded.push({ text: e.text, reason: `${e.gate!.a} ${e.gate!.op === ">=" ? "≥" : ">"} ${e.gate!.b} 조건 불충족` }); continue; }
       if (e.enemyState) { excluded.push({ text: e.text, reason: `적이 ${e.enemyState} 상태일 때만` }); continue; }
       const t = triggerRate(e.cond, kit, r);
-      if (t.rate === 0) { excluded.push({ text: e.text, reason: "why" in t ? t.why : "발동 불가" }); continue; }
-      const rate = e.cooldown ? Math.min(t.rate, 1 / e.cooldown) : t.rate;
       // 지속 시간이 없는 효과는 발동 즉시 1회성 → 지속형으로 보지 않음
       const dur = e.duration ?? 0;
-      const stacks = dur > 0 ? Math.min(e.maxStack, rate * dur) : 0;
+      if (t.rate > 0) {
+        const rate = e.cooldown ? Math.min(t.rate, 1 / e.cooldown) : t.rate;
+        const stacks = dur > 0 ? Math.min(e.maxStack, rate * dur) : 0;
+        if (stacks <= 0) { excluded.push({ text: e.text, reason: "지속 시간 정보 없음" }); continue; }
+        take(e, stacks, stacks / e.maxStack, "via" in t ? t.via : "");
+        continue;
+      }
+      // 혼자 못 만드는 조건 → 동료가 만들어 줄 기대값
+      const pt = pool ? poolTrigger(e.cond, pool) : undefined;
+      if (!pt) { excluded.push({ text: e.text, reason: "why" in t ? t.why : "발동 불가" }); continue; }
+      const rate = e.cooldown ? Math.min(pt.rate, 1 / e.cooldown) : pt.rate;
+      const stacks = dur > 0 ? pt.p * Math.min(e.maxStack, rate * dur) : 0;
       if (stacks <= 0) { excluded.push({ text: e.text, reason: "지속 시간 정보 없음" }); continue; }
-      const add = effectBag(e, kit, e.value * stacks);
-      if (!add) { excluded.push({ text: e.text, reason: e.types?.every((t) => t === "basic") ? "일반 공격 피해 (아직 미반영)" : "이 오퍼레이터 속성과 다름" }); continue; }
-      bag = addBag(bag, add);
-      applied.push({ text: e.text, uptime: stacks / e.maxStack, value: e.value, applied: e.value * stacks, pct: isPct(e), via: "via" in t ? t.via : "" });
+      take(e, stacks, stacks / e.maxStack, `${pt.via} · 3인 편성 시 ${Math.round(pt.p * 100)}%`);
     }
   }
-  return { bag, atk: w.baseAtk[w.baseAtk.length - 1], levels, applied, excluded };
+  return { bag, atk: w.baseAtk[w.baseAtk.length - 1], levels, applied, team, excluded };
 }
 
 const isPct = (e: TraitEffect) => e.zone !== "arts" && e.zone !== "flatAtk";
@@ -402,22 +520,35 @@ export interface WeaponValueRank {
   id: string;
   name: string;
   rarity: number;
+  /** 본인 피해 */
   score: ScoreResult;
-  /** 1위 대비 */
+  /** 팀 시너지 (팀원 3명 피해 증가 기대값, 본인 피해와 같은 단위) */
+  teamGain: number;
+  /** 본인 + 팀 시너지 */
+  total: number;
+  /** 1위 대비 (본인 + 시너지) */
   relative: number;
+  /** relative 중 본인 몫 / 시너지 몫 */
+  selfPart: number;
+  teamPart: number;
   levels: number[];
   applied: WeaponEffectLine[];
+  team: TeamEffectLine[];
   excluded: { text: string; reason: string }[];
   bag: StatBag;
 }
 
-/** 같은 무기 종류 전체를 피해 기대 지수(초당)로 비교 */
+/**
+ * 같은 무기 종류 전체를 (본인 피해 + 팀 시너지) 초당 기대치로 비교.
+ * 팀원 1명의 기준 피해 = 이 오퍼레이터가 본인 피해 1위 무기를 낀 피해 (모든 무기에 같은 기준 → 공정 비교)
+ */
 export function rankWeaponsByValue(
   op: OperatorBase,
   kit: OperatorKit,
   base: StatBag,
   weapons: [string, CombatWeapon][],
   refine = 0,
+  pool?: TeamPool,
 ): WeaponValueRank[] {
   const attrs: Record<AttrName, number> = {
     힘: op.attrs.힘 + base.str,
@@ -426,19 +557,36 @@ export function rankWeaponsByValue(
     의지: op.attrs.의지 + base.wil,
   };
   const rows = weapons.map(([id, w]) => {
-    const ev = evaluateWeapon(w, kit, attrs, refine);
-    return {
-      id,
-      name: w.name,
-      rarity: w.rarity,
-      score: score(op, ev.atk, addBag(base, ev.bag)),
-      levels: ev.levels,
-      applied: ev.applied,
-      excluded: ev.excluded,
-      bag: ev.bag,
-    };
+    const ev = evaluateWeapon(w, kit, attrs, refine, pool);
+    return { id, name: w.name, rarity: w.rarity, ev, score: score(op, ev.atk, addBag(base, ev.bag)) };
   });
-  rows.sort((a, b) => b.score.overall - a.score.overall);
-  const top = rows[0]?.score.overall || 1;
-  return rows.map((r) => ({ ...r, relative: r.score.overall / top }));
+  // 팀원 기준: 본인 피해 1위 무기
+  const ref = [...rows].sort((a, b) => b.score.overall - a.score.overall)[0];
+  const refBag = ref ? addBag(base, ref.ev.bag) : base;
+  const refAtk = ref?.ev.atk ?? 0;
+  const dRef = ref?.score.overall ?? 0;
+  const gainOf = (lines: TeamEffectLine[]) =>
+    lines.reduce((s, l) => s + TEAMMATES * l.share * (score(op, refAtk, addBag(refBag, l.bag)).overall - dRef), 0);
+  const scored = rows.map((r) => {
+    const teamGain = gainOf(r.ev.team);
+    return { ...r, teamGain, total: r.score.overall + teamGain };
+  });
+  scored.sort((a, b) => b.total - a.total);
+  const top = scored[0]?.total || 1;
+  return scored.map((r) => ({
+    id: r.id,
+    name: r.name,
+    rarity: r.rarity,
+    score: r.score,
+    teamGain: r.teamGain,
+    total: r.total,
+    relative: r.total / top,
+    selfPart: r.score.overall / top,
+    teamPart: r.teamGain / top,
+    levels: r.ev.levels,
+    applied: r.ev.applied,
+    team: r.ev.team,
+    excluded: r.ev.excluded,
+    bag: r.ev.bag,
+  }));
 }

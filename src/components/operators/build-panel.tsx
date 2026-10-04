@@ -37,7 +37,7 @@ export function BuildPanel({
     <div className="space-y-6">
       {/* 계산 기준 */}
       <div className="flex flex-wrap gap-1.5 text-xs">
-        {["레벨 90", "잠재 0", "무기 재련 0", "기질로 무기 스킬 상한까지", "재능 배열 완료", "장비 단조 0", "파티 효과 제외", "조건부 효과는 혼자 발동되는 만큼"].map((t) => (
+        {["레벨 90", "잠재 0", "무기 재련 0", "기질로 무기 스킬 상한까지", "재능 배열 완료", "장비 단조 0", "조건부 효과는 가동률만큼", "팀 시너지 = 아무 팀원 3명 기대값"].map((t) => (
           <span key={t} className="border bg-card px-2 py-1">
             {t}
           </span>
@@ -48,7 +48,15 @@ export function BuildPanel({
       <section className="border bg-card">
         <header className="flex flex-wrap items-baseline justify-between gap-2 border-b px-4 py-3">
           <h3 className="text-lg font-bold">추천 무기</h3>
-          <p className="text-xs text-muted-foreground">1위 = 100% · 초당 피해 기대치 기준 · 고유 특성은 이 오퍼레이터가 혼자 발동하는 만큼 가동률로 반영</p>
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <span>1위 = 100% · 초당 피해 기대치 (본인 + 팀 시너지)</span>
+            <span className="flex items-center gap-1">
+              <i className="inline-block size-2.5 bg-foreground/70" /> 본인
+            </span>
+            <span className="flex items-center gap-1">
+              <i className="inline-block size-2.5 bg-emerald-500" /> 팀 시너지
+            </span>
+          </p>
         </header>
         <ol className="divide-y">
           {shownWeapons.map((w) => {
@@ -76,15 +84,23 @@ export function BuildPanel({
                 <div className="col-span-2 sm:col-span-1">
                   <div className="flex items-baseline justify-between text-xs">
                     <span className="text-muted-foreground">
-                      공격력 <b className="font-mono text-foreground">{Math.floor(w.score.atk)}</b> · 치명 {pct(w.score.critRate, 0)} · 피해 +{pct(w.score.dmgPct.battle, 0)}
+                      본인 <b className="font-mono text-foreground">{pct(w.selfPart, 0)}</b>
+                      {w.teamPart > 0.0005 && (
+                        <>
+                          {" "}
+                          + 시너지 <b className="font-mono text-emerald-700 dark:text-emerald-300">{pct(w.teamPart, 0)}</b>
+                        </>
+                      )}{" "}
+                      · 공격력 {Math.floor(w.score.atk)} · 치명 {pct(w.score.critRate, 0)}
                     </span>
                     <b className="font-mono text-base">{pct(w.relative)}</b>
                   </div>
-                  <div className="mt-1 h-2 bg-muted">
-                    <div className={cn("h-full", rank === 1 ? "bg-accent" : "bg-foreground/70")} style={{ width: `${Math.max(2, w.relative * 100)}%` }} />
+                  <div className="mt-1 flex h-2 bg-muted">
+                    <div className={cn("h-full", rank === 1 ? "bg-accent" : "bg-foreground/70")} style={{ width: `${Math.max(2, w.selfPart * 100)}%` }} />
+                    <div className="h-full bg-emerald-500" style={{ width: `${Math.max(0, w.teamPart * 100)}%` }} />
                   </div>
                 </div>
-                {(w.applied.length > 0 || w.excluded.length > 0) && (
+                {(w.applied.length > 0 || w.team.length > 0 || w.excluded.length > 0) && (
                   <div className="col-span-2 sm:col-span-3">
                     <ul className="flex flex-wrap gap-1.5 text-[12px]">
                       {w.applied.map((a, i) => (
@@ -96,6 +112,16 @@ export function BuildPanel({
                           ) : a.via !== "항상" ? (
                             <span className="text-muted-foreground"> · 상시 유지</span>
                           ) : null}
+                          {a.via !== "항상" && <span className="ml-1 text-[11px] text-muted-foreground">({a.via})</span>}
+                        </li>
+                      ))}
+                      {w.team.map((a, i) => (
+                        <li key={`t${i}`} className="border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5" title={a.via}>
+                          <span className="mr-1 bg-emerald-600 px-1 text-[10px] font-semibold text-white">{a.target === "적" ? "적 약화" : "팀원"}</span>
+                          {a.text.replace(/\s*\+\s*$/, "").replace(/\+\[.*\]$/, "")}{" "}
+                          <b className="font-mono text-emerald-700 dark:text-emerald-300">+{a.pct ? pct(a.value, 1) : Math.round(a.value)}</b>
+                          {a.uptime < 0.995 && <span className="text-muted-foreground"> × 가동 {Math.round(a.uptime * 100)}%</span>}
+                          <span className="text-muted-foreground"> · 받는 팀원 {Math.round(a.share * 100)}%</span>
                           {a.via !== "항상" && <span className="ml-1 text-[11px] text-muted-foreground">({a.via})</span>}
                         </li>
                       ))}
@@ -235,9 +261,19 @@ export function BuildPanel({
             충전 시간. 궁극기 충전 효율이 오르면 궁극기를 더 자주 써요. 피해 배율은 스킬 설명 표의 만렙 값 합이에요.
           </p>
           <p>
-            고유 특성의 조건부 효과는 <b className="text-foreground">이 오퍼레이터가 혼자 발동할 수 있을 때만</b> 넣고, 가동률 = min(1, 발동 빈도 × 지속 시간)을
-            곱해요(중첩형은 평균 스택). 예: 궁극기 사용 시 15초 버프 → 궁극기를 약 64초마다 쓰면 가동 23%. 동료가 만들어야 하는 조건 · 다른 동료에게만 주는
-            효과 · 적 상태(불균형 등) 조건 · 일반 공격 피해 · 생존 효과는 빼고, 무기마다 &quot;반영하지 않은 효과&quot;에 이유를 적었어요.
+            고유 특성의 조건부 효과는 <b className="text-foreground">이 오퍼레이터가 혼자 발동할 수 있으면 그 빈도로</b>, 가동률 = min(1, 발동 빈도 × 지속 시간)을
+            곱해요(중첩형은 평균 스택). 예: 궁극기 사용 시 15초 버프 → 궁극기를 약 64초마다 쓰면 가동 23%. 동료가 만들어야 하는 조건 · 팀원에게 주는
+            효과는 아래 팀 시너지로 따로 계산해요. 적 상태(불균형 등) 조건 · 일반 공격 피해 · 생존 효과는 빼고, 무기마다 &quot;반영하지 않은 효과&quot;에 이유를 적었어요.
+          </p>
+          <p className="font-semibold text-foreground">팀 시너지</p>
+          <p>
+            팀 시너지 = Σ 효과마다 팀원 3명 × 효과를 받는 팀원 비율 × 팀원 1명의 피해 증가분. 특정 조합이 아니라 &quot;아무 팀원 3명&quot;의 기대값이에요. 팀원 1명의
+            기준 피해는 이 오퍼레이터가 본인 피해 1위 무기를 낀 피해와 같다고 정규화해요(모든 무기에 같은 기준).
+          </p>
+          <p>
+            받는 팀원 비율: 예) &quot;팀 전체 아츠 피해&quot;는 물리가 아닌 오퍼레이터 비율, &quot;속성이 다른 오퍼레이터&quot;는 다른 속성 비율. 적이 받는 피해 증가는 본인과
+            팀원 모두에게 들어가요. 동료가 만들어야 하는 조건은 그 상태를 만들 수 있는 오퍼레이터 k명 중 1명 이상이 3인 편성에 들어올 확률 × 그 동료들의
+            평균 발동 빈도로 가동률을 계산해요.
           </p>
           <p>점수는 1위 무기를 100%로 나눈 값이에요. 방어력·저항은 같은 오퍼레이터끼리 비교하면 똑같이 곱해지므로 빼요. 게임 추천 표시는 공식 위키 기준이에요.</p>
           <p>공격력 = (캐릭터 + 무기 기초 공격력) × (1 + 공격력%) × (1 + 0.5% × 주 능력치 + 0.2% × 보조 능력치)</p>
