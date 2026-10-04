@@ -30,7 +30,7 @@ describe("renderTemplate", () => {
       { text: "공격력 ", tone: "plain" },
       { text: "+20%", tone: "value" },
       { text: ", ", tone: "plain" },
-      { text: "감전", tone: "keyword" },
+      { text: "감전", tone: "keyword", tag: "ba.conduct" },
     ]);
     expect(r.missing).toEqual([]);
   });
@@ -117,5 +117,29 @@ describe("형태 스킬 (결: 진결 · 지혜 / 진결 · 의지)", () => {
   });
   it("기본 형태는 레벨 90 기본 능력치로 정한다", () => {
     expect(["진결 · 지혜", "진결 · 의지"]).toContain(c.defaultForm);
+  });
+});
+
+import { lookupTerm, splitTerms } from "./glossary";
+describe("용어 툴팁 (glossary)", () => {
+  it("보인 글자로 먼저, 없으면 태그로 찾는다", () => {
+    expect(lookupTerm("강력한 일격", "ba.lastcombo")?.desc).toContain("일반 공격의 마지막 단계");
+    expect(lookupTerm("물리 취약", "ba.physicalvul")?.term).toBe("물리 취약");
+    expect(lookupTerm("물리 취약", "ba.physicalvul")?.desc).toContain("받는 물리 피해가 증가");
+    expect(lookupTerm("15", "ba.poise")).toBeUndefined();
+    expect(lookupTerm("청뢰검", "ba.key")).toBeUndefined();
+  });
+  it("일반 문장에서 긴 용어부터 찾는다", () => {
+    const parts = splitTerms("자연 피해를 주고, 자연 부착을 부여합니다.");
+    expect(parts.filter((p) => p.term).map((p) => p.term)).toEqual(["자연 피해", "자연 부착"]);
+  });
+  it("실제 설명 문구의 용어 태그 중 자주 쓰이는 것은 모두 설명이 있다", () => {
+    const missing = new Set<string>();
+    const skip = new Set(["ba.vup", "ba.key", "ba.info", "ba.heal", "ba.arrowenergy", "ba.arrownum", "ba.rossi", "ba.absorb"]);
+    for (const c of Object.values(chars))
+      for (const t of [...c.skillGroups.map((g) => g.desc), ...c.potentials.map((p) => p.desc), ...c.talents.passives.map((p) => p.desc)])
+        for (const s of renderTemplate(t, {}).segments)
+          if (s.tone === "keyword" && s.tag && !skip.has(s.tag) && !/^[?\d]/.test(s.text) && !lookupTerm(s.text, s.tag)) missing.add(`${s.tag}:${s.text}`);
+    expect([...missing]).toEqual([]);
   });
 });

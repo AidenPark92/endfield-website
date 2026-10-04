@@ -5,6 +5,8 @@ import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { effectBlackboard, renderTemplate, type TextSegment } from "@/lib/skill-text";
+import { lookupTerm, splitTerms } from "@/lib/glossary";
+import { Term } from "@/components/ui/term";
 import type { Blackboard, CombatCharacter, CombatPassive, SkillGroup } from "@/types/combat";
 
 const LEVEL_LABELS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "M1", "M2", "M3"];
@@ -63,31 +65,14 @@ export function CombatPanel({ data }: { data: CombatCharacter }) {
       {tab === "skills" && (
         <>
           {formNames.length > 1 && (
-            <div className="border-b bg-muted/40 p-3">
-              <p className="mb-2 text-xs text-muted-foreground">
-                이 오퍼레이터는 <b className="text-foreground">능력치에 따라 배틀·연계·궁극기 스킬 형태가 바뀌어요.</b> 형태를 고르면 모든 스킬 수치가 바뀝니다. (실제 형태는 무기·장비를 포함한 능력치로 정해져요 · 형태별 수치는 공식 위키 표 기준)
-              </p>
-              <div className="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="스킬 형태">
-                {formNames.map((f, i) => (
-                  <button
-                    key={f}
-                    role="radio"
-                    aria-checked={form === f}
-                    onClick={() => setForm(f)}
-                    className={cn(
-                      "flex cursor-pointer flex-col items-start border-2 px-3 py-2 text-left transition-colors",
-                      form === f ? "border-foreground bg-background" : "border-transparent bg-card hover:border-border",
-                    )}
-                  >
-                    <span className="flex items-center gap-2 text-base font-bold">
-                      {f}
-                      {data.defaultForm === f && <span className="bg-accent px-1.5 py-0.5 text-[10px] font-bold text-accent-foreground">기본 능력치 기준</span>}
-                    </span>
-                    <span className="text-xs text-muted-foreground">{formConditions[i]?.replace(/,?\s*[^,]*활성화됨\.?$/, "")}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
+            <FormPicker
+              names={formNames}
+              conditions={formConditions}
+              value={form}
+              onChange={setForm}
+              defaultForm={data.defaultForm}
+              attrs={data.formAttrs}
+            />
           )}
           {/* 스킬 선택: 하나씩 크게 */}
           <div className="grid grid-cols-2 gap-px border-b bg-border sm:grid-cols-4" role="tablist" aria-label="스킬">
@@ -198,7 +183,7 @@ function SkillDetail({ group, level, setLevel, form }: { group: SkillGroup; leve
       )}
 
       {/* 설명 */}
-      <Rich template={activeForm?.desc ?? group.desc} bb={bb} className="max-w-3xl text-[15px] leading-7 whitespace-pre-line" />
+      <Rich template={activeForm?.desc ?? group.desc} bb={bb} autoTerms={!!activeForm} className="max-w-3xl text-[15px] leading-7 whitespace-pre-line" />
 
       {/* 레벨별 표 */}
       {rows.some(changes) && (
@@ -290,7 +275,7 @@ function LevelControl({ level, setLevel }: { level: number; setLevel: (n: number
 
 function Stat({ label, value, big, toneClass }: { label: string; value: string; big?: boolean; toneClass?: string }) {
   return (
-    <div className={cn("min-w-0 flex-1 border-r border-b bg-background", big ? "basis-[200px] px-4 py-3" : "basis-[140px] px-3 py-2.5")}>
+    <div className={cn("min-w-0 flex-1 border-r border-b bg-background", big ? "basis-[150px] px-4 py-3" : "basis-[140px] px-3 py-2.5")}>
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className={cn("font-mono font-bold tabular-nums", big ? cn("text-3xl sm:text-4xl", toneClass) : "text-xl")}>{value}</p>
     </div>
@@ -361,22 +346,119 @@ function Potentials({ data }: { data: CombatCharacter }) {
   );
 }
 
-function Rich({ template, bb, className }: { template: string | null; bb: Blackboard; className?: string }) {
+function Rich({ template, bb, className, autoTerms }: { template: string | null; bb: Blackboard; className?: string; autoTerms?: boolean }) {
   const { segments } = renderTemplate(template, bb);
   if (!segments.length) return null;
   return (
     <p className={className}>
-      {segments.map((s: TextSegment, i) => (
-        <span
-          key={i}
-          className={cn(
-            s.tone === "value" && "mx-0.5 bg-accent/30 px-1 font-mono text-[1.05em] font-bold text-foreground",
-            s.tone === "keyword" && "font-semibold underline decoration-accent decoration-2 underline-offset-4",
-          )}
-        >
-          {s.text}
-        </span>
-      ))}
+      {segments.map((s: TextSegment, i) => {
+        if (s.tone === "value")
+          return (
+            <span key={i} className="mx-0.5 bg-accent/30 px-1 font-mono text-[1.05em] font-bold text-foreground">
+              {s.text}
+            </span>
+          );
+        if (s.tone === "keyword") {
+          const g = lookupTerm(s.text, s.tag);
+          // 설명이 있는 용어만 밑줄 + 툴팁, 캐릭터 고유 명칭 등은 굵게만
+          return g ? (
+            <Term key={i} title={g.term} desc={g.desc}>
+              {s.text}
+            </Term>
+          ) : (
+            <b key={i} className="font-semibold">
+              {s.text}
+            </b>
+          );
+        }
+        // 태그 없는 문장(공식 위키 설명)은 용어를 찾아 툴팁을 붙인다
+        if (autoTerms)
+          return (
+            <span key={i}>
+              {splitTerms(s.text).map((p, j) => {
+                const g = p.term ? lookupTerm(p.term) : undefined;
+                return g ? (
+                  <Term key={j} title={g.term} desc={g.desc}>
+                    {p.text}
+                  </Term>
+                ) : (
+                  p.text
+                );
+              })}
+            </span>
+          );
+        return <span key={i}>{s.text}</span>;
+      })}
     </p>
+  );
+}
+
+/** 형태 선택 — 조건을 크게, 쉬운 말로. 현재 기본 능력치로 어느 쪽인지도 보여 준다 */
+function FormPicker({
+  names,
+  conditions,
+  value,
+  onChange,
+  defaultForm,
+  attrs,
+}: {
+  names: string[];
+  conditions: string[];
+  value?: string;
+  onChange: (f: string) => void;
+  defaultForm?: string;
+  attrs?: { 지능: number; 의지: number };
+}) {
+  // "지능 수치 ≥ 의지 수치, 진결 · 지혜 활성화됨." → "지능 ≥ 의지"
+  const short = (c: string) => c.replace(/,?\s*[^,]*활성화됨\.?$/, "").replace(/\s*수치/g, "").replace("＞", ">").trim();
+  const plain = (c: string) => {
+    const x = short(c);
+    if (/지능\s*≥\s*의지/.test(x)) return "지능이 의지보다 높거나 같을 때";
+    if (/의지\s*>\s*지능/.test(x)) return "의지가 지능보다 높을 때";
+    return x;
+  };
+  return (
+    <section className="border-b bg-muted/40 p-4 sm:p-5">
+      <h3 className="text-lg font-bold">스킬 형태가 능력치에 따라 바뀌어요</h3>
+      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+        <b className="text-foreground">지능</b>과 <b className="text-foreground">의지</b> 중 어느 쪽이 높은지에 따라 배틀 스킬 · 연계 스킬 · 궁극기의 효과와 수치가
+        달라집니다. 무기 · 장비로 오른 능력치까지 포함해서 비교해요. 아래에서 형태를 고르면 모든 스킬 수치가 바뀝니다.
+      </p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="스킬 형태">
+        {names.map((f, i) => {
+          const active = value === f;
+          return (
+            <button
+              key={f}
+              role="radio"
+              aria-checked={active}
+              onClick={() => onChange(f)}
+              className={cn(
+                "flex cursor-pointer flex-col items-start gap-1 border-2 bg-background px-4 py-3 text-left transition-colors",
+                active ? "border-foreground" : "border-border hover:border-muted-foreground",
+              )}
+            >
+              <span className="flex w-full items-center gap-2">
+                <span className={cn("grid size-5 place-items-center rounded-full border-2", active ? "border-foreground" : "border-muted-foreground")}>
+                  {active && <span className="size-2.5 rounded-full bg-foreground" />}
+                </span>
+                <span className="text-lg font-bold">{f}</span>
+                {defaultForm === f && (
+                  <span className="ml-auto bg-accent px-1.5 py-0.5 text-[11px] font-bold text-accent-foreground">기본 능력치로는 이 형태</span>
+                )}
+              </span>
+              <span className="pl-7 text-[15px] font-semibold">{plain(conditions[i] ?? "")}</span>
+              <span className="pl-7 font-mono text-xs text-muted-foreground">조건: {short(conditions[i] ?? "")}</span>
+            </button>
+          );
+        })}
+      </div>
+      {attrs && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          레벨 90 기본 능력치(무기·장비 제외): 지능 <b className="font-mono text-foreground">{attrs.지능}</b> · 의지{" "}
+          <b className="font-mono text-foreground">{attrs.의지}</b>
+        </p>
+      )}
+    </section>
   );
 }

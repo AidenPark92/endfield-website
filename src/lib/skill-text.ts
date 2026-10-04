@@ -6,6 +6,8 @@ export type TextTone = "value" | "keyword" | "plain";
 export interface TextSegment {
   text: string;
   tone: TextTone;
+  /** 용어 구간의 원래 태그 (예: "ba.conduct") — 툴팁 조회용 */
+  tag?: string;
 }
 
 /** {expr:fmt} 의 expr 계산 — key, 숫자, 그리고 +,- 연산만 (예: 1-costvalue, duration-1, -coolDown) */
@@ -59,7 +61,7 @@ export function renderTemplate(template: string | null | undefined, bb: Blackboa
   let last = 0;
   for (const m of template.matchAll(re)) {
     if (m.index! > last) segments.push({ text: fill(template.slice(last, m.index)), tone: "plain" });
-    if (m[3] !== undefined) segments.push({ text: fill(m[3]), tone: m[2] === "ba.vup" ? "value" : "keyword" });
+    if (m[3] !== undefined) segments.push(m[2] === "ba.vup" ? { text: fill(m[3]), tone: "value" } : { text: fill(m[3]), tone: "keyword", tag: m[2] });
     last = m.index! + m[0].length;
   }
   if (last < template.length) segments.push({ text: fill(template.slice(last)), tone: "plain" });

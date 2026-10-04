@@ -67,6 +67,7 @@ export function getCombatCharacter(id: string): CombatCharacter | undefined {
     critRate: c.critRate,
     skillGroups: c.skillGroups.map((g) => withForms(id, g)),
     defaultForm: defaultForm(id),
+    formAttrs: opStats[id] && c.skillGroups.length && defaultForm(id) ? { 지능: Math.floor(opStats[id].int[89]), 의지: Math.floor(opStats[id].wil[89]) } : undefined,
     potentials: c.potentials,
     talents: { attributes: c.talents.attributes, passives: c.talents.passives },
   };

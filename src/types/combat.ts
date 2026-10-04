@@ -95,4 +95,6 @@ export interface CombatCharacter {
   talents: { attributes: CombatAttrNode[]; passives: CombatPassive[] };
   /** 형태 스킬이 있을 때 기본 능력치(레벨 90, 무기·장비 제외) 기준 기본 형태 이름 */
   defaultForm?: string;
+  /** 형태 판정용 기본 능력치 (레벨 90, 무기·장비 제외) */
+  formAttrs?: { 지능: number; 의지: number };
 }
