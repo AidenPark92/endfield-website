@@ -176,7 +176,7 @@ export function BuildPanel({
       <section className="border bg-card">
         <header className="flex flex-wrap items-baseline justify-between gap-2 border-b px-4 py-3">
           <h3 className="text-lg font-bold">추천 장비 세트</h3>
-          <p className="text-xs text-muted-foreground">1위 무기 착용 · 세트 3개 + 1칸 자유 · 최고 등급 장비 기준</p>
+          <p className="text-xs text-muted-foreground">1위 무기 착용 · 무기와 같은 역할별 점수 · 세트 효과도 조건·가동률 반영 · 세트 3개 + 1칸 자유 · 최고 등급</p>
         </header>
         <div className="grid gap-px bg-border lg:grid-cols-3">
           {topGear.map((g, i) => {
@@ -303,6 +303,15 @@ export function BuildPanel({
           </p>
           <p>
             일반 공격 피해는 1세트에 걸리는 시간이 실측되지 않아 넣지 않아요(가정값으로 넣으면 일반 공격이 피해의 대부분을 차지해 공격력% 무기가 과대평가돼요). 가정값(실측 필요): 강력한 일격·치명타 빈도 계산용 일반 공격 1세트 {BASIC_CHAIN_SECONDS}초 · 적 불균형 가동 {Math.round(STAGGER_UPTIME * 100)}% · &quot;생명력 N% 이상&quot; 조건은 항상 유지.
+          </p>
+          <p>
+            <b className="text-foreground">무기 ↔ 장비</b>: 무기만으로 1위를 정하고 → 그 무기로 장비 세트를 고른 뒤 → 그 장비(치명률·아츠 강도 등)를 낀 상태로 무기를 다시 비교해요. 장비
+            세트 효과도 무기 고유 특성과 같은 방식(조건·가동률·팀 효과·이상 피해)으로 계산해요. 궁극기 동안 강화되는 일반 공격(레바테인 등)은 &quot;궁극기 사용 시
+            일반 공격 피해&quot; 버프를 궁극기 내내 받는다고 봐요.
+          </p>
+          <p>
+            검증: 커뮤니티 빌드 집계(endfieldtools.dev Best Build)의 1위 무기·장비가 우리 추천에서 몇 위인지 테스트로 확인해요. 커뮤니티 집계는 무기 보유 여부·인기도
+            영향도 있어서 점수에 직접 쓰지는 않아요.
           </p>
           <p>점수는 1위 무기를 100%로 나눈 값이에요. 방어력·저항은 같은 오퍼레이터끼리 비교하면 똑같이 곱해지므로 빼요. 게임 추천 표시는 공식 위키 기준이에요.</p>
           <p>공격력 = (캐릭터 + 무기 기초 공격력) × (1 + 공격력%) × (1 + 0.5% × 주 능력치 + 0.2% × 보조 능력치)</p>

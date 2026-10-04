@@ -32,7 +32,7 @@ export interface StatBag {
   flatAtk: number;
   critRate: number;
   critDmg: number;
-  dmg: Record<Elem | "arts" | "all" | DmgType, number>;
+  dmg: Record<Elem | "arts" | "all" | DmgType | "ultMode", number>;
   artsIntensity: number;
   ultGain: number;
   /** 적이 받는 피해 증가 (이 오퍼레이터 속성에 해당하는 것만, 받는 피해 증가·취약 구간) */
@@ -57,7 +57,7 @@ export const emptyBag = (): StatBag => ({
   flatAtk: 0,
   critRate: 0,
   critDmg: 0,
-  dmg: { phys: 0, fire: 0, pulse: 0, cryst: 0, natural: 0, arts: 0, all: 0, basic: 0, battle: 0, combo: 0, ult: 0 },
+  dmg: { phys: 0, fire: 0, pulse: 0, cryst: 0, natural: 0, arts: 0, all: 0, basic: 0, battle: 0, combo: 0, ult: 0, ultMode: 0 },
   artsIntensity: 0,
   ultGain: 0,
   taken: 0,
@@ -229,7 +229,7 @@ export interface Rotation {
    * "~로 간주" 피해: 스킬 설명에 다른 종류로 간주한다고 적힌 부분(미브 개천 = 강타 피해, 카뮤 추적 = 연계 스킬)
    * from 스킬의 빈도로 쓰고, to 종류의 피해 보너스를 받음. to = "anomaly" 면 이상 피해(아츠 강도)로
    */
-  moved?: { from: "battle" | "combo" | "ult"; to: DmgType | "anomaly"; weight: number; name: string }[];
+  moved?: { from: "battle" | "combo" | "ult"; to: DmgType | "anomaly"; weight: number; name: string; synced?: boolean }[];
 }
 
 /**
@@ -295,7 +295,12 @@ export function score(op: OperatorBase, weaponAtk: number, bag: StatBag): ScoreR
     // 피해 배율 정보가 없으면 세 종류를 같은 크기로
     const weight = (t: "battle" | "combo" | "ult") => (totalW > 0 ? w[t] : 1);
     const basic = INCLUDE_BASIC_ATTACK && op.rotation.weight.basic ? (op.rotation.weight.basic / BASIC_CHAIN_SECONDS) * byType.basic : 0;
-    const moved = (op.rotation.moved ?? []).reduce((s, m) => (m.to === "anomaly" ? s : s + r[m.from] * m.weight * byType[m.to]), 0);
+    // 궁극기 모드 안의 피해(synced)는 "궁극기 사용 시" 버프(dmg.ultMode)를 가동률 없이 전부 받음
+    const ultModeMult = (1 + dmgPct.basic + bag.dmg.ultMode) / (1 + dmgPct.basic);
+    const moved = (op.rotation.moved ?? []).reduce(
+      (s, m) => (m.to === "anomaly" ? s : s + r[m.from] * m.weight * byType[m.to] * (m.synced ? ultModeMult : 1)),
+      0,
+    );
     const overall = (["battle", "combo", "ult"] as const).reduce((s, t) => s + r[t] * weight(t) * byType[t], 0) + basic + moved;
     return { atk, attrBonus, critRate, critDmg, byType, overall, rates: r, attrs, dmgPct, artsIntensity: bag.artsIntensity };
   }

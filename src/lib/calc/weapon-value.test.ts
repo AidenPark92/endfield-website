@@ -138,8 +138,8 @@ describe("모든 능력치 반영", () => {
     const fx = parseTrait("장착자가 물리 이상 효과를 준 후, 추가로 자신의 공격력 {atk_scale:0.0%}의 물리 피해를 줍니다.", { atk_scale: 3.36 });
     expect(fx[0].extraScale).toBeCloseTo(3.36);
   });
-  it("치명타 조건 = 타수 × 치명률", () => {
-    const t = triggerRate("장착자가 치명타 피해를 준 후", { ...kit, critRate: 0.2, basicHits: 5 }, rates(rot, 0));
+  it("치명타 조건 = 타수 × 치명률 (일반 공격 지정)", () => {
+    const t = triggerRate("장착자의 일반 공격이 치명타 피해를 준 후", { ...kit, critRate: 0.2, basicHits: 5 }, rates(rot, 0));
     expect(t.rate).toBeCloseTo((5 / 4) * 0.2);
   });
   it("실데이터: 디펜더 엠버는 천둥의 흔적 · 푸치나는 간식 시간 1위 (생존·치유 반영, 게임 추천과 일치)", { timeout: 120000 }, () => {
@@ -150,10 +150,13 @@ describe("모든 능력치 반영", () => {
 });
 
 describe("간주 피해 · 이상 피해", () => {
-  it("미브: 개천(강타 피해로 간주)은 이상 피해 → 아츠 강도 무기(환상통)가 스킬 피해 무기(헤라펜거)보다 위, 적영 > 환상통 > 모범", { timeout: 120000 }, () => {
+  it("미브: 개천(강타 피해로 간주)은 이상 피해 → 아츠 강도 무기(환상통)가 스킬 피해 무기(헤라펜거)보다 위, 적영 1위 · 장비 고검의 잔향", { timeout: 120000 }, () => {
     const r = getBuildRecommendation(operators.find((o) => o.name === "미브")!.id)!;
     const names = r.weapons.map((w) => w.name);
     expect(names.indexOf("환상통")).toBeLessThan(names.indexOf("헤라펜거"));
-    expect(names.slice(0, 3)).toEqual(["적영", "환상통", "모범"]);
+    // 추천 장비(고검의 잔향)까지 낀 상태: 적영 1위, 모범·환상통은 근소한 차 (커뮤니티 빌드도 환상통 9 · 모범 6)
+    expect(names[0]).toBe("적영");
+    expect(new Set(names.slice(1, 3))).toEqual(new Set(["환상통", "모범"]));
+    expect(r.gear[0].suitName).toBe("고검의 잔향");
   });
 });

@@ -12,10 +12,10 @@ import combatCharactersJson from "@data/combat/characters.json";
 import combatWeaponsJson from "@data/combat/weapons.json";
 import gearJson from "@data/combat/gear.json";
 import type { CombatWeapon, GearPiece, GearSuit } from "@/types/build";
-import { addBag, rankGear, rates, synergy, talentBag, SP_REGEN_INTERVAL, type GearRank, type OperatorBase, type Rotation, type Synergy } from "@/lib/calc/build";
+import { addBag, rates, score, synergy, talentBag, gearBag, suitBag, SP_REGEN_INTERVAL, BASIC_CHAIN_SECONDS, type GearRank, type OperatorBase, type StatBag, type Rotation, type Synergy } from "@/lib/calc/build";
 import { splitTerms } from "@/lib/glossary";
 import type { Blackboard, CombatCharacter, SkillForm, SkillGroup } from "@/types/combat";
-import { damageWeight, rankWeaponsByValue, ROLE_WEIGHT, type DealerRef, type OperatorKit, type RoleWeight, type TeamPool, type WeaponValueRank } from "@/lib/calc/weapon-value";
+import { damageWeight, rankGearByValue, rankWeaponsByValue, ROLE_WEIGHT, STAGGER_UPTIME, type DealerRef, type OperatorKit, type RoleWeight, type TeamPool, type WeaponValueRank } from "@/lib/calc/weapon-value";
 import { comboRequirement, rankTeams, type ComboRequirement, type TeamCandidate, type TeamEval } from "@/lib/calc/team";
 import type { AttrName, EssenceRegion, EssenceStats, Operator, OperatorDetails, OperatorProfile, OperatorStats, Weapon } from "@/types/game";
 import { buildWeaponUsers } from "@/lib/weapon-users";
@@ -186,8 +186,13 @@ function considered(id: string, type: string): { name: string; to: "battle" | "c
 /** 간주 피해를 뺀 표시 항목 */
 function keep(id: string, type: string, levels: RawLevel[]) {
   const names = considered(id, type).map((c) => c.name);
-  return levels.flatMap((l) => l.display ?? []).filter((d) => !names.some((n) => d.label.startsWith(n)));
+  return levels
+    .flatMap((l) => l.display ?? [])
+    .filter((d) => !names.some((n) => d.label.startsWith(n)) && !(type === "궁극기" && ENHANCED_BASIC.test(d.label)));
 }
+
+/** 궁극기 중 강화 일반 공격 (레바테인 "강화 일반 공격 제N단계 배율") — 일반 공격 피해로 분류 */
+const ENHANCED_BASIC = /일반 공격.*배율/;
 
 function movedOf(id: string, lv: Record<"battle" | "combo" | "ult", RawLevel[]>): Rotation["moved"] {
   const out: NonNullable<Rotation["moved"]> = [];
@@ -197,7 +202,37 @@ function movedOf(id: string, lv: Record<"battle" | "combo" | "ult", RawLevel[]>)
       if (w > 0) out.push({ from, to: c.to, weight: w, name: c.name });
     }
   }
+  // 궁극기 지속 시간 동안 강화 일반 공격: 1세트 배율 × (지속 시간 ÷ 일반 공격 1세트 시간 — 가정값)
+  const ultDs = lv.ult.flatMap((l) => l.display ?? []);
+  const chain = damageWeight(ultDs.filter((d) => ENHANCED_BASIC.test(d.label)));
+  if (chain > 0) {
+    const dur = Math.max(0, ...ultDs.filter((d) => /^지속 시간\(초\)$/.test(d.label)).map((d) => parseFloat(d.value)));
+    out.push({ from: "ult", to: "basic", weight: chain * Math.max(1, dur / BASIC_CHAIN_SECONDS), name: "강화 일반 공격", synced: true });
+  }
   return out;
+}
+
+/** 초당 불균형치 (스킬 표 "불균형치" × 사용 빈도) */
+function poisePerSec(id: string): number {
+  const rot = rotationOf(id);
+  if (!rot) return 0;
+  const r = rates(rot, 0);
+  const sum = (type: string) =>
+    lastLevel(id, type)
+      .flatMap((l) => l.display ?? [])
+      .filter((d) => /불균형치/.test(d.label))
+      .reduce((s, d) => s + (parseFloat(d.value) || 0), 0);
+  return r.battle * sum("배틀 스킬") + r.combo * sum("연계 스킬") + r.ult * sum("궁극기");
+}
+let poiseAvg: number | undefined;
+/** 적 불균형 가동률: 기본 가정값 × (이 오퍼레이터 불균형치 ÷ 평균), 0.1~0.5 */
+function staggerUptimeOf(id: string): number {
+  poiseAvg ??= (() => {
+    const xs = Object.keys(combatChars).map(poisePerSec).filter((x) => x > 0);
+    return xs.reduce((a, b) => a + b, 0) / (xs.length || 1);
+  })();
+  const p = poisePerSec(id);
+  return Math.min(0.5, Math.max(0.1, STAGGER_UPTIME * (poiseAvg > 0 ? p / poiseAvg : 1)));
 }
 
 /** 스킬 표의 피해 배율 항목 수 (타수 근사) */
@@ -287,6 +322,7 @@ function buildKit(id: string): OperatorKit | undefined {
         .filter(([, h]) => h.length),
     ),
     critRate: base.critRate,
+    staggerUptime: staggerUptimeOf(id),
     skillHits: {
       battle: Math.max(1, damageLabels(id, "배틀 스킬")),
       combo: Math.max(1, damageLabels(id, "연계 스킬")),
@@ -337,7 +373,20 @@ export function getBuildRecommendation(id: string): BuildRecommendation | undefi
   const kit = operatorKit(id);
   if (!kit) return undefined;
   const role = roleOf(id);
-  const ranked = rankWeaponsByValue(base, kit, talents, candidates, 0, teamPool(id), role, role.dealer > 0 || role.heal > 0 ? mainDealers() : []).map((r) => ({
+  const pool = teamPool(id);
+  // 메인 딜러 가중치: 같은 속성(물리/아츠 계열 포함) +2, 이 오퍼레이터가 그 딜러의 연계를 열어 주면 +2
+  const syn = synergy(id, synergyIndex(), findTerms);
+  const dealers = (role.dealer > 0 || role.heal > 0 ? mainDealers() : []).map((d) => ({
+    ...d,
+    weight: 1 + (d.kit.element === kit.element ? 2 : 0) + (syn.enables.includes(d.id) ? 2 : 0),
+  }));
+  // 1차: 무기만 → 그 1위 무기로 장비 → 2차: 추천 장비(치명률 등)를 낀 상태로 무기를 다시 비교
+  const first = rankWeaponsByValue(base, kit, talents, candidates, 0, pool, role, dealers);
+  const gearOf = (weaponId: string, bag: StatBag) =>
+    rankGearByValue(base, kit, combatWeapons[weaponId].baseAtk.at(-1) ?? 0, bag, Object.entries(gearPieces), Object.entries(gearSuits), role, dealers, pool);
+  const gear0 = first[0] ? gearOf(first[0].id, addBag(talents, first[0].bag)) : [];
+  const withGear = addBag(talents, gearSetBag(gear0[0]));
+  const ranked = rankWeaponsByValue(base, kit, withGear, candidates, 0, pool, role, dealers).map((r) => ({
     ...r,
     official: op.recommendedWeapons.skill.includes(r.id) ? ("skill" as const) : op.recommendedWeapons.attribute.includes(r.id) ? ("attribute" as const) : null,
     image: weapons.find((w) => w.id === r.id)?.image,
@@ -352,7 +401,7 @@ export function getBuildRecommendation(id: string): BuildRecommendation | undefi
   // 장비는 1위 무기를 낀 상태로 비교
   const topWeapon = ranked[0] ? combatWeapons[ranked[0].id] : undefined;
   const withWeapon = ranked[0] ? addBag(talents, ranked[0].bag) : talents;
-  const gear = rankGear(base, topWeapon?.baseAtk.at(-1) ?? 0, withWeapon, Object.entries(gearPieces), Object.entries(gearSuits));
+  const gear = topWeapon ? gearOf(ranked[0].id, withWeapon) : [];
   return { weapons: ranked, role, heals: Object.keys(kit.heals ?? {}).length > 0, gear, synergy: synergy(id, synergyIndex(), findTerms) };
 }
 
@@ -360,6 +409,15 @@ const candidatesFor = (id: string) => {
   const op = operators.find((o) => o.id === id);
   return Object.entries(combatWeapons).filter(([wid]) => weapons.find((w) => w.id === wid)?.type === op?.weaponType);
 };
+
+/** 추천 장비 세트 1개의 능력치 합 (부위 4개 + 세트 효과) */
+function gearSetBag(g: GearRank | undefined) {
+  let bag = talentBag([]);
+  if (!g) return bag;
+  for (const p of g.pieces) bag = addBag(bag, gearBag(gearPieces[p.id]));
+  if (gearSuits[g.suitId]) bag = addBag(bag, suitBag(gearSuits[g.suitId]));
+  return bag;
+}
 
 /** 직업 → 역할 비중 */
 export function roleOf(id: string): RoleWeight {
@@ -378,9 +436,14 @@ function mainDealers(): DealerRef[] {
       const kit = operatorKit(o.id);
       if (!op || !kit) return [];
       const talents = talentBag(combatChars[o.id].talents.attributes);
-      const top = rankWeaponsByValue(op, kit, talents, candidatesFor(o.id))[0];
-      if (!top) return [];
-      return [{ id: o.id, op, kit, bag: addBag(talents, top.bag), atk: combatWeapons[top.id].baseAtk.at(-1) ?? 0, d: top.score.overall }];
+      const top0 = rankWeaponsByValue(op, kit, talents, candidatesFor(o.id))[0];
+      if (!top0) return [];
+      // 딜러 기준도 추천 장비까지 낀 상태
+      const g = rankGearByValue(op, kit, combatWeapons[top0.id].baseAtk.at(-1) ?? 0, addBag(talents, top0.bag), Object.entries(gearPieces), Object.entries(gearSuits))[0];
+      const base2 = addBag(talents, gearSetBag(g));
+      const top = rankWeaponsByValue(op, kit, base2, candidatesFor(o.id))[0];
+      const bag = addBag(base2, top.bag);
+      return [{ id: o.id, op, kit, bag, atk: combatWeapons[top.id].baseAtk.at(-1) ?? 0, d: score(op, combatWeapons[top.id].baseAtk.at(-1) ?? 0, bag).overall }];
     });
   return dealerCache;
 }
@@ -418,4 +481,9 @@ export function bestTeamsFor(id: string, n = 3): BestTeam[] {
 /** 연계 발동 조건 요약 (화면 표시용) */
 export function comboRequirementOf(id: string): ComboRequirement {
   return comboRequirement(synergyIndex()[id]?.comboDesc ?? null, findTerms);
+}
+
+/** (테스트·디버그용) 오퍼레이터 무기 평가 정보 */
+export function debugKit(id: string) {
+  return { kit: operatorKit(id), base: operatorBase(id), pool: teamPool(id) };
 }
