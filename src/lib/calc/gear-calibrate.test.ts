@@ -2,7 +2,7 @@
 import { test } from "vitest";
 import { ASSUME } from "./build";
 import { resetBuildCache } from "@/lib/data";
-import { gearMetrics, weaponMetrics } from "./bench-metrics";
+import { gearMetrics, teamGearMetrics, weaponMetrics } from "./bench-metrics";
 
 test.skipIf(!process.env.CALIBRATE)("ASSUME 보정", { timeout: 3600000 }, () => {
   const grid = JSON.parse(process.env.GRID ?? "null") ?? {
@@ -17,9 +17,15 @@ test.skipIf(!process.env.CALIBRATE)("ASSUME 보정", { timeout: 3600000 }, () =>
   for (const c of combos) {
     Object.assign(ASSUME, saved, c);
     resetBuildCache();
+    // PARTY_ONLY=1 이면 파티 장비 지표만 (빠름)
+    const t = teamGearMetrics();
+    if (process.env.PARTY_ONLY) {
+      console.log(`${JSON.stringify(c)} 파티 장비 ${t.party}/${t.n} (개인 ${t.indiv})`);
+      continue;
+    }
     const g = gearMetrics();
     const w = weaponMetrics();
-    console.log(`${JSON.stringify(c)} 장비 top1=${g.top1}/${g.n} top3=${g.top3} 부위=${g.pieceHit}/${g.pieceN} | 무기 top1=${w.top1}/${w.n} top3=${w.top3}`);
+    console.log(`${JSON.stringify(c)} 장비 top1=${g.top1}/${g.n} top3=${g.top3} 부위=${g.pieceHit}/${g.pieceN} | 무기 top1=${w.top1}/${w.n} top3=${w.top3} | 파티 ${t.party}/${t.n} (개인 ${t.indiv})`);
   }
   Object.assign(ASSUME, saved);
   resetBuildCache();

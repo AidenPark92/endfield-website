@@ -1,5 +1,6 @@
 // 커뮤니티 기준 일치율 계산 (테스트·보정 전용) — data/benchmarks
-import { getBuildRecommendation } from "@/lib/data";
+import { gearSuits as gearSuitsAll, getBuildRecommendation, partyBuild } from "@/lib/data";
+import teamGear from "@data/benchmarks/endfieldtools-team-gear.json";
 import community from "@data/benchmarks/endfieldtools-community-gear.json";
 import bestBuild from "@data/benchmarks/endfieldtools-best-build.json";
 
@@ -69,4 +70,43 @@ export function weaponMetrics(): { n: number; top1: number; top3: number } {
     if (rk <= 3) top3++;
   }
   return { n, top1, top3 };
+}
+
+type TeamBench = { members: { id: string; name: string; suits: [string, number][] }[]; count: number };
+
+export interface TeamGearMetrics {
+  /** 비교한 멤버 수 (그 조합 빌드에서 1위 세트가 절반 이상 · 3개 이상) */
+  n: number;
+  /** 개인 추천 1위 세트 = 커뮤니티 */
+  indiv: number;
+  /** 파티 최적화 세트 = 커뮤니티 */
+  party: number;
+  lines: string[];
+}
+
+/** 파티 장비: 커뮤니티 팀 빌드(같은 4인 조합)의 멤버별 1위 세트 vs 개인 추천 · 파티 최적화 */
+export function teamGearMetrics(): TeamGearMetrics {
+  const teams = (teamGear as unknown as { teams: TeamBench[] }).teams;
+  const m: TeamGearMetrics = { n: 0, indiv: 0, party: 0, lines: [] };
+  for (const t of teams) {
+    const pb = partyBuild(t.members.map((x) => x.id));
+    if (!pb) continue;
+    for (const mem of t.members) {
+      const [top, cnt] = mem.suits[0];
+      const total = mem.suits.reduce((s, [, c]) => s + c, 0);
+      if (top === "none" || cnt < 3 || cnt < total * 0.5) continue;
+      const indiv = getBuildRecommendation(mem.id)?.gear[0]?.suitId;
+      const party = pb.members.find((x) => x.id === mem.id)?.gear.suitId;
+      m.n++;
+      if (indiv === top) m.indiv++;
+      if (party === top) m.party++;
+      if (party !== top || indiv !== party) {
+        const nm = (sid?: string) => (sid ? (sid === "none" ? "없음" : (gearSuitsAll[sid]?.name ?? sid)) : "-");
+        m.lines.push(
+          `${t.members.map((x) => x.name).join("+")} · ${mem.name}: 커뮤 ${nm(top)}(${cnt}/${total}) | 개인 ${nm(indiv)} → 파티 ${nm(party)}${party === top ? " ✓" : ""}`,
+        );
+      }
+    }
+  }
+  return m;
 }

@@ -221,7 +221,7 @@ export function BuildPanel({
         <section className="border bg-card">
           <header className="flex flex-wrap items-baseline justify-between gap-2 border-b px-4 py-3">
             <h3 className="text-lg font-bold">베스트 조합</h3>
-            <p className="text-xs text-muted-foreground">연계 스킬이 서로 이어지는 4인 조합 · 캐릭터 성능(딜량)은 제외</p>
+            <p className="text-xs text-muted-foreground">연계 스킬이 서로 이어지는 4인 조합 · 동점이면 파티 화력 순 · 파티마다 장비를 다시 맞춤</p>
           </header>
           <div className="grid gap-3 p-4 lg:grid-cols-3">
             {teams.map((t, i) => (

@@ -1,0 +1,1911 @@
+{
+ "_meta": {
+  "source": "https://endfieldtools.dev/community-builds/ — 공개 팀 빌드(mode=team) 939개 중 4명 장비가 모두 있는 721개",
+  "collectedAt": "2026-10-05",
+  "note": "게임 수치 아님. 파티별 장비 추천 검증용. 같은 4인 조합 빌드 수(count) 상위 30개, 멤버별 3세트 이상 착용 세트 분포(none = 세트 효과 없음)",
+  "analysis": {
+   "usp02_teams": 508,
+   "usp02_2plus": 129,
+   "usp02_2plus_if_independent": 145.1,
+   "atb01_teams": 356,
+   "atb01_2plus": 23,
+   "atb01_2plus_if_independent": 29,
+   "partyShifts": [
+    "펠리카: 장방이와 함께면 청파 27%→75%(펄스식 62%→18%), 리노와 함께면 청파 93% — 장방이 배틀 스킬이 감전을 소모해 청뢰검을 만들므로 펠리카는 연계(강제 감전) 빈도를 올리는 역할",
+    "결: 자이히·질베르타(식양의 숨결 보유)와 함께면 열 작업용 44%→71~73%, 레바테인·카뮤·티프로스와 함께면 식양의 숨결 85~91% — 팀 버프를 다른 서포터가 이미 들고 있으면 자기 딜 세트",
+    "관리자: 로시와 함께면 검술사 86%, 에스텔라·플루라이트와 함께면 경량 초자연 38~42%",
+    "포그라니치니크: 미브와 함께면 열 작업용 15%→48%, 에스텔라와 함께면 응룡 50식 63%",
+    "아델리아: 물리 팀(관리자·여풍)에서는 식양의 숨결 69%→33~44%",
+    "레바테인: 엠버와 함께면 열 작업용 80%→47%"
+   ]
+  }
+ },
+ "teams": [
+  {
+   "members": [
+    {
+     "id": "19",
+     "name": "아델리아",
+     "suits": [
+      [
+       "suit_usp02",
+       42
+      ],
+      [
+       "suit_heal01",
+       3
+      ],
+      [
+       "suit_wisd01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "5",
+     "name": "아케쿠리",
+     "suits": [
+      [
+       "suit_atb01",
+       37
+      ],
+      [
+       "none",
+       4
+      ],
+      [
+       "suit_usp02",
+       3
+      ]
+     ]
+    },
+    {
+     "id": "11",
+     "name": "레바테인",
+     "suits": [
+      [
+       "suit_fire_natr01",
+       44
+      ],
+      [
+       "suit_burst01",
+       4
+      ]
+     ]
+    },
+    {
+     "id": "6",
+     "name": "울프가드",
+     "suits": [
+      [
+       "suit_fire_natr01",
+       33
+      ],
+      [
+       "none",
+       6
+      ],
+      [
+       "suit_atb01",
+       3
+      ]
+     ]
+    }
+   ],
+   "count": 48
+  },
+  {
+   "members": [
+    {
+     "id": "4",
+     "name": "진천우",
+     "suits": [
+      [
+       "suit_phy01",
+       21
+      ],
+      [
+       "suit_combo_cd01",
+       2
+      ],
+      [
+       "suit_criti01",
+       2
+      ]
+     ]
+    },
+    {
+     "id": "2",
+     "name": "관리자",
+     "suits": [
+      [
+       "suit_phy01",
+       12
+      ],
+      [
+       "suit_attri01",
+       7
+      ],
+      [
+       "suit_poise01",
+       5
+      ]
+     ]
+    },
+    {
+     "id": "12",
+     "name": "여풍",
+     "suits": [
+      [
+       "suit_phy01",
+       14
+      ],
+      [
+       "suit_usp02",
+       9
+      ],
+      [
+       "suit_attri01",
+       3
+      ]
+     ]
+    },
+    {
+     "id": "20",
+     "name": "포그라니치니크",
+     "suits": [
+      [
+       "suit_atb01",
+       8
+      ],
+      [
+       "suit_atk02",
+       8
+      ],
+      [
+       "suit_fire_natr01",
+       4
+      ]
+     ]
+    }
+   ],
+   "count": 30
+  },
+  {
+   "members": [
+    {
+     "id": "9",
+     "name": "질베르타",
+     "suits": [
+      [
+       "suit_usp02",
+       17
+      ],
+      [
+       "suit_burst01",
+       2
+      ],
+      [
+       "suit_attri01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "5",
+     "name": "아케쿠리",
+     "suits": [
+      [
+       "suit_atb01",
+       15
+      ],
+      [
+       "none",
+       3
+      ],
+      [
+       "suit_usp02",
+       2
+      ]
+     ]
+    },
+    {
+     "id": "11",
+     "name": "레바테인",
+     "suits": [
+      [
+       "suit_fire_natr01",
+       17
+      ],
+      [
+       "suit_burst01",
+       2
+      ],
+      [
+       "suit_criti01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "6",
+     "name": "울프가드",
+     "suits": [
+      [
+       "suit_fire_natr01",
+       15
+      ],
+      [
+       "none",
+       3
+      ],
+      [
+       "suit_atb01",
+       1
+      ]
+     ]
+    }
+   ],
+   "count": 20
+  },
+  {
+   "members": [
+    {
+     "id": "15",
+     "name": "엠버",
+     "suits": [
+      [
+       "suit_heal01",
+       5
+      ],
+      [
+       "suit_phy01",
+       5
+      ],
+      [
+       "suit_atk02",
+       4
+      ]
+     ]
+    },
+    {
+     "id": "4",
+     "name": "진천우",
+     "suits": [
+      [
+       "suit_phy01",
+       13
+      ],
+      [
+       "suit_atk02",
+       2
+      ],
+      [
+       "suit_poise01",
+       2
+      ]
+     ]
+    },
+    {
+     "id": "2",
+     "name": "관리자",
+     "suits": [
+      [
+       "suit_phy01",
+       10
+      ],
+      [
+       "suit_poise01",
+       3
+      ],
+      [
+       "suit_attri01",
+       2
+      ]
+     ]
+    },
+    {
+     "id": "20",
+     "name": "포그라니치니크",
+     "suits": [
+      [
+       "suit_atb01",
+       8
+      ],
+      [
+       "suit_atk02",
+       4
+      ],
+      [
+       "suit_fire_natr01",
+       3
+      ]
+     ]
+    }
+   ],
+   "count": 18
+  },
+  {
+   "members": [
+    {
+     "id": "9",
+     "name": "질베르타",
+     "suits": [
+      [
+       "suit_usp02",
+       17
+      ],
+      [
+       "suit_pulse_cryst01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "13",
+     "name": "자이히",
+     "suits": [
+      [
+       "suit_usp02",
+       9
+      ],
+      [
+       "none",
+       5
+      ],
+      [
+       "suit_burst01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "25",
+     "name": "탕탕",
+     "suits": [
+      [
+       "suit_attri01",
+       15
+      ],
+      [
+       "suit_criti01",
+       2
+      ],
+      [
+       "suit_combo_cd01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "14",
+     "name": "이본",
+     "suits": [
+      [
+       "suit_criti01",
+       18
+      ]
+     ]
+    }
+   ],
+   "count": 18
+  },
+  {
+   "members": [
+    {
+     "id": "9",
+     "name": "질베르타",
+     "suits": [
+      [
+       "suit_usp02",
+       13
+      ],
+      [
+       "suit_burst01",
+       1
+      ],
+      [
+       "suit_fire_natr01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "17",
+     "name": "라스트 라이트",
+     "suits": [
+      [
+       "suit_burst01",
+       15
+      ]
+     ]
+    },
+    {
+     "id": "13",
+     "name": "자이히",
+     "suits": [
+      [
+       "suit_usp02",
+       9
+      ],
+      [
+       "none",
+       2
+      ],
+      [
+       "suit_heal01",
+       2
+      ]
+     ]
+    },
+    {
+     "id": "14",
+     "name": "이본",
+     "suits": [
+      [
+       "suit_criti01",
+       15
+      ]
+     ]
+    }
+   ],
+   "count": 15
+  },
+  {
+   "members": [
+    {
+     "id": "19",
+     "name": "아델리아",
+     "suits": [
+      [
+       "suit_usp02",
+       12
+      ],
+      [
+       "suit_heal01",
+       2
+      ]
+     ]
+    },
+    {
+     "id": "24",
+     "name": "플루라이트",
+     "suits": [
+      [
+       "suit_atb01",
+       9
+      ],
+      [
+       "suit_criti01",
+       3
+      ],
+      [
+       "suit_wisd01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "17",
+     "name": "라스트 라이트",
+     "suits": [
+      [
+       "suit_burst01",
+       10
+      ],
+      [
+       "suit_atk02",
+       2
+      ],
+      [
+       "suit_attri01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "13",
+     "name": "자이히",
+     "suits": [
+      [
+       "suit_usp02",
+       10
+      ],
+      [
+       "suit_atb01",
+       1
+      ],
+      [
+       "none",
+       1
+      ]
+     ]
+    }
+   ],
+   "count": 14
+  },
+  {
+   "members": [
+    {
+     "id": "9",
+     "name": "질베르타",
+     "suits": [
+      [
+       "suit_usp02",
+       11
+      ]
+     ]
+    },
+    {
+     "id": "10",
+     "name": "아비웨나",
+     "suits": [
+      [
+       "suit_attri01",
+       11
+      ]
+     ]
+    },
+    {
+     "id": "7",
+     "name": "아크라이트",
+     "suits": [
+      [
+       "suit_atb01",
+       11
+      ]
+     ]
+    },
+    {
+     "id": "1",
+     "name": "펠리카",
+     "suits": [
+      [
+       "suit_pulse_cryst01",
+       11
+      ]
+     ]
+    }
+   ],
+   "count": 11
+  },
+  {
+   "members": [
+    {
+     "id": "9",
+     "name": "질베르타",
+     "suits": [
+      [
+       "suit_usp02",
+       10
+      ],
+      [
+       "suit_heal01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "7",
+     "name": "아크라이트",
+     "suits": [
+      [
+       "suit_atb01",
+       10
+      ],
+      [
+       "suit_atk02",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "1",
+     "name": "펠리카",
+     "suits": [
+      [
+       "suit_combo_cd01",
+       7
+      ],
+      [
+       "suit_pulse_cryst01",
+       3
+      ],
+      [
+       "suit_usp02",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "838",
+     "name": "장방이",
+     "suits": [
+      [
+       "suit_expend_spell01",
+       10
+      ],
+      [
+       "suit_usp02",
+       1
+      ]
+     ]
+    }
+   ],
+   "count": 11
+  },
+  {
+   "members": [
+    {
+     "id": "9",
+     "name": "질베르타",
+     "suits": [
+      [
+       "suit_usp02",
+       9
+      ],
+      [
+       "suit_pulse_cryst01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "18",
+     "name": "알레쉬",
+     "suits": [
+      [
+       "suit_atb01",
+       9
+      ],
+      [
+       "none",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "13",
+     "name": "자이히",
+     "suits": [
+      [
+       "suit_usp02",
+       7
+      ],
+      [
+       "suit_pulse_cryst01",
+       1
+      ],
+      [
+       "none",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "14",
+     "name": "이본",
+     "suits": [
+      [
+       "suit_criti01",
+       10
+      ]
+     ]
+    }
+   ],
+   "count": 10
+  },
+  {
+   "members": [
+    {
+     "id": "4",
+     "name": "진천우",
+     "suits": [
+      [
+       "suit_phy01",
+       7
+      ],
+      [
+       "suit_atk02",
+       1
+      ],
+      [
+       "suit_poise01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "8",
+     "name": "판",
+     "suits": [
+      [
+       "suit_atk02",
+       4
+      ],
+      [
+       "suit_fire_natr01",
+       1
+      ],
+      [
+       "suit_attri01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "12",
+     "name": "여풍",
+     "suits": [
+      [
+       "suit_phy01",
+       4
+      ],
+      [
+       "suit_usp02",
+       3
+      ],
+      [
+       "suit_attri01",
+       2
+      ]
+     ]
+    },
+    {
+     "id": "20",
+     "name": "포그라니치니크",
+     "suits": [
+      [
+       "suit_atb01",
+       3
+      ],
+      [
+       "suit_fire_natr01",
+       2
+      ],
+      [
+       "suit_phy01",
+       2
+      ]
+     ]
+    }
+   ],
+   "count": 10
+  },
+  {
+   "members": [
+    {
+     "id": "19",
+     "name": "아델리아",
+     "suits": [
+      [
+       "suit_usp02",
+       8
+      ],
+      [
+       "suit_fire_natr01",
+       1
+      ],
+      [
+       "none",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "17",
+     "name": "라스트 라이트",
+     "suits": [
+      [
+       "suit_burst01",
+       9
+      ],
+      [
+       "suit_stragi01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "1",
+     "name": "펠리카",
+     "suits": [
+      [
+       "suit_pulse_cryst01",
+       8
+      ],
+      [
+       "suit_wisdwill01",
+       1
+      ],
+      [
+       "suit_atb01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "13",
+     "name": "자이히",
+     "suits": [
+      [
+       "suit_usp02",
+       6
+      ],
+      [
+       "suit_atb01",
+       3
+      ],
+      [
+       "suit_will01",
+       1
+      ]
+     ]
+    }
+   ],
+   "count": 10
+  },
+  {
+   "members": [
+    {
+     "id": "7",
+     "name": "아크라이트",
+     "suits": [
+      [
+       "suit_atb01",
+       9
+      ]
+     ]
+    },
+    {
+     "id": "1041",
+     "name": "리노",
+     "suits": [
+      [
+       "suit_heal01",
+       5
+      ],
+      [
+       "suit_usp02",
+       4
+      ]
+     ]
+    },
+    {
+     "id": "1",
+     "name": "펠리카",
+     "suits": [
+      [
+       "suit_combo_cd01",
+       9
+      ]
+     ]
+    },
+    {
+     "id": "838",
+     "name": "장방이",
+     "suits": [
+      [
+       "suit_expend_spell01",
+       9
+      ]
+     ]
+    }
+   ],
+   "count": 9
+  },
+  {
+   "members": [
+    {
+     "id": "996",
+     "name": "카뮤",
+     "suits": [
+      [
+       "suit_atb01",
+       8
+      ]
+     ]
+    },
+    {
+     "id": "11",
+     "name": "레바테인",
+     "suits": [
+      [
+       "suit_fire_natr01",
+       8
+      ]
+     ]
+    },
+    {
+     "id": "1040",
+     "name": "결",
+     "suits": [
+      [
+       "suit_usp02",
+       7
+      ],
+      [
+       "suit_fire_natr01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "6",
+     "name": "울프가드",
+     "suits": [
+      [
+       "suit_combo_cd01",
+       3
+      ],
+      [
+       "suit_fire_natr01",
+       3
+      ],
+      [
+       "none",
+       2
+      ]
+     ]
+    }
+   ],
+   "count": 8
+  },
+  {
+   "members": [
+    {
+     "id": "4",
+     "name": "진천우",
+     "suits": [
+      [
+       "suit_phy01",
+       4
+      ],
+      [
+       "suit_combo_cd01",
+       3
+      ],
+      [
+       "suit_atk02",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "12",
+     "name": "여풍",
+     "suits": [
+      [
+       "suit_phy01",
+       4
+      ],
+      [
+       "suit_usp02",
+       4
+      ]
+     ]
+    },
+    {
+     "id": "995",
+     "name": "미브",
+     "suits": [
+      [
+       "suit_crush_fracture",
+       7
+      ],
+      [
+       "suit_phy01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "20",
+     "name": "포그라니치니크",
+     "suits": [
+      [
+       "suit_fire_natr01",
+       5
+      ],
+      [
+       "suit_atb01",
+       2
+      ],
+      [
+       "suit_atk02",
+       1
+      ]
+     ]
+    }
+   ],
+   "count": 8
+  },
+  {
+   "members": [
+    {
+     "id": "9",
+     "name": "질베르타",
+     "suits": [
+      [
+       "suit_usp02",
+       7
+      ]
+     ]
+    },
+    {
+     "id": "19",
+     "name": "아델리아",
+     "suits": [
+      [
+       "suit_usp02",
+       3
+      ],
+      [
+       "suit_heal01",
+       3
+      ],
+      [
+       "suit_fire_natr01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "11",
+     "name": "레바테인",
+     "suits": [
+      [
+       "suit_fire_natr01",
+       4
+      ],
+      [
+       "none",
+       2
+      ],
+      [
+       "suit_burst01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "6",
+     "name": "울프가드",
+     "suits": [
+      [
+       "suit_fire_natr01",
+       7
+      ]
+     ]
+    }
+   ],
+   "count": 7
+  },
+  {
+   "members": [
+    {
+     "id": "22",
+     "name": "안탈",
+     "suits": [
+      [
+       "suit_usp02",
+       7
+      ]
+     ]
+    },
+    {
+     "id": "19",
+     "name": "아델리아",
+     "suits": [
+      [
+       "suit_usp02",
+       5
+      ],
+      [
+       "suit_heal01",
+       2
+      ]
+     ]
+    },
+    {
+     "id": "11",
+     "name": "레바테인",
+     "suits": [
+      [
+       "suit_fire_natr01",
+       5
+      ],
+      [
+       "suit_burst01",
+       1
+      ],
+      [
+       "suit_criti01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "6",
+     "name": "울프가드",
+     "suits": [
+      [
+       "suit_fire_natr01",
+       5
+      ],
+      [
+       "suit_burst01",
+       1
+      ],
+      [
+       "suit_atb01",
+       1
+      ]
+     ]
+    }
+   ],
+   "count": 7
+  },
+  {
+   "members": [
+    {
+     "id": "10",
+     "name": "아비웨나",
+     "suits": [
+      [
+       "suit_attri01",
+       6
+      ],
+      [
+       "suit_atk02",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "7",
+     "name": "아크라이트",
+     "suits": [
+      [
+       "suit_atb01",
+       7
+      ]
+     ]
+    },
+    {
+     "id": "1",
+     "name": "펠리카",
+     "suits": [
+      [
+       "suit_combo_cd01",
+       4
+      ],
+      [
+       "suit_pulse_cryst01",
+       3
+      ]
+     ]
+    },
+    {
+     "id": "838",
+     "name": "장방이",
+     "suits": [
+      [
+       "suit_expend_spell01",
+       6
+      ],
+      [
+       "suit_combo_cd01",
+       1
+      ]
+     ]
+    }
+   ],
+   "count": 7
+  },
+  {
+   "members": [
+    {
+     "id": "9",
+     "name": "질베르타",
+     "suits": [
+      [
+       "suit_usp02",
+       5
+      ],
+      [
+       "suit_phy01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "1040",
+     "name": "결",
+     "suits": [
+      [
+       "suit_fire_natr01",
+       6
+      ]
+     ]
+    },
+    {
+     "id": "13",
+     "name": "자이히",
+     "suits": [
+      [
+       "suit_usp02",
+       6
+      ]
+     ]
+    },
+    {
+     "id": "25",
+     "name": "탕탕",
+     "suits": [
+      [
+       "suit_attri01",
+       5
+      ],
+      [
+       "suit_combo_cd01",
+       1
+      ]
+     ]
+    }
+   ],
+   "count": 6
+  },
+  {
+   "members": [
+    {
+     "id": "4",
+     "name": "진천우",
+     "suits": [
+      [
+       "suit_phy01",
+       4
+      ],
+      [
+       "suit_atk02",
+       2
+      ]
+     ]
+    },
+    {
+     "id": "18",
+     "name": "알레쉬",
+     "suits": [
+      [
+       "suit_atb01",
+       5
+      ],
+      [
+       "none",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "2",
+     "name": "관리자",
+     "suits": [
+      [
+       "suit_phy01",
+       3
+      ],
+      [
+       "suit_poise01",
+       3
+      ]
+     ]
+    },
+    {
+     "id": "21",
+     "name": "에스텔라",
+     "suits": [
+      [
+       "suit_usp02",
+       3
+      ],
+      [
+       "suit_atk02",
+       2
+      ],
+      [
+       "suit_poise01",
+       1
+      ]
+     ]
+    }
+   ],
+   "count": 6
+  },
+  {
+   "members": [
+    {
+     "id": "15",
+     "name": "엠버",
+     "suits": [
+      [
+       "suit_heal01",
+       4
+      ],
+      [
+       "suit_poise01",
+       1
+      ],
+      [
+       "suit_atk02",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "2",
+     "name": "관리자",
+     "suits": [
+      [
+       "suit_phy01",
+       6
+      ]
+     ]
+    },
+    {
+     "id": "12",
+     "name": "여풍",
+     "suits": [
+      [
+       "suit_phy01",
+       3
+      ],
+      [
+       "suit_attri01",
+       2
+      ],
+      [
+       "suit_poise01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "20",
+     "name": "포그라니치니크",
+     "suits": [
+      [
+       "suit_atb01",
+       5
+      ],
+      [
+       "suit_atk02",
+       1
+      ]
+     ]
+    }
+   ],
+   "count": 6
+  },
+  {
+   "members": [
+    {
+     "id": "9",
+     "name": "질베르타",
+     "suits": [
+      [
+       "suit_usp02",
+       5
+      ],
+      [
+       "suit_usp01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "1",
+     "name": "펠리카",
+     "suits": [
+      [
+       "suit_pulse_cryst01",
+       3
+      ],
+      [
+       "suit_combo_cd01",
+       2
+      ],
+      [
+       "suit_usp01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "25",
+     "name": "탕탕",
+     "suits": [
+      [
+       "suit_attri01",
+       3
+      ],
+      [
+       "suit_combo_cd01",
+       2
+      ],
+      [
+       "suit_usp01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "615",
+     "name": "로시",
+     "suits": [
+      [
+       "suit_criti01",
+       5
+      ],
+      [
+       "suit_usp01",
+       1
+      ]
+     ]
+    }
+   ],
+   "count": 6
+  },
+  {
+   "members": [
+    {
+     "id": "15",
+     "name": "엠버",
+     "suits": [
+      [
+       "suit_heal01",
+       4
+      ],
+      [
+       "suit_poise01",
+       1
+      ],
+      [
+       "suit_usp02",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "4",
+     "name": "진천우",
+     "suits": [
+      [
+       "suit_phy01",
+       4
+      ],
+      [
+       "suit_combo_cd01",
+       1
+      ],
+      [
+       "suit_atk02",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "995",
+     "name": "미브",
+     "suits": [
+      [
+       "suit_crush_fracture",
+       6
+      ]
+     ]
+    },
+    {
+     "id": "20",
+     "name": "포그라니치니크",
+     "suits": [
+      [
+       "suit_fire_natr01",
+       4
+      ],
+      [
+       "suit_atb01",
+       1
+      ],
+      [
+       "suit_atk02",
+       1
+      ]
+     ]
+    }
+   ],
+   "count": 6
+  },
+  {
+   "members": [
+    {
+     "id": "15",
+     "name": "엠버",
+     "suits": [
+      [
+       "suit_heal01",
+       4
+      ],
+      [
+       "suit_usp02",
+       2
+      ]
+     ]
+    },
+    {
+     "id": "4",
+     "name": "진천우",
+     "suits": [
+      [
+       "suit_phy01",
+       6
+      ]
+     ]
+    },
+    {
+     "id": "12",
+     "name": "여풍",
+     "suits": [
+      [
+       "suit_phy01",
+       5
+      ],
+      [
+       "suit_attri01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "20",
+     "name": "포그라니치니크",
+     "suits": [
+      [
+       "suit_atk02",
+       3
+      ],
+      [
+       "suit_attri01",
+       1
+      ],
+      [
+       "suit_fire_natr01",
+       1
+      ]
+     ]
+    }
+   ],
+   "count": 6
+  },
+  {
+   "members": [
+    {
+     "id": "19",
+     "name": "아델리아",
+     "suits": [
+      [
+       "suit_heal01",
+       3
+      ],
+      [
+       "suit_usp02",
+       2
+      ]
+     ]
+    },
+    {
+     "id": "1041",
+     "name": "리노",
+     "suits": [
+      [
+       "suit_heal01",
+       3
+      ],
+      [
+       "suit_usp02",
+       2
+      ]
+     ]
+    },
+    {
+     "id": "1040",
+     "name": "결",
+     "suits": [
+      [
+       "suit_usp02",
+       5
+      ]
+     ]
+    },
+    {
+     "id": "1173",
+     "name": "티프로스",
+     "suits": [
+      [
+       "suit_spellburst",
+       5
+      ]
+     ]
+    }
+   ],
+   "count": 5
+  },
+  {
+   "members": [
+    {
+     "id": "22",
+     "name": "안탈",
+     "suits": [
+      [
+       "suit_usp02",
+       5
+      ]
+     ]
+    },
+    {
+     "id": "5",
+     "name": "아케쿠리",
+     "suits": [
+      [
+       "suit_atb01",
+       5
+      ]
+     ]
+    },
+    {
+     "id": "11",
+     "name": "레바테인",
+     "suits": [
+      [
+       "suit_fire_natr01",
+       4
+      ],
+      [
+       "suit_burst01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "6",
+     "name": "울프가드",
+     "suits": [
+      [
+       "suit_fire_natr01",
+       3
+      ],
+      [
+       "suit_burst01",
+       2
+      ]
+     ]
+    }
+   ],
+   "count": 5
+  },
+  {
+   "members": [
+    {
+     "id": "19",
+     "name": "아델리아",
+     "suits": [
+      [
+       "suit_usp02",
+       4
+      ],
+      [
+       "suit_heal01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "10",
+     "name": "아비웨나",
+     "suits": [
+      [
+       "suit_attri01",
+       4
+      ],
+      [
+       "none",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "7",
+     "name": "아크라이트",
+     "suits": [
+      [
+       "suit_atb01",
+       4
+      ],
+      [
+       "suit_burst01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "1",
+     "name": "펠리카",
+     "suits": [
+      [
+       "suit_pulse_cryst01",
+       4
+      ],
+      [
+       "suit_wisd01",
+       1
+      ]
+     ]
+    }
+   ],
+   "count": 5
+  },
+  {
+   "members": [
+    {
+     "id": "22",
+     "name": "안탈",
+     "suits": [
+      [
+       "suit_usp02",
+       5
+      ]
+     ]
+    },
+    {
+     "id": "10",
+     "name": "아비웨나",
+     "suits": [
+      [
+       "suit_attri01",
+       5
+      ]
+     ]
+    },
+    {
+     "id": "7",
+     "name": "아크라이트",
+     "suits": [
+      [
+       "suit_atb01",
+       5
+      ]
+     ]
+    },
+    {
+     "id": "1",
+     "name": "펠리카",
+     "suits": [
+      [
+       "suit_pulse_cryst01",
+       5
+      ]
+     ]
+    }
+   ],
+   "count": 5
+  },
+  {
+   "members": [
+    {
+     "id": "1041",
+     "name": "리노",
+     "suits": [
+      [
+       "suit_usp02",
+       5
+      ]
+     ]
+    },
+    {
+     "id": "1040",
+     "name": "결",
+     "suits": [
+      [
+       "suit_fire_natr01",
+       5
+      ]
+     ]
+    },
+    {
+     "id": "13",
+     "name": "자이히",
+     "suits": [
+      [
+       "suit_usp02",
+       4
+      ],
+      [
+       "none",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "25",
+     "name": "탕탕",
+     "suits": [
+      [
+       "suit_attri01",
+       5
+      ]
+     ]
+    }
+   ],
+   "count": 5
+  },
+  {
+   "members": [
+    {
+     "id": "19",
+     "name": "아델리아",
+     "suits": [
+      [
+       "suit_usp02",
+       2
+      ],
+      [
+       "suit_fire_natr01",
+       1
+      ],
+      [
+       "suit_heal01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "16",
+     "name": "스노우샤인",
+     "suits": [
+      [
+       "suit_heal01",
+       3
+      ],
+      [
+       "suit_burst01",
+       1
+      ]
+     ]
+    },
+    {
+     "id": "17",
+     "name": "라스트 라이트",
+     "suits": [
+      [
+       "suit_burst01",
+       4
+      ]
+     ]
+    },
+    {
+     "id": "13",
+     "name": "자이히",
+     "suits": [
+      [
+       "suit_usp02",
+       3
+      ],
+      [
+       "suit_heal01",
+       1
+      ]
+     ]
+    }
+   ],
+   "count": 4
+  }
+ ]
+}

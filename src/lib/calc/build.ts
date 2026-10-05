@@ -268,8 +268,9 @@ export const BATTLE_ULT_ENERGY = 6.5;
  * - critHitScale: 치명타 조건 발동 빈도 배율 (일반 공격 타수/초 실측 전)
  * - basicScale: 일반 공격 피해를 넣는 비율 (1 = 일반 공격 1세트를 BASIC_CHAIN_SECONDS마다 계속, 0 = 미반영)
  *   스킬 사이사이 일반 공격을 하므로 0은 스킬 피해 보너스를 과대평가, 1은 과소평가 — 실측 전이라 보정값 사용
+ * - consumeDependency: "X를 소모"하는 오퍼레이터가 X 없이 쓸 때 잃는 피해 비율 (파티 장비 최적화의 상태 공급, lib/calc/party.ts)
  */
-export const ASSUME = { comboCdrRealized: 1, stackRefresh: false, critHitScale: 2, basicScale: 0.5 };
+export const ASSUME = { comboCdrRealized: 1, stackRefresh: false, critHitScale: 2, basicScale: 0.5, consumeDependency: 0.3 };
 
 /** 일반 공격 피해가 점수에 들어가는지 (INCLUDE_BASIC_ATTACK 또는 보정값 basicScale > 0) */
 export const basicCounted = () => INCLUDE_BASIC_ATTACK || ASSUME.basicScale > 0;

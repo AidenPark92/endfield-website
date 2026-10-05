@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { allTeams, bestTeamsFor, operators } from "@/lib/data";
+import { allTeams, bestTeamsFor, operators, rerankWithGear, teamView } from "@/lib/data";
 import { TeamFinder } from "@/components/teams/team-finder";
 import type { TeamMate } from "@/components/teams/team-card";
 
@@ -11,8 +11,11 @@ export const metadata: Metadata = {
 export default function TeamsPage() {
   const all = allTeams();
   // 관리자(남/여)는 같은 캐릭터 → 전체 순위에선 한쪽만
-  const overall = all.filter((t) => !t.ids.includes("3")).slice(0, 12);
-  const byOperator = Object.fromEntries(operators.map((o) => [o.id, bestTeamsFor(o.id, 6)]));
+  const overall = rerankWithGear(
+    all.filter((t) => !t.ids.includes("3")),
+    12,
+  ).map(teamView);
+  const byOperator = Object.fromEntries(operators.map((o) => [o.id, bestTeamsFor(o.id, 6).map(teamView)]));
   const mates: Record<string, TeamMate> = Object.fromEntries(
     operators.map((o) => [o.id, { id: o.id, name: o.name, face: o.face, element: o.element, cls: o.profile?.class }]),
   );
@@ -40,8 +43,17 @@ export default function TeamsPage() {
             하므로, 서로 다른 속성을 부착하는 동료가 함께 있을 때 만들 수 있다고 봐요. 불균형·강력한 일격은 누구나 만들 수 있는 조건이에요.
           </p>
           <p>
-            스킬 쿨타임·사이클, 조작 실력, 캐릭터 성능(딜량)은 넣지 않았어요. &quot;연계가 서로 잘 이어지는가&quot;만 본 순위예요. 점수가 같으면 치유 담당이 있는
-            조합, 직업이 다양한 조합을 위에 둬요.
+            1차 순위는 &quot;연계가 서로 잘 이어지는가&quot;예요. 시너지 점수가 같으면 <b className="text-foreground">파티 화력</b>(아래 파티 장비를 낀 딜러들의 피해
+            기대치 합)이 높은 조합을 위에 둬요. 조작 실력·실제 스킬 사이클은 넣지 않았어요.
+          </p>
+          <p className="font-semibold text-foreground">파티 장비 — 같은 오퍼레이터도 파티마다 장비가 달라요</p>
+          <p>
+            개인 추천 장비는 &quot;아무 팀원 3명&quot;을 가정한 기대값이에요. 파티가 정해지면 ① 세트 조건(부착·반응·동료가 만드는 상태)을 실제 팀원으로 판정하고 ② 팀 버프 중첩
+            규칙을 적용하고(&quot;팀 전체&quot; 버프 개척은 둘이 들면 낭비, &quot;다른 팀원&quot; 버프 식양의 숨결은 본인이 못 받아서 둘이 들면 서로를 채워 줌) ③ 팀 버프 가치를 실제
+            팀원의 피해(딜러일수록 크게)로 계산해, 4명의 장비를 한 명씩 번갈아 바꿔 보며 더 나아지지 않을 때까지 맞춰요.
+          </p>
+          <p>
+            검증: endfieldtools.dev 공개 팀 빌드에서 많이 쓰인 4인 조합 30개의 멤버별 세트와 비교하면, 개인 추천 그대로는 113명 중 70명, 파티 맞춤은 74명이 같아요.
           </p>
         </div>
       </details>

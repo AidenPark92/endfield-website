@@ -16,6 +16,7 @@ import type { CombatWeapon, GearPiece, GearSuit } from "@/types/build";
 import { addBag, rates, score, synergy, talentBag, gearBag, suitBag, SP_REGEN_INTERVAL, BASIC_CHAIN_SECONDS, type GearRank, type OperatorBase, type StatBag, type Rotation, type Synergy } from "@/lib/calc/build";
 import { splitTerms } from "@/lib/glossary";
 import type { Blackboard, CombatCharacter, SkillForm, SkillGroup } from "@/types/combat";
+import { optimizeParty, type PartyMember } from "@/lib/calc/party";
 import { damageWeight, evaluateSuitEffect, rankGearByValue, rankWeaponsByValue, ROLE_WEIGHT, STAGGER_UPTIME, type DealerRef, type OperatorKit, type RoleWeight, type TeamPool, type WeaponValueRank } from "@/lib/calc/weapon-value";
 import { comboRequirement, rankTeams, type ComboRequirement, type TeamCandidate, type TeamEval } from "@/lib/calc/team";
 import type { AttrName, EssenceRegion, EssenceStats, Operator, OperatorDetails, OperatorProfile, OperatorStats, Weapon } from "@/types/game";
@@ -374,7 +375,13 @@ const synergyIndex = () =>
 const findTerms = (text: string) => splitTerms(text).filter((p) => p.term).map((p) => p.term!);
 
 /** 오퍼레이터 추천 빌드 — 레벨 90 · 잠재 0 · 무기 재련 0 · 재능 배열 완료 기준 (빌드 시 미리 계산) */
+const recCache = new Map<string, BuildRecommendation | undefined>();
 export function getBuildRecommendation(id: string): BuildRecommendation | undefined {
+  if (!recCache.has(id)) recCache.set(id, computeBuildRecommendation(id));
+  return recCache.get(id);
+}
+
+function computeBuildRecommendation(id: string): BuildRecommendation | undefined {
   const op = operators.find((o) => o.id === id);
   const base = operatorBase(id);
   if (!op || !base) return undefined;
@@ -585,9 +592,53 @@ export function allTeams(): BestTeam[] {
   return (teamCache = ranked.map((t) => ({ ...t, classes: classes(t.ids), healer: healer(t.ids) })));
 }
 
-/** 이 오퍼레이터가 들어간 베스트 조합 */
-export function bestTeamsFor(id: string, n = 3): BestTeam[] {
-  return allTeams().filter((t) => t.ids.includes(id)).slice(0, n);
+/** 시너지 상위 몇 개를 파티 장비까지 계산해 다시 줄 세울지 */
+const PARTY_RERANK_WINDOW = 12;
+
+export type BestTeamWithGear = BestTeam & { party?: PartyBuild };
+
+/** 베스트 조합 카드의 파티 장비 */
+export interface TeamGearView {
+  /** 파티 피해 기대치 ÷ 개인 추천 장비 그대로 */
+  gain: number;
+  members: { id: string; suitId: string; suitName: string | null; icon?: string; same: boolean; reason?: string }[];
+}
+
+/**
+ * 시너지 순위 상위 조합을 파티 장비까지 계산해 다시 정렬: 시너지 점수 → (같으면) 파티 화력
+ * 파티 화력 = 파티별로 최적화한 장비를 낀 딜러들의 피해 기대치 합 (lib/calc/party.ts)
+ */
+export function rerankWithGear(teams: BestTeam[], n: number): BestTeamWithGear[] {
+  return teams
+    .slice(0, Math.max(PARTY_RERANK_WINDOW, n))
+    .map((t) => ({ ...t, party: partyBuild(t.ids) }))
+    .sort((a, b) => b.score - a.score || (b.party?.power ?? 0) - (a.party?.power ?? 0))
+    .slice(0, n);
+}
+
+/** 화면용 (직렬화 가능한 최소 정보) */
+export function teamView(t: BestTeamWithGear): BestTeam & { gear?: TeamGearView } {
+  const { party, ...rest } = t;
+  if (!party) return rest;
+  return {
+    ...rest,
+    gear: {
+      gain: party.gain,
+      members: party.members.map((m) => ({
+        id: m.id,
+        suitId: m.gear.suitId,
+        suitName: m.gear.suitName,
+        icon: gearImages.suits[m.gear.suitId],
+        same: m.same,
+        reason: m.reason,
+      })),
+    },
+  };
+}
+
+/** 이 오퍼레이터가 들어간 베스트 조합 (파티 장비 포함) */
+export function bestTeamsFor(id: string, n = 3): BestTeamWithGear[] {
+  return rerankWithGear(allTeams().filter((t) => t.ids.includes(id)), n);
 }
 
 /** 연계 발동 조건 요약 (화면 표시용) */
@@ -598,6 +649,81 @@ export function comboRequirementOf(id: string): ComboRequirement {
 /** (보정 테스트용) 가정값을 바꾼 뒤 캐시 비우기 */
 export function resetBuildCache() {
   dealerCache = undefined;
+  recCache.clear();
+  partyCache.clear();
+}
+
+// ───────── 파티별 장비 (lib/calc/party.ts) ─────────
+
+/** 파티 장비 후보 수 (개인 추천 상위 K개 세트) */
+export const PARTY_CANDIDATES = 12;
+
+export interface PartyBuild {
+  ids: string[];
+  members: {
+    id: string;
+    /** 이 파티에서 고른 장비 */
+    gear: GearRank;
+    /** 개인 추천 1위와 같은지 */
+    same: boolean;
+    reason?: string;
+    received: { suitName: string | null; from: string; text: string }[];
+  }[];
+  /** 파티 피해 기대치 ÷ 개인 추천 장비 그대로 */
+  gain: number;
+  teamDamage: number;
+  /** 파티 화력 (딜러 피해 합 — 파티끼리 비교) */
+  power: number;
+}
+
+const partyCache = new Map<string, PartyBuild | undefined>();
+const pieceMap = new Map(Object.entries(gearPieces));
+const suitMap = new Map(Object.entries(gearSuits));
+
+/** 4인 파티가 정해졌을 때 각자의 장비 (팀 버프 중첩·상태 공급·실제 팀원 기준) */
+export function partyBuild(ids: string[]): PartyBuild | undefined {
+  const key = [...ids].sort().join("+");
+  if (partyCache.has(key)) return partyCache.get(key);
+  const inputs: { m: PartyMember; rec: BuildRecommendation }[] = [];
+  for (const id of ids) {
+    const rec = getBuildRecommendation(id);
+    const op = operatorBase(id);
+    const kit = operatorKit(id);
+    if (!rec || !op || !kit || !rec.weapons[0] || !rec.gear.length) {
+      partyCache.set(key, undefined);
+      return undefined;
+    }
+    const talents = addBag(talentBag(combatChars[id].talents.attributes), selfKitBag(id));
+    inputs.push({
+      rec,
+      m: {
+        id,
+        op,
+        kit,
+        role: roleOf(id),
+        weaponAtk: combatWeapons[rec.weapons[0].id].baseAtk.at(-1) ?? 0,
+        base: addBag(talents, rec.weapons[0].bag),
+        candidates: rec.gear.slice(0, PARTY_CANDIDATES).map((g) => ({ suitId: g.suitId, suitName: g.suitName, pieces: g.pieces })),
+      },
+    });
+  }
+  const res = optimizeParty(inputs.map((x) => x.m), pieceMap, suitMap);
+  const nameOf = (oid: string) => operators.find((o) => o.id === oid)?.name ?? oid;
+  const out: PartyBuild = {
+    ids,
+    members: res.picks.map((p, i) => ({
+      id: p.id,
+      gear: inputs[i].rec.gear[p.pick],
+      same: p.pick === 0,
+      reason: p.reason?.replace(/@([^@]+)@/g, (_, oid: string) => nameOf(oid)),
+      received: p.received,
+    })),
+    gain: res.gain,
+    teamDamage: res.teamDamage,
+    power: res.power,
+  };
+  partyCache.set(key, out);
+  return out;
 }
 
 /** (테스트·디버그용) 오퍼레이터 무기 평가 정보 */
