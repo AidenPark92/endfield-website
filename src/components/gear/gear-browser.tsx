@@ -4,10 +4,10 @@ import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Rich } from "@/components/rich-text";
-import { GearIcon } from "@/components/gear/gear-icon";
+import { GearCard, SlotHeader } from "@/components/gear/gear-card";
+import { formatGearValue, gearTier, pieceStats, type AttrTypes } from "@/lib/calc/gear-stats";
 import type { GearPiece, GearSuit } from "@/types/build";
 
-type AttrTypes = Record<string, { name: string; kind: string }>;
 type GearImages = { pieces: Record<string, string>; suits: Record<string, string> };
 const SLOTS = ["방어구", "장갑", "부품"];
 /** 피해·전투 관련 옵션 (필터 칩) */
@@ -23,12 +23,6 @@ const STAT_FILTERS: { label: string; types: number[] }[] = [
   { label: "불균형 대상 피해", types: [61] },
   { label: "치유", types: [29] },
 ];
-
-function fmt(v: number, kind: string) {
-  if (kind === "ratio") return `${(v * 100).toFixed(v * 100 < 10 ? 1 : 0)}%`;
-  if (kind === "mult") return `×${v}`;
-  return String(Math.round(v * 10) / 10);
-}
 
 /** 장비 전체 — 세트별 카드 + 세트 없는 장비, 부위·옵션·검색 필터, 단조 단계 선택 */
 export function GearBrowser({
@@ -117,70 +111,75 @@ export function GearBrowser({
         </p>
       </div>
 
-      {/* 세트 */}
-      <div className="mt-5 grid gap-4 lg:grid-cols-2">
+      {/* 세트 — 인게임 세트 효과 패널 + 장비 카드 */}
+      <div className="mt-5 space-y-4">
         {groups.suitOrder.map(([sid, s]) => {
           const list = groups.bySuit.get(sid) ?? [];
           const eff = s.effects.find((e) => e.pieces === 3) ?? s.effects[0];
           return (
-            <section key={sid} className="flex flex-col border bg-card">
-              <header className="border-b px-4 py-3">
+            <section key={sid} className="border bg-card">
+              <header className="grid gap-3 border-b p-4 md:grid-cols-[minmax(0,16rem)_1fr] md:gap-6">
                 <div className="flex items-center gap-3">
-                  <GearIcon src={images.suits[sid]} size={52} />
-                  <div className="flex min-w-0 items-baseline gap-2">
-                    <h2 className="text-xl font-bold">{s.name}</h2>
-                    <span className="font-mono text-xs text-muted-foreground">T{s.tier} · {list.length}종</span>
+                  <GearCard src={images.suits[sid]} tier={s.tier} compact className="size-16 shrink-0" />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 rounded-full bg-muted py-1 pr-3 pl-2.5">
+                      <span className="size-2.5 shrink-0 rounded-full border-2 border-accent-strong" />
+                      <h2 className="truncate text-lg font-bold">{s.name}</h2>
+                    </div>
+                    <p className="mt-1 pl-1 font-mono text-[11px] text-muted-foreground">
+                      T{s.tier} · {list.length}종{eff ? ` · ${eff.pieces}개 세트` : ""}
+                    </p>
                   </div>
                 </div>
-                {eff && <Rich template={eff.desc} bb={eff.bb} className="mt-2 text-[14px] leading-6 whitespace-pre-line" />}
+                {eff && (
+                  <div className="flex gap-2 text-[14px] leading-6">
+                    <span className="mt-2 size-2 shrink-0 rounded-full border-2 border-accent-strong" />
+                    <Rich template={eff.desc} bb={eff.bb} className="whitespace-pre-line" />
+                  </div>
+                )}
               </header>
-              <PieceList list={list} forge={forge} attrTypes={attrTypes} images={images.pieces} />
+              <PieceGrid list={list} forge={forge} attrTypes={attrTypes} images={images.pieces} />
             </section>
           );
         })}
-      </div>
 
-      {/* 세트 없는 장비 */}
-      {(groups.bySuit.get(null)?.length ?? 0) > 0 && (
-        <section className="mt-4 border bg-card">
-          <header className="border-b px-4 py-3">
-            <h2 className="text-xl font-bold">세트 없는 장비</h2>
-          </header>
-          <PieceList list={groups.bySuit.get(null)!} forge={forge} attrTypes={attrTypes} images={images.pieces} />
-        </section>
-      )}
+        {/* 세트 없는 장비 */}
+        {(groups.bySuit.get(null)?.length ?? 0) > 0 && (
+          <section className="border bg-card">
+            <header className="border-b px-4 py-3">
+              <h2 className="text-lg font-bold">세트 없는 장비</h2>
+            </header>
+            <PieceGrid list={groups.bySuit.get(null)!} forge={forge} attrTypes={attrTypes} images={images.pieces} />
+          </section>
+        )}
+      </div>
       {total === 0 && <p className="py-12 text-center text-sm text-muted-foreground">조건에 맞는 장비가 없어요.</p>}
     </div>
   );
 }
 
-function PieceList({ list, forge, attrTypes, images }: { list: [string, GearPiece][]; forge: number; attrTypes: AttrTypes; images: Record<string, string> }) {
+/** 장비 카드 격자 — 부위 헤더 · 인게임 카드 · 이름 · 옵션 */
+function PieceGrid({ list, forge, attrTypes, images }: { list: [string, GearPiece][]; forge: number; attrTypes: AttrTypes; images: Record<string, string> }) {
   const sorted = [...list].sort((a, b) => a[1].partType - b[1].partType || b[1].minWearLv - a[1].minWearLv || (a[1].name ?? "").localeCompare(b[1].name ?? "", "ko"));
   return (
-    <ul className="divide-y">
+    <ul className="grid grid-cols-2 gap-x-3 gap-y-5 p-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
       {sorted.map(([id, p]) => (
-        <li key={id} className="grid gap-1.5 px-4 py-2.5 sm:grid-cols-[minmax(0,16rem)_1fr] sm:items-center sm:gap-4">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <GearIcon src={images[id]} />
-            <div className="min-w-0">
-              <p className="truncate font-semibold">{p.name}</p>
-              <p className="text-[11px] text-muted-foreground">
-                {SLOTS[p.partType] ?? "-"} · Lv.{p.minWearLv}
-              </p>
-            </div>
+        <li key={id} className="flex min-w-0 flex-col">
+          <div className="mb-1.5 flex items-center justify-between gap-1">
+            <SlotHeader partType={p.partType} size="sm" />
+            <span className="font-mono text-[10px] text-muted-foreground">Lv.{p.minWearLv}</span>
           </div>
-          <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-            {p.attrs.map((a, i) => {
-              const t =
-                a.attrType === 0
-                  ? { name: a.target === 1 ? "주요 능력치" : a.target === 2 ? "보조 능력치" : "능력치", kind: a.modifierType === 6 ? "ratio" : "flat" }
-                  : (attrTypes[String(a.attrType)] ?? { name: `#${a.attrType}`, kind: "flat" });
-              const v = a.values[Math.min(forge, a.values.length - 1)];
-              const grows = new Set(a.values).size > 1;
+          <GearCard src={images[id]} tier={gearTier(id)} className="aspect-[4/3]" />
+          <p className="mt-1.5 truncate text-sm font-bold" title={p.name ?? undefined}>
+            {p.name}
+          </p>
+          <ul className="mt-1 space-y-0.5 text-[12px]">
+            {pieceStats(p, forge, attrTypes).map((r, i) => {
+              const grows = new Set(p.attrs[i].values).size > 1;
               return (
-                <li key={i} className="whitespace-nowrap">
-                  <span className="text-muted-foreground">{t.name}</span>{" "}
-                  <b className={cn("font-mono", grows && i > 0 && "text-accent-strong")}>{fmt(v, a.modifierType === 7 ? "flat" : t.kind)}</b>
+                <li key={i} className="flex items-baseline justify-between gap-2 border-b border-dashed pb-0.5 last:border-0">
+                  <span className="truncate text-muted-foreground">{r.name}</span>
+                  <b className={cn("shrink-0 font-mono", grows && i > 0 && "text-accent-strong")}>{formatGearValue(r.value, r.kind)}</b>
                 </li>
               );
             })}

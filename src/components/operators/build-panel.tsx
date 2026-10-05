@@ -8,11 +8,11 @@ import { STAGGER_UPTIME } from "@/lib/calc/weapon-value";
 import type { BuildRecommendation } from "@/lib/data";
 import type { GearSuit } from "@/types/build";
 import { RARITY_BG } from "@/lib/operator-meta";
-import { GearIcon } from "@/components/gear/gear-icon";
-import { gearImages } from "@/lib/data";
+import { GearLoadout, type LoadoutSet } from "@/components/gear/gear-loadout";
+import { gearImages, gearPieces, getCombatCharacter } from "@/lib/data";
+import attrTypesJson from "@data/combat/attr-types.json";
 import { TeamCard, type TeamMate, type TeamView } from "@/components/teams/team-card";
 
-const SLOT = ["방어구", "장갑", "부품 I", "부품 II"];
 const pct = (v: number, d = 1) => `${(v * 100).toFixed(d)}%`;
 
 type Mate = TeamMate;
@@ -35,6 +35,24 @@ export function BuildPanel({
     ...rec.weapons.slice(5).filter((w) => w.official), // 게임 추천 무기는 순위 밖이어도 보여 줌
   ];
   const topGear = rec.gear.slice(0, 3);
+  // 추천 장비 화면용 데이터 (클라이언트에는 필요한 장비만 넘김)
+  const loadoutSets: LoadoutSet[] = topGear.map((g) => {
+    const suit = suits[g.suitId];
+    const effect = suit?.effects.find((e) => e.pieces === 3) ?? suit?.effects[0];
+    return {
+      suitId: g.suitId,
+      suitName: g.suitName,
+      relative: g.relative,
+      icon: gearImages.suits[g.suitId],
+      pieces: g.pieces.map((p) => ({ id: p.id, name: p.name, inSuit: p.inSuit, src: gearImages.pieces[p.id] })),
+      effect: effect ? { desc: effect.desc, bb: effect.bb } : null,
+      need: effect?.pieces ?? 3,
+      summary: `${DMG_TYPES.map((t) => `${DMG_TYPE_LABEL[t]} +${pct(g.score.dmgPct[t], 0)}`).join(" · ")} · 치명 ${pct(g.score.critRate, 0)}`,
+    };
+  });
+  const loadoutPieces = Object.fromEntries(topGear.flatMap((g) => g.pieces.map((p) => [p.id, gearPieces[p.id]])));
+  const cc = getCombatCharacter(opId);
+  const loadoutAttrs = cc ? { main: cc.mainAttr, sub: cc.subAttr } : undefined;
   // 점수 표시: 서포터는 내부 지표(메인 딜러 피해 증가)를 1위 대비로 환산 — 수치 자체는 화면에 쓰지 않음
   const shown = (w: (typeof rec.weapons)[number]) => w.relative;
   // 비중 문장 (치유 스킬이 없으면 치유 몫은 메인 딜러로)
@@ -185,46 +203,7 @@ export function BuildPanel({
           <h3 className="text-lg font-bold">추천 장비 세트</h3>
           <p className="text-xs text-muted-foreground">1위 무기 착용 · 무기와 같은 역할별 점수 · 세트 효과도 조건·가동률 반영 · 세트 3개 + 1칸 자유 · 최고 등급</p>
         </header>
-        <div className="grid gap-px bg-border lg:grid-cols-3">
-          {topGear.map((g, i) => {
-            const suit = suits[g.suitId];
-            const effect = suit?.effects.find((e) => e.pieces === 3) ?? suit?.effects[0];
-            return (
-              <article key={g.suitId} className="flex flex-col bg-background p-4">
-                <div className="flex items-center gap-3">
-                  <GearIcon src={gearImages.suits[g.suitId]} size={48} />
-                  <h4 className="min-w-0 flex-1 text-lg leading-tight font-bold">
-                    <span className={cn("mr-1.5 font-mono", i === 0 && "text-accent-strong")}>{i + 1}</span>
-                    {g.suitName}
-                  </h4>
-                  <b className="font-mono">{pct(g.relative)}</b>
-                </div>
-                <ul className="mt-3 space-y-1.5 text-sm">
-                  {g.pieces.map((p, j) => (
-                    <li key={p.id + j} className="flex items-center gap-2">
-                      <GearIcon src={gearImages.pieces[p.id]} size={36} className={cn(!p.inSuit && "opacity-70")} />
-                      <span className="min-w-0">
-                        <span className="block text-[11px] leading-4 text-muted-foreground">{SLOT[j]}</span>
-                        <span className={cn("block leading-5", !p.inSuit && "text-muted-foreground")}>
-                          {p.name}
-                          {!p.inSuit && <span className="ml-1 border px-1 text-[10px]">세트 외</span>}
-                        </span>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                {effect && (
-                  <div className="mt-3 border-t pt-2 text-[13px] leading-6 whitespace-pre-line">
-                    <Rich template={effect.desc} bb={effect.bb} />
-                  </div>
-                )}
-                <p className="mt-auto pt-3 text-[11px] text-muted-foreground">
-                  {DMG_TYPES.map((t) => `${DMG_TYPE_LABEL[t]} +${pct(g.score.dmgPct[t], 0)}`).join(" · ")} · 치명 {pct(g.score.critRate, 0)}
-                </p>
-              </article>
-            );
-          })}
-        </div>
+        <GearLoadout sets={loadoutSets} pieces={loadoutPieces} attrTypes={attrTypesJson.attrTypes} attrs={loadoutAttrs} />
         <p className="border-t px-4 py-2 text-xs text-muted-foreground">
           <Link href="/gear" className="font-semibold underline underline-offset-2">
             전체 장비 보기 →

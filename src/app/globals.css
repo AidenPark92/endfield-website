@@ -37,6 +37,12 @@
   --rarity-5: #f5b800;
   --rarity-4: #9a6bff;
   --rarity-3: #3aa0ff;
+  --rarity-2: #58b947;
+  --rarity-1: #9a9ba0;
+
+  /* 장비 카드 (인게임 장착 화면 풍 밝은 회색 + 동심원) */
+  --gear-card: #e4e4e1;
+  --gear-ring: rgba(27, 28, 30, 0.07);
 
   --radius: 2px;
 }
@@ -63,6 +69,9 @@
   --stat-base: #e9e9e6;
   --stat-extra: #6ea2ff;
   --stat-skill: #ffd52e;
+
+  --gear-card: #34363b;
+  --gear-ring: rgba(233, 233, 230, 0.05);
 }
 
 @theme inline {
@@ -126,6 +135,12 @@
   /* 모노 마이크로 라벨: "ESS // 01" 같은 작은 코드 텍스트 */
   .ef-label {
     @apply font-mono text-[10px] font-medium tracking-[0.18em] text-muted-foreground uppercase;
+  }
+
+  /* 장비 카드 배경: 오른쪽 아래에서 퍼지는 동심원 (인게임 장착 화면) */
+  .ef-gear-card {
+    background-color: var(--gear-card);
+    background-image: repeating-radial-gradient(circle at 100% 100%, transparent 0 10px, var(--gear-ring) 10px 11px);
   }
 
   /* 사선 해치 스트라이프 (장식용) */
