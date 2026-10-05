@@ -86,6 +86,24 @@ export const ANOMALY_SCALE = { 아츠폭발: 1.6, 강타: 1.5 + 1.5 * 4, "갑옷
 /** 팀원 수 (4인 편성) */
 export const TEAMMATES = 3;
 
+/** 아츠 반응 → 반응을 결정하는(나중에 부착한) 속성 ✅ combat-mechanics §5 */
+export const REACTION_ELEM: Record<string, string> = { 연소: "열기", 감전: "전기", 동결: "냉기", 부식: "자연" };
+
+/** 이 오퍼레이터가 elem 부착을 거는 초당 횟수 (부착하는 스킬 빈도의 합) */
+export function attachRate(kit: OperatorKit, r: Record<"battle" | "combo" | "ult", number>, elem: string): number {
+  return (["battle", "combo", "ult"] as const).reduce((s, k) => s + ((kit.texts[k] ?? "").includes(`${elem} 부착`) ? r[k] : 0), 0);
+}
+
+/**
+ * 팀원 3명이 "나와 다른 아츠 속성" 부착을 거는 초당 기대 횟수 (무작위 3인 편성 기대값)
+ * — 내 부착 스택을 반응으로 소모시키고, 반대로 내 부착이 반응(감전 등)을 일으키게 하는 빈도
+ */
+export function foreignAttachRate(kit: OperatorKit, pool?: TeamPool): number {
+  if (!pool?.others.length) return 0;
+  const per = pool.others.map((o) => (o.element === kit.element || o.element === "물리" ? 0 : attachRate(o.kit, o.rates, o.element)));
+  return (TEAMMATES * per.reduce((a, b) => a + b, 0)) / per.length;
+}
+
 /**
  * 중첩 효과의 평균 스택 · 최대 스택 가동률
  * - 주기형 발동(스킬 쿨마다): 결정적. 지속 갱신형은 간격 ≤ 지속이면 계속 쌓여 최대 유지, 독립 지속형은 min(최대, 빈도 × 지속)
@@ -682,6 +700,35 @@ export function evaluateWeapon(w: CombatWeapon, kit: OperatorKit, baseAttrs: Rec
     let prev: { rate: number; stacks: number; maxStack: number; duration?: number; full?: number } | undefined;
     /** 조건 → 빈도 (혼자 → 안 되면 동료 기대값) */
     const resolve = (cond: string): { rate: number; p: number; via: string } | { why: string } => {
+      // "적에게 N스택 혹은 그 이상의 아츠 부착을 부여한 후" — 내 속성 부착이 N스택까지 쌓여야 함.
+      //   다른 속성 팀원의 부착은 반응으로 내 스택을 소모 → 다음 내 부착이 끊기기 전에 올 확률 q = 내 빈도 / (내 빈도 + 다른 속성 빈도 + 1/지속)
+      //   N스택에서 부착하는 비율 = q^(N−1) → 발동 빈도 = 내 부착 빈도 × q^(N−1)
+      const stackM = cond.match(/(?:⟦(\w+)⟧|(\d+))스택 혹은 그 이상의 (아츠|열기|전기|냉기|자연) 부착/);
+      if (stackM && kit.element !== "물리") {
+        const n = Number(stackM[1] ? bb[stackM[1]] : stackM[2]) || 1;
+        const ra = attachRate(kit, r, kit.element);
+        if (ra <= 0) return { why: `${kit.element} 부착을 스스로 하지 않음` };
+        const lo = foreignAttachRate(kit, pool);
+        const q = ra / (ra + lo + 1 / STATE_DURATION["아츠 부착"]);
+        return { rate: ra * q ** (n - 1), p: 1, via: `${kit.element} 부착 ${n}스택 도달 (${Math.round(q ** (n - 1) * 100)}% — 다른 속성 팀원 반응으로 끊김 반영)` };
+      }
+      // "적에게 감전을 부여한 후" 처럼 내 속성 반응: 직접 거는 것(강제 감전 등) + 다른 속성 부착이 있을 때 내 부착으로 반응
+      //   다른 속성 부착이 적에게 남아 있는 비율 = 다른 속성 빈도 / (다른 속성 빈도 + 내 부착 빈도 + 1/지속)
+      const reactM = cond.match(/(연소|감전|동결|부식)(?:을|를) 부여/);
+      if (reactM && REACTION_ELEM[reactM[1]] === kit.element && !/소모/.test(cond)) {
+        const own = triggerRate(cond, kit, r);
+        const ownRate = own.rate > 0 && Number.isFinite(own.rate) ? own.rate : 0;
+        const ra = attachRate(kit, r, kit.element);
+        const lo = foreignAttachRate(kit, pool);
+        const pOther = lo > 0 ? lo / (lo + ra + 1 / STATE_DURATION["아츠 부착"]) : 0;
+        const rate = ownRate + ra * pOther;
+        if (rate > 0)
+          return {
+            rate,
+            p: 1,
+            via: [ownRate > 0 ? ("via" in own ? own.via : "") : "", ra * pOther > 0 ? `팀원 다른 속성 부착에 내 ${kit.element} 부착으로 ${reactM[1]} (${Math.round(pOther * 100)}%)` : ""].filter(Boolean).join(" + "),
+          };
+      }
       // "팀 내 임의의 오퍼레이터가 배틀 스킬을 사용할 때" → 본인 + 팀원 3명의 그 스킬 빈도 (팀원은 동료 평균)
       const anyM = cond.match(/팀 내 (?:임의의|모든) 오퍼레이터가 (배틀 스킬|연계 스킬|궁극기)/);
       if (anyM) {

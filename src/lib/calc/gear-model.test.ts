@@ -1,6 +1,6 @@
 // 장비 세트 효과 해석 · 중첩 모델 · 탐색 규칙 (커뮤니티 보정 작업에서 추가한 부분)
 import { describe, expect, it } from "vitest";
-import { evaluateSuitEffect, parseTrait, rankGearByValue, stackModel, type OperatorKit } from "./weapon-value";
+import { evaluateSuitEffect, parseTrait, rankGearByValue, stackModel, type OperatorKit, type TeamPool } from "./weapon-value";
 import { emptyBag, rates, type OperatorBase, type Rotation } from "./build";
 import type { GearPiece, GearSuit } from "@/types/build";
 import type { AttrName } from "@/types/game";
@@ -40,6 +40,32 @@ describe("세트 효과 문장", () => {
   it("지속 시간은 따로 계산 → 독립 지속 표시", () => {
     const fx = parseTrait("장착자가 연계 스킬을 사용할 때, 모든 스킬 피해 +{a:0%}, {duration}초 동안 지속. 해당 효과는 최대 {max_stack}스택까지 중첩되며 중첩될 때마다 지속 시간은 따로 계산됩니다.", { a: 0.2, duration: 15, max_stack: 2 });
     expect(fx[0]).toMatchObject({ separate: true, maxStack: 2 });
+  });
+});
+
+describe("아츠 부착 · 반응 (팀 기대값)", () => {
+  // 전기 오퍼레이터: 배틀 스킬로 전기 부착, 연계 스킬로 강제 감전
+  const pulse: OperatorKit = { ...kit, element: "전기", texts: { basic: "", battle: "전기 피해를 주고 전기 부착을 부여합니다.", combo: "짧은 강제 감전 상태를 부여합니다.", ult: "" } };
+  // 팀원 후보: 열기 부착을 배틀 스킬마다 거는 오퍼레이터만
+  const mate: OperatorKit = { ...kit, element: "열기", texts: { basic: "", battle: "열기 부착을 부여합니다.", combo: "", ult: "" } };
+  const pool: TeamPool = { others: [{ id: "m", element: "열기", kit: mate, rates: rates(rot, 0) }] };
+  it("조류의 물결 '2스택 이상 아츠 부착': 다른 속성 팀원 반응으로 스택이 끊기는 만큼 가동률 감소", () => {
+    const desc = "장착자의 모든 스킬 피해 +{skill_dmg_up:0%}\n장착자가 적에게 {stack_cond}스택 혹은 그 이상의 아츠 부착을 부여한 후, 주는 아츠 피해 +{spell_dmg_up:0%}, {duration}초 동안 지속. 해당 효과는 중첩되지 않습니다.";
+    const bb = { skill_dmg_up: 0.2, stack_cond: 2, spell_dmg_up: 0.35, duration: 15 };
+    const solo = evaluateSuitEffect(desc, bb, pulse, attrs).applied.find((a) => a.text.includes("아츠 피해"))!;
+    const team = evaluateSuitEffect(desc, bb, pulse, attrs, pool).applied.find((a) => a.text.includes("아츠 피해"))!;
+    // 혼자: q = 0.08 / (0.08 + 0.05) → 빈도 0.08 × q × 15초
+    const ra = 1 / 12.5;
+    expect(solo.uptime).toBeCloseTo(Math.min(1, ra * (ra / (ra + 1 / 20)) * 15));
+    expect(team.uptime).toBeLessThan(solo.uptime);
+  });
+  it("펄스식 '감전 부여 후': 직접 거는 감전 + 다른 속성 부착 위에 내 부착으로 생기는 감전", () => {
+    const desc = "장착자의 오리지늄 아츠 강도 +{phy_spell_up:0}\n장착자가 적에게 감전을 부여한 후, 전기 피해 +{pulse_dmg_up:0%}, {duration}초 동안 지속, 해당 효과는 중첩되지 않습니다.";
+    const bb = { phy_spell_up: 30, pulse_dmg_up: 0.5, duration: 10 };
+    const solo = evaluateSuitEffect(desc, bb, pulse, attrs).applied.find((a) => a.text.includes("전기 피해"))!;
+    const team = evaluateSuitEffect(desc, bb, pulse, attrs, pool).applied.find((a) => a.text.includes("전기 피해"))!;
+    expect(solo.uptime).toBeCloseTo((1 / 20) * 10); // 연계 스킬 강제 감전만
+    expect(team.uptime).toBeGreaterThan(solo.uptime);
   });
 });
 

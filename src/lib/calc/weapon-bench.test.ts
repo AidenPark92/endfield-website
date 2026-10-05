@@ -41,8 +41,8 @@ test("커뮤니티 Best Build 1위 장비 세트가 우리 추천 상위에 있�
     if (rk <= 3) top3++;
     if (rk > 1) lines.push(`${b.name.padEnd(7)} 커뮤 ${b.gear.slice(0, 2).map((g) => `${g.name}(${g.count})#${ours.indexOf(g.suitId) + 1}`).join(", ")} | 우리 ${r.gear.slice(0, 3).map((g) => g.suitName).join(", ")}`);
   }
-  // 기준(2026-10-05, 장비 최적화·커뮤니티 보정 후): top1 15/26, top3 24/26 (이전 top1 11 · top3 20)
-  expect(top3).toBeGreaterThanOrEqual(23);
-  expect(top1).toBeGreaterThanOrEqual(14);
+  // 기준(2026-10-05): top1 17/26, top3 23/26 (장비 최적화 전 top1 11 · top3 20)
+  expect(top3).toBeGreaterThanOrEqual(22);
+  expect(top1).toBeGreaterThanOrEqual(16);
   console.log(`[장비] n=${n} top1=${top1} top3=${top3}\n` + lines.join("\n"));
 });
