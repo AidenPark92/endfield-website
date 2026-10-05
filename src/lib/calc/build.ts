@@ -35,6 +35,8 @@ export interface StatBag {
   dmg: Record<Elem | "arts" | "all" | DmgType | "ultMode", number>;
   artsIntensity: number;
   ultGain: number;
+  /** 연계 스킬 쿨타임 감소 (0.15 = 15%) — 개척·청파 세트 */
+  comboCdr: number;
   /** 적이 받는 피해 증가 (이 오퍼레이터 속성에 해당하는 것만, 받는 피해 증가·취약 구간) */
   taken: number;
   /** 생존·치유 (피해 지수 밖, 무기 평가의 치유·생존 지표에서 사용) */
@@ -66,6 +68,7 @@ export const emptyBag = (): StatBag => ({
   dmg: { phys: 0, fire: 0, pulse: 0, cryst: 0, natural: 0, arts: 0, all: 0, basic: 0, battle: 0, combo: 0, ult: 0, ultMode: 0 },
   artsIntensity: 0,
   ultGain: 0,
+  comboCdr: 0,
   taken: 0,
   healEff: 0,
   hpPct: 0,
@@ -81,7 +84,7 @@ export function addBag(a: StatBag, b: StatBag): StatBag {
     r.critBy[k] += b.critBy?.[k] ?? 0;
     r.critDmgBy[k] += b.critDmgBy?.[k] ?? 0;
   }
-  for (const k of ["str", "agi", "int", "wil", "main", "sub", "mainPct", "subPct", "atkPct", "flatAtk", "critRate", "critDmg", "artsIntensity", "ultGain", "taken", "healEff", "hpPct", "defPct", "shieldEff"] as const) r[k] += b[k];
+  for (const k of ["str", "agi", "int", "wil", "main", "sub", "mainPct", "subPct", "atkPct", "flatAtk", "critRate", "critDmg", "artsIntensity", "ultGain", "comboCdr", "taken", "healEff", "hpPct", "defPct", "shieldEff"] as const) r[k] += b[k];
   for (const k of Object.keys(r.dmg) as (keyof StatBag["dmg"])[]) r.dmg[k] += b.dmg[k];
   return r;
 }
@@ -258,10 +261,25 @@ export const INCLUDE_BASIC_ATTACK = false;
 export const SP_REGEN_INTERVAL = 12.5;
 export const BATTLE_ULT_ENERGY = 6.5;
 
-export function rates(r: Rotation, ultGain: number): Record<"battle" | "combo" | "ult", number> {
-  const energyPerSec = BATTLE_ULT_ENERGY * r.battleRate + r.comboEnergy * r.comboRate;
+/**
+ * 게임 데이터로 정해지지 않는 가정값 — 커뮤니티 빌드 합의(data/benchmarks)로 보정 (gear-calibrate.test, CALIBRATE=1)
+ * - comboCdrRealized: 연계 스킬 쿨타임 감소가 실제 사용 빈도로 이어지는 비율 (연계는 발동 조건이 있어 쿨마다 쓰지 못함)
+ * - stackRefresh: "지속 시간은 따로 계산" 문구가 없는 중첩 효과를 새 스택이 지속 시간을 갱신하는 방식으로 볼지
+ * - critHitScale: 치명타 조건 발동 빈도 배율 (일반 공격 타수/초 실측 전)
+ * - basicScale: 일반 공격 피해를 넣는 비율 (1 = 일반 공격 1세트를 BASIC_CHAIN_SECONDS마다 계속, 0 = 미반영)
+ *   스킬 사이사이 일반 공격을 하므로 0은 스킬 피해 보너스를 과대평가, 1은 과소평가 — 실측 전이라 보정값 사용
+ */
+export const ASSUME = { comboCdrRealized: 1, stackRefresh: false, critHitScale: 2, basicScale: 0.5 };
+
+/** 일반 공격 피해가 점수에 들어가는지 (INCLUDE_BASIC_ATTACK 또는 보정값 basicScale > 0) */
+export const basicCounted = () => INCLUDE_BASIC_ATTACK || ASSUME.basicScale > 0;
+
+export function rates(r: Rotation, ultGain: number, comboCdr = 0): Record<"battle" | "combo" | "ult", number> {
+  // 연계 스킬 쿨타임 감소 → 쿨타임마다 쓴다고 보고 빈도 증가 (최대 70% 감소까지)
+  const comboRate = r.comboRate / (1 - Math.min(0.7, Math.max(0, comboCdr * ASSUME.comboCdrRealized)));
+  const energyPerSec = BATTLE_ULT_ENERGY * r.battleRate + r.comboEnergy * comboRate;
   const ultInterval = Math.max(r.ultCooldown, energyPerSec > 0 ? r.ultCost / (energyPerSec * (1 + ultGain)) : Infinity);
-  return { battle: r.battleRate, combo: r.comboRate, ult: Number.isFinite(ultInterval) && ultInterval > 0 ? 1 / ultInterval : 0 };
+  return { battle: r.battleRate, combo: comboRate, ult: Number.isFinite(ultInterval) && ultInterval > 0 ? 1 / ultInterval : 0 };
 }
 
 export interface ScoreResult {
@@ -303,12 +321,13 @@ export function score(op: OperatorBase, weaponAtk: number, bag: StatBag): ScoreR
     k === "basic" ? crit : 1 + Math.min(1, critRate + (bag.critBy?.[k] ?? 0)) * (critDmg + (bag.critDmgBy?.[k] ?? 0));
   const byType = Object.fromEntries(types.map((t) => [t, atk * (1 + dmgPct[t]) * critOf(t) * taken])) as Record<DmgType, number>;
   if (op.rotation) {
-    const r = rates(op.rotation, bag.ultGain);
+    const r = rates(op.rotation, bag.ultGain, bag.comboCdr);
     const w = op.rotation.weight;
     const totalW = w.battle + w.combo + w.ult;
     // 피해 배율 정보가 없으면 세 종류를 같은 크기로
     const weight = (t: "battle" | "combo" | "ult") => (totalW > 0 ? w[t] : 1);
-    const basic = INCLUDE_BASIC_ATTACK && op.rotation.weight.basic ? (op.rotation.weight.basic / BASIC_CHAIN_SECONDS) * byType.basic : 0;
+    const basicScale = INCLUDE_BASIC_ATTACK ? 1 : ASSUME.basicScale;
+    const basic = basicScale > 0 && op.rotation.weight.basic ? basicScale * (op.rotation.weight.basic / BASIC_CHAIN_SECONDS) * byType.basic : 0;
     // 궁극기 모드 안의 피해(synced)는 "궁극기 사용 시" 버프(dmg.ultMode)를 가동률 없이 전부 받음
     const ultModeMult = ((1 + dmgPct.basic + bag.dmg.ultMode) / (1 + dmgPct.basic)) * (critOf("ultMode") / crit);
     const moved = (op.rotation.moved ?? []).reduce(
@@ -355,6 +374,8 @@ export interface GearRank {
   suitName: string | null;
   /** [방어구, 장갑, 부품, 부품] */
   pieces: { id: string; name: string | null; partType: number; inSuit: boolean }[];
+  /** 세트 효과를 해석한 기대 능력치 (조건부 효과는 가동률만큼) — 없으면 조건 없는 효과만 */
+  setBag?: StatBag;
   score: ScoreResult;
   relative: number;
 }

@@ -22,6 +22,8 @@ export interface LoadoutSet {
   need: number;
   /** 피해 유형별 보너스 요약 (계산 결과) */
   summary: string;
+  /** 커뮤니티 빌드(endfieldtools.dev)에서 이 오퍼레이터가 이 세트를 쓴 비율 · 표본 수 */
+  community?: { share: number; n: number };
 }
 
 const SLOT_LABEL = ["방어구", "보호 장갑", "부품 I", "부품 II"];
@@ -73,7 +75,14 @@ export function GearLoadout({
                 <span className={cn("mr-1 font-mono", i === 0 && "text-accent-strong")}>{i + 1}</span>
                 {s.suitName}
               </span>
-              <span className="block font-mono text-[11px] leading-4">{pct(s.relative)}</span>
+              <span className="block font-mono text-[11px] leading-4">
+                {pct(s.relative)}
+                {s.community && s.community.share > 0 && (
+                  <span className="ml-1.5 text-muted-foreground" title={`커뮤니티 빌드 ${s.community.n}개 중 이 세트 비율 (endfieldtools.dev)`}>
+                    커뮤니티 {Math.round(s.community.share * 100)}%
+                  </span>
+                )}
+              </span>
             </span>
             {i === idx && <span className="absolute inset-x-0 top-0 h-[3px] bg-accent" />}
           </button>

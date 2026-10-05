@@ -1,0 +1,4487 @@
+{
+ "_meta": {
+  "source": "https://endfieldtools.dev/community-builds/ — 공개 커뮤니티 빌드 1,214개(팀 빌드 포함)의 캐릭터별 장비 4칸 집계",
+  "collectedAt": "2026-10-05",
+  "entries": 3439,
+  "note": "게임 수치가 아님. 장비 추천 알고리즘 검증용 기준(커뮤니티 선호). suits = 3개 이상 낀 세트(none = 세트 효과 없음). body/hand/edc = 부위별 채택 수(부품은 2칸 각각 셈), loadouts = 4칸 조합 상위. 같은 부품 2개 장착이 흔함"
+ },
+ "operators": {
+  "10": {
+   "charId": "chr_0012_avywen",
+   "name": "아비웨나",
+   "entries": 63,
+   "asMain": 47,
+   "suits": [
+    {
+     "suitId": "suit_attri01",
+     "name": "본 크러셔",
+     "count": 56
+    },
+    {
+     "suitId": "suit_phy01",
+     "name": "검술사",
+     "count": 1
+    },
+    {
+     "suitId": "suit_atk02",
+     "name": "응룡 50식",
+     "count": 1
+    },
+    {
+     "suitId": "none",
+     "name": null,
+     "count": 1
+    },
+    {
+     "suitId": "suit_expend_spell01",
+     "name": "식양의 흐름",
+     "count": 1
+    },
+    {
+     "suitId": "suit_will01",
+     "name": "침식 방호",
+     "count": 1
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_attri01_body_04",
+     31
+    ],
+    [
+     "item_equip_t4_suit_attri01_body_03",
+     21
+    ],
+    [
+     "item_equip_t4_suit_attri01_body_01",
+     3
+    ],
+    [
+     "item_equip_t4_suit_criti01_body_04",
+     3
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_pulse_cryst01_hand_01",
+     18
+    ],
+    [
+     "item_equip_t4_suit_atk02_hand_02",
+     16
+    ],
+    [
+     "item_equip_t4_suit_poise01_hand_02",
+     11
+    ],
+    [
+     "item_equip_t4_suit_attri01_hand_03",
+     7
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_attri01_edc_03",
+     84
+    ],
+    [
+     "item_equip_t4_suit_attri01_edc_06",
+     23
+    ],
+    [
+     "item_equip_t4_suit_attri01_edc_04",
+     5
+    ],
+    [
+     "item_equip_t4_suit_atk02_edc_04",
+     2
+    ],
+    [
+     "item_equip_t4_suit_expend_spell01_edc_02",
+     2
+    ],
+    [
+     "item_equip_t4_suit_attri01_edc_02",
+     2
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_attri01_body_03",
+      "item_equip_t4_suit_pulse_cryst01_hand_01",
+      "item_equip_t4_suit_attri01_edc_03",
+      "item_equip_t4_suit_attri01_edc_06"
+     ],
+     9
+    ],
+    [
+     [
+      "item_equip_t4_suit_attri01_body_04",
+      "item_equip_t4_suit_poise01_hand_02",
+      "item_equip_t4_suit_attri01_edc_03",
+      "item_equip_t4_suit_attri01_edc_03"
+     ],
+     8
+    ],
+    [
+     [
+      "item_equip_t4_suit_attri01_body_04",
+      "item_equip_t4_suit_pulse_cryst01_hand_01",
+      "item_equip_t4_suit_attri01_edc_03",
+      "item_equip_t4_suit_attri01_edc_03"
+     ],
+     7
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_lance_0011",
+     54
+    ],
+    [
+     "wpn_lance_0006",
+     8
+    ]
+   ]
+  },
+  "1": {
+   "charId": "chr_0004_pelica",
+   "name": "펠리카",
+   "entries": 194,
+   "asMain": 20,
+   "suits": [
+    {
+     "suitId": "suit_pulse_cryst01",
+     "name": "펄스식",
+     "count": 117
+    },
+    {
+     "suitId": "suit_combo_cd01",
+     "name": "청파",
+     "count": 51
+    },
+    {
+     "suitId": "suit_atb01",
+     "name": "개척",
+     "count": 5
+    },
+    {
+     "suitId": "suit_wisd01",
+     "name": "침식 차단",
+     "count": 5
+    },
+    {
+     "suitId": "suit_usp01",
+     "name": "재앙 방호",
+     "count": 4
+    },
+    {
+     "suitId": "suit_burst01",
+     "name": "조류의 물결",
+     "count": 2
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_pulse_cryst01_body_01",
+     117
+    ],
+    [
+     "item_equip_t4_suit_combo_cd01_body_02",
+     24
+    ],
+    [
+     "item_equip_t4_suit_combo_cd01_body_01",
+     19
+    ],
+    [
+     "item_equip_t4_parts_wuling01_body_02",
+     10
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_pulse_cryst01_hand_01",
+     65
+    ],
+    [
+     "item_equip_t4_suit_combo_cd01_hand_02",
+     30
+    ],
+    [
+     "item_equip_t4_suit_poise01_hand_01",
+     20
+    ],
+    [
+     "item_equip_t4_suit_usp02_hand_02",
+     19
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_pulse_cryst01_edc_02",
+     195
+    ],
+    [
+     "item_equip_t4_suit_combo_cd01_edc_03",
+     70
+    ],
+    [
+     "item_equip_t4_suit_pulse_cryst01_edc_03",
+     25
+    ],
+    [
+     "item_equip_t4_suit_combo_cd01_edc_01",
+     14
+    ],
+    [
+     "item_equip_t4_suit_pulse_cryst01_edc_01",
+     10
+    ],
+    [
+     "item_equip_t4_suit_heal01_edc_03",
+     9
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_pulse_cryst01_body_01",
+      "item_equip_t4_suit_pulse_cryst01_hand_01",
+      "item_equip_t4_suit_pulse_cryst01_edc_02",
+      "item_equip_t4_suit_pulse_cryst01_edc_02"
+     ],
+     38
+    ],
+    [
+     [
+      "item_equip_t4_suit_pulse_cryst01_body_01",
+      "item_equip_t4_suit_usp02_hand_02",
+      "item_equip_t4_suit_pulse_cryst01_edc_02",
+      "item_equip_t4_suit_pulse_cryst01_edc_02"
+     ],
+     17
+    ],
+    [
+     [
+      "item_equip_t4_suit_pulse_cryst01_body_01",
+      "item_equip_t4_suit_poise01_hand_01",
+      "item_equip_t4_suit_pulse_cryst01_edc_02",
+      "item_equip_t4_suit_pulse_cryst01_edc_02"
+     ],
+     14
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_funnel_0004",
+     70
+    ],
+    [
+     "wpn_funnel_0005",
+     47
+    ],
+    [
+     "wpn_funnel_0009",
+     39
+    ],
+    [
+     "wpn_funnel_0008",
+     28
+    ]
+   ]
+  },
+  "4": {
+   "charId": "chr_0005_chen",
+   "name": "진천우",
+   "entries": 172,
+   "asMain": 34,
+   "suits": [
+    {
+     "suitId": "suit_phy01",
+     "name": "검술사",
+     "count": 100
+    },
+    {
+     "suitId": "suit_combo_cd01",
+     "name": "청파",
+     "count": 15
+    },
+    {
+     "suitId": "suit_atk02",
+     "name": "응룡 50식",
+     "count": 14
+    },
+    {
+     "suitId": "suit_poise01",
+     "name": "경량 초자연",
+     "count": 11
+    },
+    {
+     "suitId": "suit_agi01",
+     "name": "순행 전달자",
+     "count": 9
+    },
+    {
+     "suitId": "suit_criti01",
+     "name": "M. I. 경찰용",
+     "count": 8
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_phy01_body_02",
+     52
+    ],
+    [
+     "item_equip_t4_suit_atk02_body_02",
+     24
+    ],
+    [
+     "item_equip_t4_suit_phy01_body_03",
+     24
+    ],
+    [
+     "item_equip_t4_suit_attri01_body_02",
+     18
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_phy01_hand_02",
+     68
+    ],
+    [
+     "item_equip_t4_suit_poise01_hand_01",
+     22
+    ],
+    [
+     "item_equip_t4_parts_wuling01_hand_01",
+     19
+    ],
+    [
+     "item_equip_t4_suit_phy01_hand_01",
+     14
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_phy01_edc_03",
+     147
+    ],
+    [
+     "item_equip_t4_suit_combo_cd01_edc_04",
+     23
+    ],
+    [
+     "item_equip_t4_suit_atk02_edc_02",
+     21
+    ],
+    [
+     "item_equip_t4_suit_phy01_edc_01",
+     18
+    ],
+    [
+     "item_equip_t4_suit_poise01_edc_02",
+     14
+    ],
+    [
+     "item_equip_t4_suit_phy01_edc_02",
+     13
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_phy01_body_02",
+      "item_equip_t4_suit_phy01_hand_02",
+      "item_equip_t4_suit_phy01_edc_03",
+      "item_equip_t4_suit_phy01_edc_03"
+     ],
+     23
+    ],
+    [
+     [
+      "item_equip_t4_suit_attri01_body_02",
+      "item_equip_t4_suit_phy01_hand_02",
+      "item_equip_t4_suit_phy01_edc_03",
+      "item_equip_t4_suit_phy01_edc_03"
+     ],
+     10
+    ],
+    [
+     [
+      "item_equip_t4_suit_atk02_body_02",
+      "item_equip_t4_suit_phy01_hand_02",
+      "item_equip_t4_suit_phy01_edc_03",
+      "item_equip_t4_suit_phy01_edc_03"
+     ],
+     8
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_sword_0011",
+     55
+    ],
+    [
+     "wpn_sword_0005",
+     45
+    ],
+    [
+     "wpn_sword_0015",
+     30
+    ],
+    [
+     "wpn_sword_0017",
+     29
+    ]
+   ]
+  },
+  "9": {
+   "charId": "chr_0013_aglina",
+   "name": "질베르타",
+   "entries": 277,
+   "asMain": 18,
+   "suits": [
+    {
+     "suitId": "suit_usp02",
+     "name": "식양의 숨결",
+     "count": 233
+    },
+    {
+     "suitId": "suit_fire_natr01",
+     "name": "열 작업용",
+     "count": 8
+    },
+    {
+     "suitId": "suit_pulse_cryst01",
+     "name": "펄스식",
+     "count": 6
+    },
+    {
+     "suitId": "suit_burst01",
+     "name": "조류의 물결",
+     "count": 5
+    },
+    {
+     "suitId": "suit_phy01",
+     "name": "검술사",
+     "count": 5
+    },
+    {
+     "suitId": "suit_attri01",
+     "name": "본 크러셔",
+     "count": 4
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_usp02_body_01",
+     132
+    ],
+    [
+     "item_equip_t4_suit_attri01_body_04",
+     39
+    ],
+    [
+     "item_equip_t4_suit_burst01_body_01",
+     36
+    ],
+    [
+     "item_equip_t4_parts_wuling01_body_02",
+     17
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_usp02_hand_02",
+     139
+    ],
+    [
+     "item_equip_t4_suit_usp02_hand_01",
+     69
+    ],
+    [
+     "item_equip_t4_suit_fire_natr01_hand_03",
+     24
+    ],
+    [
+     "item_equip_t4_suit_fire_natr01_hand_02",
+     12
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_usp02_edc_03",
+     346
+    ],
+    [
+     "item_equip_t4_suit_usp02_edc_02",
+     80
+    ],
+    [
+     "item_equip_t4_suit_usp02_edc_01",
+     21
+    ],
+    [
+     "item_equip_t4_suit_fire_natr01_edc_03",
+     20
+    ],
+    [
+     "item_equip_t4_suit_pulse_cryst01_edc_02",
+     14
+    ],
+    [
+     "item_equip_t4_suit_heal01_edc_03",
+     9
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_usp02_body_01",
+      "item_equip_t4_suit_usp02_hand_02",
+      "item_equip_t4_suit_usp02_edc_03",
+      "item_equip_t4_suit_usp02_edc_03"
+     ],
+     34
+    ],
+    [
+     [
+      "item_equip_t4_suit_attri01_body_04",
+      "item_equip_t4_suit_usp02_hand_02",
+      "item_equip_t4_suit_usp02_edc_03",
+      "item_equip_t4_suit_usp02_edc_03"
+     ],
+     26
+    ],
+    [
+     [
+      "item_equip_t4_suit_usp02_body_01",
+      "item_equip_t4_suit_usp02_hand_01",
+      "item_equip_t4_suit_usp02_edc_02",
+      "item_equip_t4_suit_usp02_edc_03"
+     ],
+     18
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_funnel_0011",
+     210
+    ],
+    [
+     "wpn_funnel_0005",
+     24
+    ],
+    [
+     "wpn_funnel_0006",
+     23
+    ],
+    [
+     "wpn_funnel_0007",
+     6
+    ]
+   ]
+  },
+  "11": {
+   "charId": "chr_0016_laevat",
+   "name": "레바테인",
+   "entries": 205,
+   "asMain": 192,
+   "suits": [
+    {
+     "suitId": "suit_fire_natr01",
+     "name": "열 작업용",
+     "count": 158
+    },
+    {
+     "suitId": "suit_burst01",
+     "name": "조류의 물결",
+     "count": 21
+    },
+    {
+     "suitId": "suit_atk02",
+     "name": "응룡 50식",
+     "count": 6
+    },
+    {
+     "suitId": "suit_criti01",
+     "name": "M. I. 경찰용",
+     "count": 5
+    },
+    {
+     "suitId": "suit_wisd01",
+     "name": "침식 차단",
+     "count": 5
+    },
+    {
+     "suitId": "suit_usp01",
+     "name": "재앙 방호",
+     "count": 3
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_burst01_body_01",
+     118
+    ],
+    [
+     "item_equip_t4_suit_fire_natr01_body_01",
+     44
+    ],
+    [
+     "item_equip_t4_suit_fire_natr01_body_02",
+     12
+    ],
+    [
+     "item_equip_t4_parts_wuling01_body_02",
+     6
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_fire_natr01_hand_02",
+     168
+    ],
+    [
+     "item_equip_t4_suit_burst01_hand_01",
+     7
+    ],
+    [
+     "item_equip_t4_suit_fire_natr01_hand_03",
+     7
+    ],
+    [
+     "item_equip_t4_suit_usp02_hand_01",
+     4
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_fire_natr01_edc_02",
+     227
+    ],
+    [
+     "item_equip_t4_suit_fire_natr01_edc_03",
+     50
+    ],
+    [
+     "item_equip_t4_suit_heal01_edc_03",
+     27
+    ],
+    [
+     "item_equip_t4_suit_burst01_edc_02",
+     22
+    ],
+    [
+     "item_equip_t4_suit_burst01_edc_01",
+     16
+    ],
+    [
+     "item_equip_t4_suit_fire_natr01_edc_01",
+     11
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_burst01_body_01",
+      "item_equip_t4_suit_fire_natr01_hand_02",
+      "item_equip_t4_suit_fire_natr01_edc_02",
+      "item_equip_t4_suit_fire_natr01_edc_02"
+     ],
+     63
+    ],
+    [
+     [
+      "item_equip_t4_suit_burst01_body_01",
+      "item_equip_t4_suit_fire_natr01_hand_02",
+      "item_equip_t4_suit_fire_natr01_edc_02",
+      "item_equip_t4_suit_fire_natr01_edc_03"
+     ],
+     21
+    ],
+    [
+     [
+      "item_equip_t4_suit_fire_natr01_body_01",
+      "item_equip_t4_suit_fire_natr01_hand_02",
+      "item_equip_t4_suit_fire_natr01_edc_02",
+      "item_equip_t4_suit_fire_natr01_edc_03"
+     ],
+     15
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_sword_0006",
+     189
+    ],
+    [
+     "wpn_sword_0010",
+     12
+    ],
+    [
+     "wpn_sword_0003",
+     1
+    ],
+    [
+     "wpn_sword_0017",
+     1
+    ]
+   ]
+  },
+  "1040": {
+   "charId": "chr_0032_lizhiyan",
+   "name": "결",
+   "entries": 74,
+   "asMain": 33,
+   "suits": [
+    {
+     "suitId": "suit_usp02",
+     "name": "식양의 숨결",
+     "count": 39
+    },
+    {
+     "suitId": "suit_fire_natr01",
+     "name": "열 작업용",
+     "count": 31
+    },
+    {
+     "suitId": "none",
+     "name": null,
+     "count": 3
+    },
+    {
+     "suitId": "suit_criti01",
+     "name": "M. I. 경찰용",
+     "count": 1
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_usp02_body_03",
+     32
+    ],
+    [
+     "item_equip_t4_suit_fire_natr01_body_02",
+     30
+    ],
+    [
+     "item_equip_t4_suit_usp02_body_04",
+     5
+    ],
+    [
+     "item_equip_t4_suit_usp02_body_01",
+     2
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_fire_natr01_hand_04",
+     30
+    ],
+    [
+     "item_equip_t4_suit_usp02_hand_03",
+     29
+    ],
+    [
+     "item_equip_t4_suit_usp02_hand_02",
+     4
+    ],
+    [
+     "item_equip_t4_suit_usp02_hand_01",
+     2
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_usp02_edc_04",
+     63
+    ],
+    [
+     "item_equip_t4_suit_fire_natr01_edc_04",
+     33
+    ],
+    [
+     "item_equip_t4_suit_heal01_edc_03",
+     31
+    ],
+    [
+     "item_equip_t4_suit_usp02_edc_03",
+     8
+    ],
+    [
+     "item_equip_t4_suit_usp02_edc_01",
+     3
+    ],
+    [
+     "item_equip_t4_parts_wuling00_edc_03",
+     3
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_fire_natr01_body_02",
+      "item_equip_t4_suit_fire_natr01_hand_04",
+      "item_equip_t4_suit_fire_natr01_edc_04",
+      "item_equip_t4_suit_heal01_edc_03"
+     ],
+     27
+    ],
+    [
+     [
+      "item_equip_t4_suit_usp02_body_03",
+      "item_equip_t4_suit_usp02_hand_03",
+      "item_equip_t4_suit_usp02_edc_04",
+      "item_equip_t4_suit_usp02_edc_04"
+     ],
+     21
+    ],
+    [
+     [
+      "item_equip_t4_suit_usp02_body_03",
+      "item_equip_t4_suit_usp02_hand_03",
+      "item_equip_t4_suit_usp02_edc_03",
+      "item_equip_t4_suit_usp02_edc_04"
+     ],
+     3
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_funnel_0016",
+     71
+    ],
+    [
+     "wpn_funnel_0018",
+     2
+    ],
+    [
+     "wpn_funnel_0008",
+     1
+    ]
+   ]
+  },
+  "6": {
+   "charId": "chr_0006_wolfgd",
+   "name": "울프가드",
+   "entries": 157,
+   "asMain": 6,
+   "suits": [
+    {
+     "suitId": "suit_fire_natr01",
+     "name": "열 작업용",
+     "count": 99
+    },
+    {
+     "suitId": "suit_atb01",
+     "name": "개척",
+     "count": 15
+    },
+    {
+     "suitId": "none",
+     "name": null,
+     "count": 13
+    },
+    {
+     "suitId": "suit_burst01",
+     "name": "조류의 물결",
+     "count": 7
+    },
+    {
+     "suitId": "suit_combo_cd01",
+     "name": "청파",
+     "count": 6
+    },
+    {
+     "suitId": "suit_usp01",
+     "name": "재앙 방호",
+     "count": 5
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_fire_natr01_body_01",
+     96
+    ],
+    [
+     "item_equip_t4_suit_burst01_body_01",
+     17
+    ],
+    [
+     "item_equip_t4_suit_atb01_body_02",
+     11
+    ],
+    [
+     "item_equip_t4_suit_fire_natr01_body_02",
+     6
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_fire_natr01_hand_02",
+     26
+    ],
+    [
+     "item_equip_t4_suit_heal01_hand_01",
+     21
+    ],
+    [
+     "item_equip_t4_suit_criti01_hand_01",
+     21
+    ],
+    [
+     "item_equip_t4_suit_attri01_hand_01",
+     13
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_fire_natr01_edc_01",
+     109
+    ],
+    [
+     "item_equip_t4_suit_fire_natr01_edc_02",
+     58
+    ],
+    [
+     "item_equip_t4_parts_wuling01_edc_03",
+     27
+    ],
+    [
+     "item_equip_t4_suit_fire_natr01_edc_03",
+     23
+    ],
+    [
+     "item_equip_t4_suit_atb01_edc_01",
+     20
+    ],
+    [
+     "item_equip_t4_suit_burst01_edc_02",
+     11
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_fire_natr01_body_01",
+      "item_equip_t4_suit_attri01_hand_01",
+      "item_equip_t4_suit_fire_natr01_edc_01",
+      "item_equip_t4_suit_fire_natr01_edc_01"
+     ],
+     8
+    ],
+    [
+     [
+      "item_equip_t4_suit_burst01_body_01",
+      "item_equip_t4_suit_heal01_hand_01",
+      "item_equip_t4_parts_wuling01_edc_03",
+      "item_equip_t4_parts_wuling01_edc_03"
+     ],
+     8
+    ],
+    [
+     [
+      "item_equip_t4_suit_fire_natr01_body_01",
+      "item_equip_t4_suit_criti01_hand_01",
+      "item_equip_t4_suit_fire_natr01_edc_02",
+      "item_equip_t4_suit_fire_natr01_edc_03"
+     ],
+     8
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_pistol_0009",
+     108
+    ],
+    [
+     "wpn_pistol_0004",
+     30
+    ],
+    [
+     "wpn_pistol_0008",
+     13
+    ],
+    [
+     "wpn_pistol_0012",
+     6
+    ]
+   ]
+  },
+  "996": {
+   "charId": "chr_0033_camille",
+   "name": "카뮤",
+   "entries": 34,
+   "asMain": 3,
+   "suits": [
+    {
+     "suitId": "suit_atb01",
+     "name": "개척",
+     "count": 34
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_atb01_body_05",
+     23
+    ],
+    [
+     "item_equip_t4_suit_atb01_body_03",
+     6
+    ],
+    [
+     "item_equip_t4_suit_atb01_body_01",
+     2
+    ],
+    [
+     "item_equip_t4_suit_criti01_body_06",
+     1
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_atb01_hand_03",
+     24
+    ],
+    [
+     "item_equip_t4_suit_atb01_hand_01",
+     7
+    ],
+    [
+     "item_equip_t4_suit_atb01_hand_02",
+     3
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_atb01_edc_04",
+     30
+    ],
+    [
+     "item_equip_t4_parts_wuling01_edc_03",
+     22
+    ],
+    [
+     "item_equip_t4_suit_atb01_edc_06",
+     5
+    ],
+    [
+     "item_equip_t4_suit_atb01_edc_01",
+     4
+    ],
+    [
+     "item_equip_t4_suit_combo_cd01_edc_01",
+     3
+    ],
+    [
+     "item_equip_t4_suit_atb01_edc_02",
+     2
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_atb01_body_05",
+      "item_equip_t4_suit_atb01_hand_03",
+      "item_equip_t4_parts_wuling01_edc_03",
+      "item_equip_t4_suit_atb01_edc_04"
+     ],
+     16
+    ],
+    [
+     [
+      "item_equip_t4_suit_atb01_body_05",
+      "item_equip_t4_suit_atb01_hand_03",
+      "item_equip_t4_parts_wuling01_edc_03",
+      "item_equip_t4_suit_atb01_edc_06"
+     ],
+     4
+    ],
+    [
+     [
+      "item_equip_t4_suit_atb01_body_03",
+      "item_equip_t4_suit_atb01_hand_01",
+      "item_equip_t4_suit_atb01_edc_04",
+      "item_equip_t4_suit_combo_cd01_edc_01"
+     ],
+     3
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_lance_0015",
+     32
+    ],
+    [
+     "wpn_lance_0007",
+     2
+    ]
+   ]
+  },
+  "20": {
+   "charId": "chr_0029_pograni",
+   "name": "포그라니치니크",
+   "entries": 190,
+   "asMain": 32,
+   "suits": [
+    {
+     "suitId": "suit_atb01",
+     "name": "개척",
+     "count": 68
+    },
+    {
+     "suitId": "suit_atk02",
+     "name": "응룡 50식",
+     "count": 57
+    },
+    {
+     "suitId": "suit_fire_natr01",
+     "name": "열 작업용",
+     "count": 24
+    },
+    {
+     "suitId": "suit_attri01",
+     "name": "본 크러셔",
+     "count": 8
+    },
+    {
+     "suitId": "suit_phy01",
+     "name": "검술사",
+     "count": 8
+    },
+    {
+     "suitId": "suit_usp02",
+     "name": "식양의 숨결",
+     "count": 6
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_attri01_body_04",
+     64
+    ],
+    [
+     "item_equip_t4_suit_atb01_body_03",
+     17
+    ],
+    [
+     "item_equip_t4_suit_usp02_body_01",
+     16
+    ],
+    [
+     "item_equip_t4_suit_atb01_body_05",
+     15
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_atk02_hand_02",
+     45
+    ],
+    [
+     "item_equip_t4_suit_fire_natr01_hand_01",
+     27
+    ],
+    [
+     "item_equip_t4_suit_atb01_hand_01",
+     25
+    ],
+    [
+     "item_equip_t4_suit_atb01_hand_02",
+     16
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_atk02_edc_04",
+     91
+    ],
+    [
+     "item_equip_t4_suit_fire_natr01_edc_03",
+     48
+    ],
+    [
+     "item_equip_t4_suit_atb01_edc_05",
+     45
+    ],
+    [
+     "item_equip_t4_suit_atb01_edc_04",
+     27
+    ],
+    [
+     "item_equip_t4_suit_atb01_edc_01",
+     23
+    ],
+    [
+     "item_equip_t4_suit_atb01_edc_02",
+     20
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_attri01_body_04",
+      "item_equip_t4_suit_atk02_hand_02",
+      "item_equip_t4_suit_atk02_edc_04",
+      "item_equip_t4_suit_atk02_edc_04"
+     ],
+     21
+    ],
+    [
+     [
+      "item_equip_t4_suit_usp02_body_01",
+      "item_equip_t4_suit_fire_natr01_hand_01",
+      "item_equip_t4_suit_fire_natr01_edc_03",
+      "item_equip_t4_suit_fire_natr01_edc_03"
+     ],
+     12
+    ],
+    [
+     [
+      "item_equip_t4_suit_attri01_body_04",
+      "item_equip_t4_suit_fire_natr01_hand_01",
+      "item_equip_t4_suit_fire_natr01_edc_03",
+      "item_equip_t4_suit_fire_natr01_edc_03"
+     ],
+     8
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_sword_0016",
+     116
+    ],
+    [
+     "wpn_sword_0012",
+     58
+    ],
+    [
+     "wpn_sword_0007",
+     9
+    ],
+    [
+     "wpn_sword_0005",
+     3
+    ]
+   ]
+  },
+  "2": {
+   "charId": "chr_0002_endminm",
+   "name": "관리자(남)",
+   "entries": 162,
+   "asMain": 86,
+   "suits": [
+    {
+     "suitId": "suit_phy01",
+     "name": "검술사",
+     "count": 81
+    },
+    {
+     "suitId": "suit_attri01",
+     "name": "본 크러셔",
+     "count": 21
+    },
+    {
+     "suitId": "suit_poise01",
+     "name": "경량 초자연",
+     "count": 20
+    },
+    {
+     "suitId": "suit_crush_fracture",
+     "name": "고검의 잔향",
+     "count": 10
+    },
+    {
+     "suitId": "suit_agi01",
+     "name": "순행 전달자",
+     "count": 10
+    },
+    {
+     "suitId": "suit_atk02",
+     "name": "응룡 50식",
+     "count": 5
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_phy01_body_02",
+     72
+    ],
+    [
+     "item_equip_t4_suit_attri01_body_02",
+     18
+    ],
+    [
+     "item_equip_t4_suit_attri01_body_03",
+     10
+    ],
+    [
+     "item_equip_t4_suit_phy01_body_01",
+     10
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_poise01_hand_01",
+     58
+    ],
+    [
+     "item_equip_t4_suit_phy01_hand_02",
+     42
+    ],
+    [
+     "item_equip_t4_suit_phy01_hand_01",
+     8
+    ],
+    [
+     "item_equip_t4_suit_crush_fracture_hand_02",
+     8
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_phy01_edc_03",
+     125
+    ],
+    [
+     "item_equip_t4_suit_attri01_edc_04",
+     30
+    ],
+    [
+     "item_equip_t4_suit_poise01_edc_02",
+     28
+    ],
+    [
+     "item_equip_t4_suit_phy01_edc_01",
+     19
+    ],
+    [
+     "item_equip_t4_suit_crush_fracture_edc_02",
+     12
+    ],
+    [
+     "item_equip_t4_suit_phy01_edc_02",
+     11
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_phy01_body_02",
+      "item_equip_t4_suit_poise01_hand_01",
+      "item_equip_t4_suit_phy01_edc_03",
+      "item_equip_t4_suit_phy01_edc_03"
+     ],
+     27
+    ],
+    [
+     [
+      "item_equip_t4_suit_phy01_body_02",
+      "item_equip_t4_suit_phy01_hand_02",
+      "item_equip_t4_suit_phy01_edc_03",
+      "item_equip_t4_suit_phy01_edc_03"
+     ],
+     17
+    ],
+    [
+     [
+      "item_equip_t4_suit_phy01_body_02",
+      "item_equip_t4_suit_poise01_hand_01",
+      "item_equip_t4_suit_poise01_edc_02",
+      "item_equip_t4_suit_poise01_edc_02"
+     ],
+     7
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_sword_0021",
+     142
+    ],
+    [
+     "wpn_sword_0005",
+     6
+    ],
+    [
+     "wpn_sword_0013",
+     6
+    ],
+    [
+     "wpn_sword_0011",
+     3
+    ]
+   ]
+  },
+  "17": {
+   "charId": "chr_0026_lastrite",
+   "name": "라스트 라이트",
+   "entries": 140,
+   "asMain": 91,
+   "suits": [
+    {
+     "suitId": "suit_burst01",
+     "name": "조류의 물결",
+     "count": 122
+    },
+    {
+     "suitId": "suit_atk02",
+     "name": "응룡 50식",
+     "count": 5
+    },
+    {
+     "suitId": "suit_atk01",
+     "name": "아부레이의 메아리",
+     "count": 3
+    },
+    {
+     "suitId": "suit_atb01",
+     "name": "개척",
+     "count": 2
+    },
+    {
+     "suitId": "suit_usp02",
+     "name": "식양의 숨결",
+     "count": 1
+    },
+    {
+     "suitId": "suit_stragi01",
+     "name": "통합 중량형 모델",
+     "count": 1
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_atk02_body_04",
+     27
+    ],
+    [
+     "item_equip_t4_suit_poise01_body_01",
+     24
+    ],
+    [
+     "item_equip_t4_suit_burst01_body_01",
+     22
+    ],
+    [
+     "item_equip_t4_suit_attri01_body_03",
+     19
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_burst01_hand_01",
+     122
+    ],
+    [
+     "item_equip_t4_suit_atk02_hand_02",
+     3
+    ],
+    [
+     "item_equip_t4_suit_pulse_cryst01_hand_01",
+     2
+    ],
+    [
+     "item_equip_t3_suit_atk01_hand_01",
+     2
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_burst01_edc_01",
+     208
+    ],
+    [
+     "item_equip_t4_suit_burst01_edc_02",
+     36
+    ],
+    [
+     "item_equip_t4_suit_atk02_edc_04",
+     7
+    ],
+    [
+     "item_equip_t3_suit_atk01_edc_02",
+     3
+    ],
+    [
+     "item_equip_t4_suit_criti01_edc_01",
+     3
+    ],
+    [
+     "item_equip_t4_suit_atb01_edc_01",
+     2
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_poise01_body_01",
+      "item_equip_t4_suit_burst01_hand_01",
+      "item_equip_t4_suit_burst01_edc_01",
+      "item_equip_t4_suit_burst01_edc_01"
+     ],
+     17
+    ],
+    [
+     [
+      "item_equip_t4_suit_attri01_body_03",
+      "item_equip_t4_suit_burst01_hand_01",
+      "item_equip_t4_suit_burst01_edc_01",
+      "item_equip_t4_suit_burst01_edc_01"
+     ],
+     16
+    ],
+    [
+     [
+      "item_equip_t4_suit_atk02_body_04",
+      "item_equip_t4_suit_burst01_hand_01",
+      "item_equip_t4_suit_burst01_edc_01",
+      "item_equip_t4_suit_burst01_edc_01"
+     ],
+     15
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_claym_0013",
+     128
+    ],
+    [
+     "wpn_claym_0008",
+     6
+    ],
+    [
+     "wpn_claym_0011",
+     5
+    ],
+    [
+     "wpn_claym_0004",
+     1
+    ]
+   ]
+  },
+  "13": {
+   "charId": "chr_0011_seraph",
+   "name": "자이히",
+   "entries": 207,
+   "asMain": 6,
+   "suits": [
+    {
+     "suitId": "suit_usp02",
+     "name": "식양의 숨결",
+     "count": 123
+    },
+    {
+     "suitId": "suit_heal01",
+     "name": "생체 보조",
+     "count": 28
+    },
+    {
+     "suitId": "none",
+     "name": null,
+     "count": 27
+    },
+    {
+     "suitId": "suit_atb01",
+     "name": "개척",
+     "count": 20
+    },
+    {
+     "suitId": "suit_pulse_cryst01",
+     "name": "펄스식",
+     "count": 2
+    },
+    {
+     "suitId": "suit_will01",
+     "name": "침식 방호",
+     "count": 2
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_usp02_body_01",
+     50
+    ],
+    [
+     "item_equip_t4_parts_wuling01_body_02",
+     42
+    ],
+    [
+     "item_equip_t4_suit_heal01_body_02",
+     32
+    ],
+    [
+     "item_equip_t4_suit_burst01_body_01",
+     27
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_usp02_hand_02",
+     110
+    ],
+    [
+     "item_equip_t4_suit_usp02_hand_01",
+     50
+    ],
+    [
+     "item_equip_t4_suit_pulse_cryst01_hand_01",
+     13
+    ],
+    [
+     "item_equip_t4_parts_wuling00_hand_03",
+     9
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_usp02_edc_03",
+     113
+    ],
+    [
+     "item_equip_t4_suit_atb01_edc_04",
+     61
+    ],
+    [
+     "item_equip_t4_suit_usp02_edc_02",
+     51
+    ],
+    [
+     "item_equip_t4_suit_usp02_edc_01",
+     37
+    ],
+    [
+     "item_equip_t4_suit_usp02_edc_04",
+     30
+    ],
+    [
+     "item_equip_t4_suit_heal01_edc_03",
+     28
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_usp02_body_01",
+      "item_equip_t4_suit_usp02_hand_01",
+      "item_equip_t4_suit_usp02_edc_02",
+      "item_equip_t4_suit_usp02_edc_03"
+     ],
+     15
+    ],
+    [
+     [
+      "item_equip_t4_parts_wuling01_body_02",
+      "item_equip_t4_suit_usp02_hand_02",
+      "item_equip_t4_suit_atb01_edc_04",
+      "item_equip_t4_suit_atb01_edc_04"
+     ],
+     10
+    ],
+    [
+     [
+      "item_equip_t4_suit_usp02_body_01",
+      "item_equip_t4_suit_usp02_hand_02",
+      "item_equip_t4_suit_usp02_edc_03",
+      "item_equip_t4_suit_usp02_edc_03"
+     ],
+     10
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_funnel_0010",
+     97
+    ],
+    [
+     "wpn_funnel_0008",
+     67
+    ],
+    [
+     "wpn_funnel_0012",
+     16
+    ],
+    [
+     "wpn_funnel_0005",
+     11
+    ]
+   ]
+  },
+  "19": {
+   "charId": "chr_0025_ardelia",
+   "name": "아델리아",
+   "entries": 262,
+   "asMain": 16,
+   "suits": [
+    {
+     "suitId": "suit_usp02",
+     "name": "식양의 숨결",
+     "count": 181
+    },
+    {
+     "suitId": "suit_heal01",
+     "name": "생체 보조",
+     "count": 40
+    },
+    {
+     "suitId": "suit_fire_natr01",
+     "name": "열 작업용",
+     "count": 13
+    },
+    {
+     "suitId": "suit_usp01",
+     "name": "재앙 방호",
+     "count": 6
+    },
+    {
+     "suitId": "suit_will01",
+     "name": "침식 방호",
+     "count": 5
+    },
+    {
+     "suitId": "suit_wisd01",
+     "name": "침식 차단",
+     "count": 5
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_usp02_body_01",
+     104
+    ],
+    [
+     "item_equip_t4_suit_heal01_body_02",
+     58
+    ],
+    [
+     "item_equip_t4_suit_burst01_body_01",
+     24
+    ],
+    [
+     "item_equip_t4_suit_pulse_cryst01_body_01",
+     19
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_usp02_hand_02",
+     108
+    ],
+    [
+     "item_equip_t4_suit_usp02_hand_01",
+     78
+    ],
+    [
+     "item_equip_t4_suit_heal01_hand_02",
+     20
+    ],
+    [
+     "item_equip_t4_suit_fire_natr01_hand_03",
+     9
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_usp02_edc_03",
+     185
+    ],
+    [
+     "item_equip_t4_suit_usp02_edc_02",
+     147
+    ],
+    [
+     "item_equip_t4_suit_heal01_edc_04",
+     37
+    ],
+    [
+     "item_equip_t4_suit_usp02_edc_01",
+     26
+    ],
+    [
+     "item_equip_t4_suit_heal01_edc_01",
+     19
+    ],
+    [
+     "item_equip_t4_suit_heal01_edc_03",
+     19
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_usp02_body_01",
+      "item_equip_t4_suit_usp02_hand_01",
+      "item_equip_t4_suit_usp02_edc_02",
+      "item_equip_t4_suit_usp02_edc_03"
+     ],
+     35
+    ],
+    [
+     [
+      "item_equip_t4_suit_usp02_body_01",
+      "item_equip_t4_suit_usp02_hand_02",
+      "item_equip_t4_suit_usp02_edc_03",
+      "item_equip_t4_suit_usp02_edc_03"
+     ],
+     17
+    ],
+    [
+     [
+      "item_equip_t4_suit_usp02_body_01",
+      "item_equip_t4_suit_usp02_hand_01",
+      "item_equip_t4_suit_usp02_edc_01",
+      "item_equip_t4_suit_usp02_edc_02"
+     ],
+     12
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_funnel_0013",
+     231
+    ],
+    [
+     "wpn_funnel_0005",
+     14
+    ],
+    [
+     "wpn_funnel_0010",
+     4
+    ],
+    [
+     "wpn_funnel_0009",
+     4
+    ]
+   ]
+  },
+  "24": {
+   "charId": "chr_0022_bounda",
+   "name": "플루라이트",
+   "entries": 62,
+   "asMain": 11,
+   "suits": [
+    {
+     "suitId": "suit_atb01",
+     "name": "개척",
+     "count": 29
+    },
+    {
+     "suitId": "suit_criti01",
+     "name": "M. I. 경찰용",
+     "count": 12
+    },
+    {
+     "suitId": "none",
+     "name": null,
+     "count": 4
+    },
+    {
+     "suitId": "suit_atk02",
+     "name": "응룡 50식",
+     "count": 4
+    },
+    {
+     "suitId": "suit_combo_cd01",
+     "name": "청파",
+     "count": 3
+    },
+    {
+     "suitId": "suit_wisd01",
+     "name": "침식 차단",
+     "count": 3
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_atb01_body_03",
+     19
+    ],
+    [
+     "item_equip_t4_suit_atb01_body_04",
+     8
+    ],
+    [
+     "item_equip_t4_suit_criti01_body_02",
+     6
+    ],
+    [
+     "item_equip_t4_suit_attri01_body_01",
+     6
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_atb01_hand_01",
+     19
+    ],
+    [
+     "item_equip_t4_suit_atk02_hand_01",
+     10
+    ],
+    [
+     "item_equip_t4_suit_criti01_hand_02",
+     7
+    ],
+    [
+     "item_equip_t4_suit_usp02_hand_02",
+     4
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_atb01_edc_04",
+     26
+    ],
+    [
+     "item_equip_t4_suit_criti01_edc_03",
+     17
+    ],
+    [
+     "item_equip_t4_suit_atb01_edc_01",
+     12
+    ],
+    [
+     "item_equip_t4_parts_wuling01_edc_03",
+     10
+    ],
+    [
+     "item_equip_t4_suit_atb01_edc_02",
+     8
+    ],
+    [
+     "item_equip_t4_suit_atk02_edc_03",
+     6
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_atb01_body_03",
+      "item_equip_t4_suit_atb01_hand_01",
+      "item_equip_t4_suit_atb01_edc_01",
+      "item_equip_t4_suit_atb01_edc_02"
+     ],
+     4
+    ],
+    [
+     [
+      "item_equip_t4_suit_criti01_body_02",
+      "item_equip_t4_suit_criti01_hand_02",
+      "item_equip_t4_suit_criti01_edc_03",
+      "item_equip_t4_suit_criti01_edc_03"
+     ],
+     4
+    ],
+    [
+     [
+      "item_equip_t4_suit_attri01_body_02",
+      "item_equip_t4_suit_atk02_hand_01",
+      "item_equip_t4_suit_atk02_edc_04",
+      "item_equip_t4_suit_atk02_edc_04"
+     ],
+     2
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_pistol_0012",
+     28
+    ],
+    [
+     "wpn_pistol_0005",
+     14
+    ],
+    [
+     "wpn_pistol_0006",
+     13
+    ],
+    [
+     "wpn_pistol_0008",
+     5
+    ]
+   ]
+  },
+  "5": {
+   "charId": "chr_0019_karin",
+   "name": "아케쿠리",
+   "entries": 168,
+   "asMain": 14,
+   "suits": [
+    {
+     "suitId": "suit_atb01",
+     "name": "개척",
+     "count": 138
+    },
+    {
+     "suitId": "none",
+     "name": null,
+     "count": 12
+    },
+    {
+     "suitId": "suit_usp02",
+     "name": "식양의 숨결",
+     "count": 11
+    },
+    {
+     "suitId": "suit_burst01",
+     "name": "조류의 물결",
+     "count": 2
+    },
+    {
+     "suitId": "suit_usp01",
+     "name": "재앙 방호",
+     "count": 2
+    },
+    {
+     "suitId": "suit_atk02",
+     "name": "응룡 50식",
+     "count": 1
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_atb01_body_03",
+     55
+    ],
+    [
+     "item_equip_t4_suit_atb01_body_04",
+     35
+    ],
+    [
+     "item_equip_t4_suit_atb01_body_05",
+     21
+    ],
+    [
+     "item_equip_t4_suit_burst01_body_01",
+     16
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_usp02_hand_01",
+     49
+    ],
+    [
+     "item_equip_t4_suit_atb01_hand_01",
+     46
+    ],
+    [
+     "item_equip_t4_suit_usp02_hand_02",
+     30
+    ],
+    [
+     "item_equip_t4_suit_atb01_hand_03",
+     14
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_atb01_edc_04",
+     142
+    ],
+    [
+     "item_equip_t4_suit_atb01_edc_01",
+     47
+    ],
+    [
+     "item_equip_t4_parts_wuling01_edc_03",
+     40
+    ],
+    [
+     "item_equip_t4_suit_atb01_edc_02",
+     39
+    ],
+    [
+     "item_equip_t4_suit_atb01_edc_06",
+     17
+    ],
+    [
+     "item_equip_t4_suit_usp02_edc_01",
+     13
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_atb01_body_04",
+      "item_equip_t4_suit_usp02_hand_01",
+      "item_equip_t4_suit_atb01_edc_04",
+      "item_equip_t4_suit_atb01_edc_04"
+     ],
+     18
+    ],
+    [
+     [
+      "item_equip_t4_suit_atb01_body_03",
+      "item_equip_t4_suit_atb01_hand_01",
+      "item_equip_t4_suit_atb01_edc_01",
+      "item_equip_t4_suit_atb01_edc_02"
+     ],
+     13
+    ],
+    [
+     [
+      "item_equip_t4_suit_atb01_body_05",
+      "item_equip_t4_suit_atb01_hand_03",
+      "item_equip_t4_parts_wuling01_edc_03",
+      "item_equip_t4_suit_atb01_edc_06"
+     ],
+     7
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_sword_0012",
+     116
+    ],
+    [
+     "wpn_sword_0019",
+     32
+    ],
+    [
+     "wpn_sword_0007",
+     9
+    ],
+    [
+     "wpn_sword_0010",
+     2
+    ]
+   ]
+  },
+  "23": {
+   "charId": "chr_0020_meurs",
+   "name": "카치르",
+   "entries": 14,
+   "asMain": 9,
+   "suits": [
+    {
+     "suitId": "suit_usp02",
+     "name": "식양의 숨결",
+     "count": 6
+    },
+    {
+     "suitId": "suit_poise01",
+     "name": "경량 초자연",
+     "count": 5
+    },
+    {
+     "suitId": "suit_wisd01",
+     "name": "침식 차단",
+     "count": 1
+    },
+    {
+     "suitId": "suit_burst01",
+     "name": "조류의 물결",
+     "count": 1
+    },
+    {
+     "suitId": "suit_phy01",
+     "name": "검술사",
+     "count": 1
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_poise01_body_01",
+     5
+    ],
+    [
+     "item_equip_t4_suit_usp02_body_01",
+     3
+    ],
+    [
+     "item_equip_t4_suit_atk02_body_01",
+     2
+    ],
+    [
+     "item_equip_t2_suit_wisd01_body_01",
+     1
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_phy01_hand_01",
+     7
+    ],
+    [
+     "item_equip_t4_suit_usp02_hand_01",
+     3
+    ],
+    [
+     "item_equip_t4_suit_usp02_hand_02",
+     2
+    ],
+    [
+     "item_equip_t2_suit_wisd01_hand_01",
+     1
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_poise01_edc_01",
+     9
+    ],
+    [
+     "item_equip_t4_suit_usp02_edc_03",
+     8
+    ],
+    [
+     "item_equip_t4_suit_phy01_edc_03",
+     2
+    ],
+    [
+     "item_equip_t3_suit_usp01_edc_02",
+     1
+    ],
+    [
+     "item_equip_t2_suit_wisd01_edc_01",
+     1
+    ],
+    [
+     "item_equip_t4_suit_burst01_edc_02",
+     1
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_poise01_body_01",
+      "item_equip_t4_suit_phy01_hand_01",
+      "item_equip_t4_suit_poise01_edc_01",
+      "item_equip_t4_suit_poise01_edc_01"
+     ],
+     4
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_claym_0004",
+     8
+    ],
+    [
+     "wpn_claym_0006",
+     2
+    ],
+    [
+     "wpn_claym_0010",
+     1
+    ],
+    [
+     "wpn_claym_0013",
+     1
+    ]
+   ]
+  },
+  "25": {
+   "charId": "chr_0027_tangtang",
+   "name": "탕탕",
+   "entries": 105,
+   "asMain": 34,
+   "suits": [
+    {
+     "suitId": "suit_attri01",
+     "name": "본 크러셔",
+     "count": 79
+    },
+    {
+     "suitId": "suit_combo_cd01",
+     "name": "청파",
+     "count": 10
+    },
+    {
+     "suitId": "suit_criti01",
+     "name": "M. I. 경찰용",
+     "count": 6
+    },
+    {
+     "suitId": "suit_atb01",
+     "name": "개척",
+     "count": 3
+    },
+    {
+     "suitId": "suit_usp02",
+     "name": "식양의 숨결",
+     "count": 3
+    },
+    {
+     "suitId": "suit_atk02",
+     "name": "응룡 50식",
+     "count": 2
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_attri01_body_05",
+     55
+    ],
+    [
+     "item_equip_t4_suit_atk02_body_02",
+     13
+    ],
+    [
+     "item_equip_t4_suit_combo_cd01_body_01",
+     10
+    ],
+    [
+     "item_equip_t4_suit_attri01_body_04",
+     6
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_attri01_hand_02",
+     54
+    ],
+    [
+     "item_equip_t4_suit_criti01_hand_01",
+     16
+    ],
+    [
+     "item_equip_t4_suit_combo_cd01_hand_01",
+     8
+    ],
+    [
+     "item_equip_t4_suit_attri01_hand_01",
+     6
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_attri01_edc_07",
+     119
+    ],
+    [
+     "item_equip_t4_suit_combo_cd01_edc_01",
+     15
+    ],
+    [
+     "item_equip_t4_suit_attri01_edc_03",
+     10
+    ],
+    [
+     "item_equip_t4_suit_attri01_edc_06",
+     9
+    ],
+    [
+     "item_equip_t4_suit_attri01_edc_04",
+     8
+    ],
+    [
+     "item_equip_t4_suit_criti01_edc_02",
+     7
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_attri01_body_05",
+      "item_equip_t4_suit_attri01_hand_02",
+      "item_equip_t4_suit_attri01_edc_07",
+      "item_equip_t4_suit_attri01_edc_07"
+     ],
+     29
+    ],
+    [
+     [
+      "item_equip_t4_suit_attri01_body_05",
+      "item_equip_t4_suit_criti01_hand_01",
+      "item_equip_t4_suit_attri01_edc_07",
+      "item_equip_t4_suit_attri01_edc_07"
+     ],
+     12
+    ],
+    [
+     [
+      "item_equip_t4_suit_atk02_body_02",
+      "item_equip_t4_suit_attri01_hand_02",
+      "item_equip_t4_suit_attri01_edc_07",
+      "item_equip_t4_suit_attri01_edc_07"
+     ],
+     10
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_pistol_0011",
+     90
+    ],
+    [
+     "wpn_pistol_0007",
+     11
+    ],
+    [
+     "wpn_pistol_0009",
+     1
+    ],
+    [
+     "wpn_pistol_0006",
+     1
+    ]
+   ]
+  },
+  "16": {
+   "charId": "chr_0014_aurora",
+   "name": "스노우샤인",
+   "entries": 56,
+   "asMain": 5,
+   "suits": [
+    {
+     "suitId": "suit_heal01",
+     "name": "생체 보조",
+     "count": 35
+    },
+    {
+     "suitId": "suit_usp02",
+     "name": "식양의 숨결",
+     "count": 8
+    },
+    {
+     "suitId": "suit_burst01",
+     "name": "조류의 물결",
+     "count": 4
+    },
+    {
+     "suitId": "suit_str01",
+     "name": "중장갑 전달자",
+     "count": 2
+    },
+    {
+     "suitId": "suit_usp01",
+     "name": "재앙 방호",
+     "count": 2
+    },
+    {
+     "suitId": "suit_criti01",
+     "name": "M. I. 경찰용",
+     "count": 1
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_heal01_body_01",
+     23
+    ],
+    [
+     "item_equip_t4_suit_heal01_body_02",
+     14
+    ],
+    [
+     "item_equip_t4_suit_usp02_body_01",
+     2
+    ],
+    [
+     "item_equip_t4_suit_attri01_body_04",
+     2
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_heal01_hand_01",
+     20
+    ],
+    [
+     "item_equip_t4_suit_heal01_hand_02",
+     14
+    ],
+    [
+     "item_equip_t4_suit_burst01_hand_01",
+     5
+    ],
+    [
+     "item_equip_t4_suit_usp02_hand_01",
+     4
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_heal01_edc_01",
+     29
+    ],
+    [
+     "item_equip_t4_suit_heal01_edc_05",
+     14
+    ],
+    [
+     "item_equip_t4_suit_heal01_edc_04",
+     12
+    ],
+    [
+     "item_equip_t4_suit_usp02_edc_03",
+     9
+    ],
+    [
+     "item_equip_t4_suit_burst01_edc_01",
+     7
+    ],
+    [
+     "item_equip_t4_suit_usp02_edc_02",
+     6
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_heal01_body_01",
+      "item_equip_t4_suit_heal01_hand_01",
+      "item_equip_t4_suit_heal01_edc_01",
+      "item_equip_t4_suit_heal01_edc_01"
+     ],
+     6
+    ],
+    [
+     [
+      "item_equip_t4_suit_heal01_body_01",
+      "item_equip_t4_suit_heal01_hand_01",
+      "item_equip_t4_suit_heal01_edc_05",
+      "item_equip_t4_suit_heal01_edc_05"
+     ],
+     3
+    ],
+    [
+     [
+      "item_equip_t4_suit_heal01_body_01",
+      "item_equip_t4_suit_heal01_hand_02",
+      "item_equip_t4_suit_heal01_edc_04",
+      "item_equip_t4_suit_heal01_edc_04"
+     ],
+     3
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_claym_0012",
+     28
+    ],
+    [
+     "wpn_claym_0006",
+     14
+    ],
+    [
+     "wpn_claym_0007",
+     6
+    ],
+    [
+     "wpn_claym_0013",
+     4
+    ]
+   ]
+  },
+  "15": {
+   "charId": "chr_0009_azrila",
+   "name": "엠버",
+   "entries": 132,
+   "asMain": 55,
+   "suits": [
+    {
+     "suitId": "suit_heal01",
+     "name": "생체 보조",
+     "count": 62
+    },
+    {
+     "suitId": "suit_phy01",
+     "name": "검술사",
+     "count": 18
+    },
+    {
+     "suitId": "suit_poise01",
+     "name": "경량 초자연",
+     "count": 18
+    },
+    {
+     "suitId": "suit_usp02",
+     "name": "식양의 숨결",
+     "count": 14
+    },
+    {
+     "suitId": "suit_atk02",
+     "name": "응룡 50식",
+     "count": 7
+    },
+    {
+     "suitId": "suit_attri01",
+     "name": "본 크러셔",
+     "count": 3
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_heal01_body_01",
+     34
+    ],
+    [
+     "item_equip_t4_suit_poise01_body_01",
+     25
+    ],
+    [
+     "item_equip_t4_suit_heal01_body_02",
+     23
+    ],
+    [
+     "item_equip_t4_suit_atk02_body_01",
+     16
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_phy01_hand_01",
+     48
+    ],
+    [
+     "item_equip_t4_suit_heal01_hand_01",
+     26
+    ],
+    [
+     "item_equip_t4_suit_heal01_hand_02",
+     24
+    ],
+    [
+     "item_equip_t4_suit_usp02_hand_01",
+     9
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_heal01_edc_01",
+     47
+    ],
+    [
+     "item_equip_t4_suit_heal01_edc_05",
+     40
+    ],
+    [
+     "item_equip_t4_suit_poise01_edc_01",
+     32
+    ],
+    [
+     "item_equip_t4_suit_phy01_edc_02",
+     23
+    ],
+    [
+     "item_equip_t4_suit_heal01_edc_04",
+     14
+    ],
+    [
+     "item_equip_t4_suit_usp02_edc_01",
+     12
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_poise01_body_01",
+      "item_equip_t4_suit_phy01_hand_01",
+      "item_equip_t4_suit_poise01_edc_01",
+      "item_equip_t4_suit_poise01_edc_01"
+     ],
+     12
+    ],
+    [
+     [
+      "item_equip_t4_suit_heal01_body_01",
+      "item_equip_t4_suit_phy01_hand_01",
+      "item_equip_t4_suit_heal01_edc_01",
+      "item_equip_t4_suit_heal01_edc_01"
+     ],
+     7
+    ],
+    [
+     [
+      "item_equip_t4_suit_heal01_body_02",
+      "item_equip_t4_suit_heal01_hand_02",
+      "item_equip_t4_suit_heal01_edc_01",
+      "item_equip_t4_suit_heal01_edc_04"
+     ],
+     5
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_claym_0008",
+     42
+    ],
+    [
+     "wpn_claym_0007",
+     37
+    ],
+    [
+     "wpn_claym_0012",
+     30
+    ],
+    [
+     "wpn_claym_0004",
+     16
+    ]
+   ]
+  },
+  "14": {
+   "charId": "chr_0017_yvonne",
+   "name": "이본",
+   "entries": 123,
+   "asMain": 105,
+   "suits": [
+    {
+     "suitId": "suit_criti01",
+     "name": "M. I. 경찰용",
+     "count": 117
+    },
+    {
+     "suitId": "suit_atb01",
+     "name": "개척",
+     "count": 2
+    },
+    {
+     "suitId": "suit_atk01",
+     "name": "아부레이의 메아리",
+     "count": 2
+    },
+    {
+     "suitId": "suit_pulse_cryst01",
+     "name": "펄스식",
+     "count": 1
+    },
+    {
+     "suitId": "suit_wisd01",
+     "name": "침식 차단",
+     "count": 1
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_criti01_body_02",
+     102
+    ],
+    [
+     "item_equip_t4_suit_criti01_body_03",
+     8
+    ],
+    [
+     "item_equip_t4_suit_criti01_body_04",
+     2
+    ],
+    [
+     "item_equip_t4_suit_atb01_body_01",
+     1
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_criti01_hand_02",
+     87
+    ],
+    [
+     "item_equip_t4_suit_criti01_hand_03",
+     18
+    ],
+    [
+     "item_equip_t4_suit_criti01_hand_01",
+     6
+    ],
+    [
+     "item_equip_t4_suit_pulse_cryst01_hand_01",
+     5
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_criti01_edc_03",
+     171
+    ],
+    [
+     "item_equip_t4_suit_heal01_edc_03",
+     26
+    ],
+    [
+     "item_equip_t4_suit_criti01_edc_02",
+     13
+    ],
+    [
+     "item_equip_t4_suit_criti01_edc_04",
+     7
+    ],
+    [
+     "item_equip_t4_suit_criti01_edc_05",
+     7
+    ],
+    [
+     "item_equip_t4_suit_criti01_edc_01",
+     4
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_criti01_body_02",
+      "item_equip_t4_suit_criti01_hand_02",
+      "item_equip_t4_suit_criti01_edc_03",
+      "item_equip_t4_suit_criti01_edc_03"
+     ],
+     49
+    ],
+    [
+     [
+      "item_equip_t4_suit_criti01_body_02",
+      "item_equip_t4_suit_criti01_hand_02",
+      "item_equip_t4_suit_criti01_edc_03",
+      "item_equip_t4_suit_heal01_edc_03"
+     ],
+     19
+    ],
+    [
+     [
+      "item_equip_t4_suit_criti01_body_02",
+      "item_equip_t4_suit_criti01_hand_02",
+      "item_equip_t4_suit_criti01_edc_02",
+      "item_equip_t4_suit_criti01_edc_03"
+     ],
+     12
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_pistol_0010",
+     100
+    ],
+    [
+     "wpn_pistol_0005",
+     10
+    ],
+    [
+     "wpn_pistol_0008",
+     7
+    ],
+    [
+     "wpn_pistol_0006",
+     4
+    ]
+   ]
+  },
+  "12": {
+   "charId": "chr_0015_lifeng",
+   "name": "여풍",
+   "entries": 100,
+   "asMain": 17,
+   "suits": [
+    {
+     "suitId": "suit_phy01",
+     "name": "검술사",
+     "count": 44
+    },
+    {
+     "suitId": "suit_usp02",
+     "name": "식양의 숨결",
+     "count": 24
+    },
+    {
+     "suitId": "suit_poise01",
+     "name": "경량 초자연",
+     "count": 10
+    },
+    {
+     "suitId": "suit_attri01",
+     "name": "본 크러셔",
+     "count": 9
+    },
+    {
+     "suitId": "suit_agi01",
+     "name": "순행 전달자",
+     "count": 5
+    },
+    {
+     "suitId": "suit_atk02",
+     "name": "응룡 50식",
+     "count": 3
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_phy01_body_02",
+     29
+    ],
+    [
+     "item_equip_t4_suit_atk02_body_02",
+     11
+    ],
+    [
+     "item_equip_t4_suit_attri01_body_01",
+     7
+    ],
+    [
+     "item_equip_t4_suit_attri01_body_02",
+     5
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_phy01_hand_02",
+     29
+    ],
+    [
+     "item_equip_t4_suit_poise01_hand_01",
+     16
+    ],
+    [
+     "item_equip_t4_suit_usp02_hand_01",
+     15
+    ],
+    [
+     "item_equip_t4_suit_phy01_hand_01",
+     14
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_phy01_edc_03",
+     68
+    ],
+    [
+     "item_equip_t4_suit_usp02_edc_01",
+     29
+    ],
+    [
+     "item_equip_t4_suit_poise01_edc_02",
+     15
+    ],
+    [
+     "item_equip_t4_suit_phy01_edc_01",
+     9
+    ],
+    [
+     "item_equip_t4_suit_usp02_edc_03",
+     8
+    ],
+    [
+     "item_equip_t4_suit_usp02_edc_02",
+     8
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_phy01_body_02",
+      "item_equip_t4_suit_poise01_hand_01",
+      "item_equip_t4_suit_phy01_edc_03",
+      "item_equip_t4_suit_phy01_edc_03"
+     ],
+     6
+    ],
+    [
+     [
+      "item_equip_t4_suit_phy01_body_02",
+      "item_equip_t4_suit_phy01_hand_02",
+      "item_equip_t4_suit_phy01_edc_03",
+      "item_equip_t4_suit_phy01_edc_03"
+     ],
+     5
+    ],
+    [
+     [
+      "item_equip_t4_suit_attri01_body_01",
+      "item_equip_t4_suit_phy01_hand_02",
+      "item_equip_t4_suit_phy01_edc_03",
+      "item_equip_t4_suit_phy01_edc_03"
+     ],
+     4
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_lance_0012",
+     64
+    ],
+    [
+     "wpn_lance_0010",
+     25
+    ],
+    [
+     "wpn_lance_0004",
+     4
+    ],
+    [
+     "wpn_lance_0011",
+     3
+    ]
+   ]
+  },
+  "615": {
+   "charId": "chr_0028_wulfa",
+   "name": "로시",
+   "entries": 74,
+   "asMain": 42,
+   "suits": [
+    {
+     "suitId": "suit_criti01",
+     "name": "M. I. 경찰용",
+     "count": 68
+    },
+    {
+     "suitId": "suit_atb01",
+     "name": "개척",
+     "count": 2
+    },
+    {
+     "suitId": "suit_usp01",
+     "name": "재앙 방호",
+     "count": 1
+    },
+    {
+     "suitId": "suit_atk02",
+     "name": "응룡 50식",
+     "count": 1
+    },
+    {
+     "suitId": "suit_phy01",
+     "name": "검술사",
+     "count": 1
+    },
+    {
+     "suitId": "suit_fire_natr01",
+     "name": "열 작업용",
+     "count": 1
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_criti01_body_06",
+     46
+    ],
+    [
+     "item_equip_t4_suit_criti01_body_02",
+     12
+    ],
+    [
+     "item_equip_t4_suit_criti01_body_04",
+     7
+    ],
+    [
+     "item_equip_t4_suit_atk02_body_03",
+     2
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_criti01_hand_04",
+     25
+    ],
+    [
+     "item_equip_t4_parts_wuling01_hand_01",
+     23
+    ],
+    [
+     "item_equip_t4_suit_criti01_hand_03",
+     13
+    ],
+    [
+     "item_equip_t4_suit_criti01_hand_01",
+     5
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_criti01_edc_06",
+     87
+    ],
+    [
+     "item_equip_t4_suit_criti01_edc_04",
+     13
+    ],
+    [
+     "item_equip_t4_suit_criti01_edc_01",
+     10
+    ],
+    [
+     "item_equip_t4_suit_criti01_edc_03",
+     9
+    ],
+    [
+     "item_equip_t4_suit_atk02_edc_02",
+     7
+    ],
+    [
+     "item_equip_t4_suit_heal01_edc_03",
+     6
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_criti01_body_06",
+      "item_equip_t4_parts_wuling01_hand_01",
+      "item_equip_t4_suit_criti01_edc_06",
+      "item_equip_t4_suit_criti01_edc_06"
+     ],
+     23
+    ],
+    [
+     [
+      "item_equip_t4_suit_criti01_body_06",
+      "item_equip_t4_suit_criti01_hand_04",
+      "item_equip_t4_suit_criti01_edc_06",
+      "item_equip_t4_suit_criti01_edc_06"
+     ],
+     13
+    ],
+    [
+     [
+      "item_equip_t4_suit_criti01_body_06",
+      "item_equip_t4_suit_criti01_hand_04",
+      "item_equip_t4_suit_criti01_edc_06",
+      "item_equip_t4_suit_heal01_edc_03"
+     ],
+     5
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_sword_0022",
+     70
+    ],
+    [
+     "wpn_sword_0006",
+     1
+    ],
+    [
+     "wpn_sword_0012",
+     1
+    ],
+    [
+     "wpn_sword_0010",
+     1
+    ]
+   ]
+  },
+  "21": {
+   "charId": "chr_0021_whiten",
+   "name": "에스텔라",
+   "entries": 66,
+   "asMain": 24,
+   "suits": [
+    {
+     "suitId": "suit_atk02",
+     "name": "응룡 50식",
+     "count": 30
+    },
+    {
+     "suitId": "suit_usp02",
+     "name": "식양의 숨결",
+     "count": 12
+    },
+    {
+     "suitId": "suit_burst01",
+     "name": "조류의 물결",
+     "count": 5
+    },
+    {
+     "suitId": "suit_phy01",
+     "name": "검술사",
+     "count": 4
+    },
+    {
+     "suitId": "suit_heal01",
+     "name": "생체 보조",
+     "count": 3
+    },
+    {
+     "suitId": "suit_usp01",
+     "name": "재앙 방호",
+     "count": 3
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_atk02_body_04",
+     20
+    ],
+    [
+     "item_equip_t4_suit_atk02_body_01",
+     10
+    ],
+    [
+     "item_equip_t4_suit_usp02_body_01",
+     7
+    ],
+    [
+     "item_equip_t4_suit_phy01_body_01",
+     5
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_phy01_hand_01",
+     18
+    ],
+    [
+     "item_equip_t4_suit_atk02_hand_02",
+     8
+    ],
+    [
+     "item_equip_t4_suit_usp02_hand_02",
+     7
+    ],
+    [
+     "item_equip_t4_suit_heal01_hand_01",
+     6
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_atk02_edc_01",
+     35
+    ],
+    [
+     "item_equip_t4_suit_usp02_edc_03",
+     21
+    ],
+    [
+     "item_equip_t4_suit_atk02_edc_04",
+     18
+    ],
+    [
+     "item_equip_t4_suit_burst01_edc_01",
+     9
+    ],
+    [
+     "item_equip_t4_suit_atk02_edc_05",
+     8
+    ],
+    [
+     "item_equip_t4_suit_heal01_edc_02",
+     5
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_atk02_body_04",
+      "item_equip_t4_suit_phy01_hand_01",
+      "item_equip_t4_suit_atk02_edc_01",
+      "item_equip_t4_suit_atk02_edc_01"
+     ],
+     6
+    ],
+    [
+     [
+      "item_equip_t4_suit_atk02_body_01",
+      "item_equip_t4_suit_atk02_hand_01",
+      "item_equip_t4_suit_atk02_edc_04",
+      "item_equip_t4_suit_atk02_edc_05"
+     ],
+     4
+    ],
+    [
+     [
+      "item_equip_t4_suit_atk02_body_04",
+      "item_equip_t4_suit_heal01_hand_01",
+      "item_equip_t4_suit_atk02_edc_01",
+      "item_equip_t4_suit_atk02_edc_01"
+     ],
+     3
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_lance_0013",
+     39
+    ],
+    [
+     "wpn_lance_0011",
+     18
+    ],
+    [
+     "wpn_lance_0004",
+     3
+    ],
+    [
+     "wpn_lance_0010",
+     3
+    ]
+   ]
+  },
+  "18": {
+   "charId": "chr_0024_deepfin",
+   "name": "알레쉬",
+   "entries": 52,
+   "asMain": 5,
+   "suits": [
+    {
+     "suitId": "suit_atb01",
+     "name": "개척",
+     "count": 44
+    },
+    {
+     "suitId": "none",
+     "name": null,
+     "count": 3
+    },
+    {
+     "suitId": "suit_atk02",
+     "name": "응룡 50식",
+     "count": 2
+    },
+    {
+     "suitId": "suit_atk01",
+     "name": "아부레이의 메아리",
+     "count": 1
+    },
+    {
+     "suitId": "suit_usp02",
+     "name": "식양의 숨결",
+     "count": 1
+    },
+    {
+     "suitId": "suit_usp01",
+     "name": "재앙 방호",
+     "count": 1
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_atb01_body_01",
+     20
+    ],
+    [
+     "item_equip_t4_suit_atb01_body_03",
+     9
+    ],
+    [
+     "item_equip_t4_suit_atb01_body_05",
+     8
+    ],
+    [
+     "item_equip_t4_suit_atb01_body_02",
+     4
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_usp02_hand_01",
+     23
+    ],
+    [
+     "item_equip_t4_suit_atb01_hand_01",
+     9
+    ],
+    [
+     "item_equip_t4_suit_atb01_hand_02",
+     7
+    ],
+    [
+     "item_equip_t4_suit_atb01_hand_03",
+     4
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_atb01_edc_02",
+     36
+    ],
+    [
+     "item_equip_t4_suit_atb01_edc_01",
+     21
+    ],
+    [
+     "item_equip_t4_suit_atb01_edc_04",
+     13
+    ],
+    [
+     "item_equip_t4_parts_wuling01_edc_03",
+     9
+    ],
+    [
+     "item_equip_t4_suit_atb01_edc_06",
+     8
+    ],
+    [
+     "item_equip_t4_suit_atb01_edc_03",
+     7
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_atb01_body_01",
+      "item_equip_t4_suit_usp02_hand_01",
+      "item_equip_t4_suit_atb01_edc_02",
+      "item_equip_t4_suit_atb01_edc_02"
+     ],
+     9
+    ],
+    [
+     [
+      "item_equip_t4_suit_atb01_body_03",
+      "item_equip_t4_suit_atb01_hand_01",
+      "item_equip_t4_suit_atb01_edc_01",
+      "item_equip_t4_suit_atb01_edc_02"
+     ],
+     8
+    ],
+    [
+     [
+      "item_equip_t4_suit_atb01_body_01",
+      "item_equip_t4_suit_atb01_hand_02",
+      "item_equip_t4_suit_atb01_edc_01",
+      "item_equip_t4_suit_atb01_edc_02"
+     ],
+     5
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_sword_0012",
+     23
+    ],
+    [
+     "wpn_sword_0020",
+     20
+    ],
+    [
+     "wpn_sword_0007",
+     7
+    ],
+    [
+     "wpn_sword_0005",
+     1
+    ]
+   ]
+  },
+  "1173": {
+   "charId": "chr_0034_typhoea",
+   "name": "티프로스",
+   "entries": 22,
+   "asMain": 22,
+   "suits": [
+    {
+     "suitId": "suit_spellburst",
+     "name": "관문",
+     "count": 19
+    },
+    {
+     "suitId": "none",
+     "name": null,
+     "count": 2
+    },
+    {
+     "suitId": "suit_atk02",
+     "name": "응룡 50식",
+     "count": 1
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_spellburst_body_01",
+     19
+    ],
+    [
+     "item_equip_t4_parts_wuling00_body_04",
+     2
+    ],
+    [
+     "item_equip_t4_suit_atk02_body_04",
+     1
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_spellburst_hand_01",
+     17
+    ],
+    [
+     "item_equip_t4_parts_wuling01_hand_01",
+     2
+    ],
+    [
+     "item_equip_t4_parts_wuling00_hand_04",
+     1
+    ],
+    [
+     "item_equip_t4_parts_wuling00_hand_01",
+     1
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_spellburst_edc_01",
+     25
+    ],
+    [
+     "item_equip_t4_suit_heal01_edc_03",
+     13
+    ],
+    [
+     "item_equip_t4_parts_wuling00_edc_04",
+     4
+    ],
+    [
+     "item_equip_t4_suit_atk02_edc_05",
+     1
+    ],
+    [
+     "item_equip_t4_suit_criti01_edc_05",
+     1
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_spellburst_body_01",
+      "item_equip_t4_suit_spellburst_hand_01",
+      "item_equip_t4_suit_heal01_edc_03",
+      "item_equip_t4_suit_spellburst_edc_01"
+     ],
+     13
+    ],
+    [
+     [
+      "item_equip_t4_suit_spellburst_body_01",
+      "item_equip_t4_suit_spellburst_hand_01",
+      "item_equip_t4_suit_spellburst_edc_01",
+      "item_equip_t4_suit_spellburst_edc_01"
+     ],
+     4
+    ],
+    [
+     [
+      "item_equip_t4_suit_spellburst_body_01",
+      "item_equip_t4_parts_wuling01_hand_01",
+      "item_equip_t4_suit_spellburst_edc_01",
+      "item_equip_t4_suit_spellburst_edc_01"
+     ],
+     2
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_funnel_0019",
+     17
+    ],
+    [
+     "wpn_funnel_0020",
+     5
+    ]
+   ]
+  },
+  "1041": {
+   "charId": "chr_0035_liino",
+   "name": "리노",
+   "entries": 41,
+   "asMain": 3,
+   "suits": [
+    {
+     "suitId": "suit_usp02",
+     "name": "식양의 숨결",
+     "count": 27
+    },
+    {
+     "suitId": "suit_heal01",
+     "name": "생체 보조",
+     "count": 14
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_usp02_body_03",
+     34
+    ],
+    [
+     "item_equip_t4_suit_heal01_body_03",
+     2
+    ],
+    [
+     "item_equip_t4_suit_heal01_body_01",
+     2
+    ],
+    [
+     "item_equip_t4_suit_usp02_body_04",
+     1
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_usp02_hand_04",
+     26
+    ],
+    [
+     "item_equip_t4_suit_heal01_hand_03",
+     10
+    ],
+    [
+     "item_equip_t4_suit_heal01_hand_02",
+     2
+    ],
+    [
+     "item_equip_t4_suit_usp02_hand_01",
+     1
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_heal01_edc_03",
+     41
+    ],
+    [
+     "item_equip_t4_suit_usp02_edc_03",
+     21
+    ],
+    [
+     "item_equip_t4_suit_usp02_edc_04",
+     7
+    ],
+    [
+     "item_equip_t4_suit_usp02_edc_05",
+     5
+    ],
+    [
+     "item_equip_t4_suit_heal01_edc_04",
+     4
+    ],
+    [
+     "item_equip_t4_suit_heal01_edc_05",
+     2
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_usp02_body_03",
+      "item_equip_t4_suit_usp02_hand_04",
+      "item_equip_t4_suit_heal01_edc_03",
+      "item_equip_t4_suit_usp02_edc_03"
+     ],
+     10
+    ],
+    [
+     [
+      "item_equip_t4_suit_usp02_body_03",
+      "item_equip_t4_suit_heal01_hand_03",
+      "item_equip_t4_suit_heal01_edc_03",
+      "item_equip_t4_suit_heal01_edc_03"
+     ],
+     8
+    ],
+    [
+     [
+      "item_equip_t4_suit_usp02_body_03",
+      "item_equip_t4_suit_usp02_hand_04",
+      "item_equip_t4_suit_heal01_edc_03",
+      "item_equip_t4_suit_usp02_edc_04"
+     ],
+     6
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_lance_0014",
+     38
+    ],
+    [
+     "wpn_lance_0016",
+     2
+    ]
+   ]
+  },
+  "7": {
+   "charId": "chr_0007_ikut",
+   "name": "아크라이트",
+   "entries": 104,
+   "asMain": 5,
+   "suits": [
+    {
+     "suitId": "suit_atb01",
+     "name": "개척",
+     "count": 92
+    },
+    {
+     "suitId": "suit_atk02",
+     "name": "응룡 50식",
+     "count": 4
+    },
+    {
+     "suitId": "suit_pulse_cryst01",
+     "name": "펄스식",
+     "count": 2
+    },
+    {
+     "suitId": "suit_agi01",
+     "name": "순행 전달자",
+     "count": 2
+    },
+    {
+     "suitId": "suit_burst01",
+     "name": "조류의 물결",
+     "count": 1
+    },
+    {
+     "suitId": "suit_attri01",
+     "name": "본 크러셔",
+     "count": 1
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_atb01_body_04",
+     30
+    ],
+    [
+     "item_equip_t4_suit_atb01_body_03",
+     21
+    ],
+    [
+     "item_equip_t4_suit_atb01_body_05",
+     16
+    ],
+    [
+     "item_equip_t4_suit_atb01_body_02",
+     15
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_atb01_hand_01",
+     23
+    ],
+    [
+     "item_equip_t4_suit_atb01_hand_03",
+     21
+    ],
+    [
+     "item_equip_t4_suit_atk02_hand_01",
+     19
+    ],
+    [
+     "item_equip_t4_suit_atb01_hand_02",
+     11
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_atb01_edc_04",
+     67
+    ],
+    [
+     "item_equip_t4_suit_atb01_edc_06",
+     38
+    ],
+    [
+     "item_equip_t4_suit_atb01_edc_01",
+     23
+    ],
+    [
+     "item_equip_t4_parts_wuling01_edc_03",
+     18
+    ],
+    [
+     "item_equip_t4_suit_atb01_edc_02",
+     15
+    ],
+    [
+     "item_equip_t4_suit_atb01_edc_03",
+     13
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_atb01_body_05",
+      "item_equip_t4_suit_atb01_hand_03",
+      "item_equip_t4_parts_wuling01_edc_03",
+      "item_equip_t4_suit_atb01_edc_06"
+     ],
+     9
+    ],
+    [
+     [
+      "item_equip_t4_suit_atb01_body_04",
+      "item_equip_t4_suit_usp02_hand_01",
+      "item_equip_t4_suit_atb01_edc_04",
+      "item_equip_t4_suit_atb01_edc_04"
+     ],
+     7
+    ],
+    [
+     [
+      "item_equip_t4_suit_atb01_body_04",
+      "item_equip_t4_suit_atk02_hand_01",
+      "item_equip_t4_suit_atb01_edc_04",
+      "item_equip_t4_suit_atb01_edc_04"
+     ],
+     6
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_sword_0012",
+     56
+    ],
+    [
+     "wpn_sword_0019",
+     16
+    ],
+    [
+     "wpn_sword_0018",
+     13
+    ],
+    [
+     "wpn_sword_0014",
+     11
+    ]
+   ]
+  },
+  "838": {
+   "charId": "chr_0030_zhuangfy",
+   "name": "장방이",
+   "entries": 50,
+   "asMain": 38,
+   "suits": [
+    {
+     "suitId": "suit_expend_spell01",
+     "name": "식양의 흐름",
+     "count": 46
+    },
+    {
+     "suitId": "suit_burst01",
+     "name": "조류의 물결",
+     "count": 1
+    },
+    {
+     "suitId": "suit_combo_cd01",
+     "name": "청파",
+     "count": 1
+    },
+    {
+     "suitId": "suit_usp02",
+     "name": "식양의 숨결",
+     "count": 1
+    },
+    {
+     "suitId": "suit_pulse_cryst01",
+     "name": "펄스식",
+     "count": 1
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_expend_spell01_body_02",
+     45
+    ],
+    [
+     "item_equip_t4_suit_burst01_body_01",
+     1
+    ],
+    [
+     "item_equip_t4_suit_combo_cd01_body_02",
+     1
+    ],
+    [
+     "item_equip_t4_suit_criti01_body_04",
+     1
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_expend_spell01_hand_02",
+     46
+    ],
+    [
+     "item_equip_t4_suit_usp02_hand_02",
+     2
+    ],
+    [
+     "item_equip_t4_suit_combo_cd01_hand_02",
+     1
+    ],
+    [
+     "item_equip_t4_suit_usp02_hand_01",
+     1
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_expend_spell01_edc_02",
+     53
+    ],
+    [
+     "item_equip_t4_suit_heal01_edc_03",
+     35
+    ],
+    [
+     "item_equip_t4_suit_usp02_edc_03",
+     5
+    ],
+    [
+     "item_equip_t4_suit_burst01_edc_01",
+     1
+    ],
+    [
+     "item_equip_t4_suit_burst01_edc_02",
+     1
+    ],
+    [
+     "item_equip_t4_suit_combo_cd01_edc_03",
+     1
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_expend_spell01_body_02",
+      "item_equip_t4_suit_expend_spell01_hand_02",
+      "item_equip_t4_suit_expend_spell01_edc_02",
+      "item_equip_t4_suit_heal01_edc_03"
+     ],
+     35
+    ],
+    [
+     [
+      "item_equip_t4_suit_expend_spell01_body_02",
+      "item_equip_t4_suit_expend_spell01_hand_02",
+      "item_equip_t4_suit_expend_spell01_edc_02",
+      "item_equip_t4_suit_expend_spell01_edc_02"
+     ],
+     5
+    ],
+    [
+     [
+      "item_equip_t4_suit_expend_spell01_body_02",
+      "item_equip_t4_suit_expend_spell01_hand_02",
+      "item_equip_t4_suit_expend_spell01_edc_02",
+      "item_equip_t4_suit_usp02_edc_03"
+     ],
+     4
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_funnel_0015",
+     48
+    ],
+    [
+     "wpn_funnel_0017",
+     2
+    ]
+   ]
+  },
+  "995": {
+   "charId": "chr_0031_mifu",
+   "name": "미브",
+   "entries": 40,
+   "asMain": 36,
+   "suits": [
+    {
+     "suitId": "suit_crush_fracture",
+     "name": "고검의 잔향",
+     "count": 36
+    },
+    {
+     "suitId": "suit_phy01",
+     "name": "검술사",
+     "count": 3
+    },
+    {
+     "suitId": "suit_atk01",
+     "name": "아부레이의 메아리",
+     "count": 1
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_crush_fracture_body_01",
+     33
+    ],
+    [
+     "item_equip_t4_suit_phy01_body_01",
+     3
+    ],
+    [
+     "item_equip_t4_suit_phy01_body_02",
+     1
+    ],
+    [
+     "item_equip_t3_suit_atk01_body_01",
+     1
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_crush_fracture_hand_01",
+     35
+    ],
+    [
+     "item_equip_t4_suit_phy01_hand_03",
+     2
+    ],
+    [
+     "item_equip_t4_suit_phy01_hand_01",
+     2
+    ],
+    [
+     "item_equip_t3_suit_atk01_hand_01",
+     1
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_crush_fracture_edc_01",
+     35
+    ],
+    [
+     "item_equip_t4_suit_phy01_edc_01",
+     27
+    ],
+    [
+     "item_equip_t4_suit_crush_fracture_edc_02",
+     8
+    ],
+    [
+     "item_equip_t4_suit_phy01_edc_02",
+     3
+    ],
+    [
+     "item_equip_t4_suit_heal01_edc_03",
+     3
+    ],
+    [
+     "item_equip_t3_suit_atk01_edc_02",
+     1
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_crush_fracture_body_01",
+      "item_equip_t4_suit_crush_fracture_hand_01",
+      "item_equip_t4_suit_crush_fracture_edc_01",
+      "item_equip_t4_suit_phy01_edc_01"
+     ],
+     21
+    ],
+    [
+     [
+      "item_equip_t4_suit_crush_fracture_body_01",
+      "item_equip_t4_suit_crush_fracture_hand_01",
+      "item_equip_t4_suit_crush_fracture_edc_01",
+      "item_equip_t4_suit_heal01_edc_03"
+     ],
+     2
+    ],
+    [
+     [
+      "item_equip_t4_suit_phy01_body_01",
+      "item_equip_t4_suit_crush_fracture_hand_01",
+      "item_equip_t4_suit_crush_fracture_edc_01",
+      "item_equip_t4_suit_crush_fracture_edc_01"
+     ],
+     2
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_claym_0017",
+     37
+    ],
+    [
+     "wpn_claym_0016",
+     1
+    ],
+    [
+     "wpn_claym_0004",
+     1
+    ],
+    [
+     "wpn_claym_0014",
+     1
+    ]
+   ]
+  },
+  "22": {
+   "charId": "chr_0023_antal",
+   "name": "안탈",
+   "entries": 58,
+   "asMain": 5,
+   "suits": [
+    {
+     "suitId": "suit_usp02",
+     "name": "식양의 숨결",
+     "count": 50
+    },
+    {
+     "suitId": "suit_atb01",
+     "name": "개척",
+     "count": 2
+    },
+    {
+     "suitId": "suit_burst01",
+     "name": "조류의 물결",
+     "count": 2
+    },
+    {
+     "suitId": "suit_combo_cd01",
+     "name": "청파",
+     "count": 1
+    },
+    {
+     "suitId": "suit_usp01",
+     "name": "재앙 방호",
+     "count": 1
+    },
+    {
+     "suitId": "suit_wisd01",
+     "name": "침식 차단",
+     "count": 1
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_burst01_body_01",
+     35
+    ],
+    [
+     "item_equip_t4_suit_usp02_body_01",
+     12
+    ],
+    [
+     "item_equip_t4_parts_wuling01_body_02",
+     3
+    ],
+    [
+     "item_equip_t4_suit_atb01_body_05",
+     1
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_usp02_hand_01",
+     43
+    ],
+    [
+     "item_equip_t4_suit_usp02_hand_02",
+     7
+    ],
+    [
+     "item_equip_t4_suit_pulse_cryst01_hand_01",
+     2
+    ],
+    [
+     "item_equip_t4_suit_combo_cd01_hand_02",
+     1
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_usp02_edc_01",
+     71
+    ],
+    [
+     "item_equip_t4_suit_usp02_edc_02",
+     17
+    ],
+    [
+     "item_equip_t4_suit_usp02_edc_03",
+     12
+    ],
+    [
+     "item_equip_t4_suit_atb01_edc_01",
+     2
+    ],
+    [
+     "item_equip_t4_suit_atb01_edc_06",
+     2
+    ],
+    [
+     "item_equip_t4_suit_burst01_edc_01",
+     2
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_burst01_body_01",
+      "item_equip_t4_suit_usp02_hand_01",
+      "item_equip_t4_suit_usp02_edc_01",
+      "item_equip_t4_suit_usp02_edc_01"
+     ],
+     26
+    ],
+    [
+     [
+      "item_equip_t4_suit_usp02_body_01",
+      "item_equip_t4_suit_usp02_hand_01",
+      "item_equip_t4_suit_usp02_edc_02",
+      "item_equip_t4_suit_usp02_edc_03"
+     ],
+     4
+    ],
+    [
+     [
+      "item_equip_t4_suit_usp02_body_01",
+      "item_equip_t4_suit_usp02_hand_02",
+      "item_equip_t4_suit_usp02_edc_01",
+      "item_equip_t4_suit_usp02_edc_02"
+     ],
+     3
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_funnel_0008",
+     24
+    ],
+    [
+     "wpn_funnel_0014",
+     18
+    ],
+    [
+     "wpn_funnel_0005",
+     13
+    ],
+    [
+     "wpn_funnel_0009",
+     2
+    ]
+   ]
+  },
+  "8": {
+   "charId": "chr_0018_dapan",
+   "name": "판",
+   "entries": 30,
+   "asMain": 15,
+   "suits": [
+    {
+     "suitId": "suit_atk02",
+     "name": "응룡 50식",
+     "count": 17
+    },
+    {
+     "suitId": "suit_phy01",
+     "name": "검술사",
+     "count": 3
+    },
+    {
+     "suitId": "suit_poise01",
+     "name": "경량 초자연",
+     "count": 3
+    },
+    {
+     "suitId": "suit_fire_natr01",
+     "name": "열 작업용",
+     "count": 1
+    },
+    {
+     "suitId": "suit_atk01",
+     "name": "아부레이의 메아리",
+     "count": 1
+    },
+    {
+     "suitId": "suit_attri01",
+     "name": "본 크러셔",
+     "count": 1
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_atk02_body_01",
+     14
+    ],
+    [
+     "item_equip_t4_suit_poise01_body_01",
+     4
+    ],
+    [
+     "item_equip_t4_suit_phy01_body_01",
+     2
+    ],
+    [
+     "item_equip_t4_suit_attri01_body_03",
+     2
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_phy01_hand_01",
+     9
+    ],
+    [
+     "item_equip_t4_suit_fire_natr01_hand_01",
+     5
+    ],
+    [
+     "item_equip_t4_suit_atk02_hand_01",
+     5
+    ],
+    [
+     "item_equip_t4_suit_usp02_hand_01",
+     2
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_atk02_edc_01",
+     19
+    ],
+    [
+     "item_equip_t4_suit_atk02_edc_04",
+     9
+    ],
+    [
+     "item_equip_t4_suit_atk02_edc_05",
+     6
+    ],
+    [
+     "item_equip_t4_suit_phy01_edc_01",
+     4
+    ],
+    [
+     "item_equip_t4_suit_poise01_edc_02",
+     4
+    ],
+    [
+     "item_equip_t4_suit_phy01_edc_03",
+     3
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_atk02_body_01",
+      "item_equip_t4_suit_phy01_hand_01",
+      "item_equip_t4_suit_atk02_edc_01",
+      "item_equip_t4_suit_atk02_edc_01"
+     ],
+     4
+    ],
+    [
+     [
+      "item_equip_t4_suit_atk02_body_01",
+      "item_equip_t4_suit_atk02_hand_01",
+      "item_equip_t4_suit_atk02_edc_04",
+      "item_equip_t4_suit_atk02_edc_05"
+     ],
+     4
+    ],
+    [
+     [
+      "item_equip_t4_suit_atk02_body_01",
+      "item_equip_t4_suit_heal01_hand_01",
+      "item_equip_t4_suit_atk02_edc_01",
+      "item_equip_t4_suit_atk02_edc_01"
+     ],
+     2
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_claym_0004",
+     15
+    ],
+    [
+     "wpn_claym_0014",
+     8
+    ],
+    [
+     "wpn_claym_0012",
+     2
+    ],
+    [
+     "wpn_claym_0016",
+     2
+    ]
+   ]
+  },
+  "1174": {
+   "charId": "chr_0038_purrche",
+   "name": "푸치나",
+   "entries": 5,
+   "asMain": 0,
+   "suits": [
+    {
+     "suitId": "suit_usp02",
+     "name": "식양의 숨결",
+     "count": 2
+    },
+    {
+     "suitId": "suit_heal01",
+     "name": "생체 보조",
+     "count": 2
+    },
+    {
+     "suitId": "none",
+     "name": null,
+     "count": 1
+    }
+   ],
+   "body": [
+    [
+     "item_equip_t4_suit_usp02_body_03",
+     3
+    ],
+    [
+     "item_equip_t4_suit_heal01_body_01",
+     1
+    ],
+    [
+     "item_equip_t3_suit_atk01_body_02",
+     1
+    ]
+   ],
+   "hand": [
+    [
+     "item_equip_t4_suit_usp02_hand_02",
+     1
+    ],
+    [
+     "item_equip_t4_suit_heal01_hand_01",
+     1
+    ],
+    [
+     "item_equip_t4_suit_heal01_hand_02",
+     1
+    ],
+    [
+     "item_equip_t3_suit_agi01_hand_01",
+     1
+    ]
+   ],
+   "edc": [
+    [
+     "item_equip_t4_suit_usp02_edc_06",
+     4
+    ],
+    [
+     "item_equip_t4_suit_heal01_edc_04",
+     2
+    ],
+    [
+     "item_equip_t4_suit_heal01_edc_05",
+     2
+    ],
+    [
+     "item_equip_t3_suit_will01_edc_01",
+     1
+    ],
+    [
+     "item_equip_t3_suit_atk01_edc_03",
+     1
+    ]
+   ],
+   "loadouts": [
+    [
+     [
+      "item_equip_t4_suit_usp02_body_03",
+      "item_equip_t4_suit_usp02_hand_02",
+      "item_equip_t4_suit_usp02_edc_06",
+      "item_equip_t4_suit_usp02_edc_06"
+     ],
+     1
+    ]
+   ],
+   "weapons": [
+    [
+     "wpn_sword_0023",
+     5
+    ]
+   ]
+  }
+ }
+}

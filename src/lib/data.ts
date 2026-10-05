@@ -302,10 +302,12 @@ function buildKit(id: string): OperatorKit | undefined {
   const base = operatorBase(id);
   const cc = getCombatCharacter(id);
   if (!base?.rotation || !cc) return undefined;
+  // 게임 데이터 설명 + 공식 위키 설명 (위키에만 있는 효과 — 예: 결 연계 스킬 "자연 취약·냉기 취약 부여")
   const text = (type: string) =>
-    cc.skillGroups
-      .filter((g) => g.type === type)
-      .map((g) => [g.desc ?? "", ...(g.forms ?? []).map((f) => f.desc)].join("\n"))
+    [
+      ...cc.skillGroups.filter((g) => g.type === type).map((g) => [g.desc ?? "", ...(g.forms ?? []).map((f) => f.desc)].join("\n")),
+      ...(opDetails[id]?.skills.filter((w) => w.type === type).map((w) => w.description) ?? []),
+    ]
       .join("\n")
       .replace(/<[^>]*>/g, "");
   return {
@@ -423,7 +425,9 @@ function gearSetBag(g: GearRank | undefined) {
   let bag = talentBag([]);
   if (!g) return bag;
   for (const p of g.pieces) bag = addBag(bag, gearBag(gearPieces[p.id]));
-  if (gearSuits[g.suitId]) bag = addBag(bag, suitBag(gearSuits[g.suitId]));
+  // 세트 효과: 추천 계산에서 해석한 기대 능력치(조건부 포함), 없으면 조건 없는 효과만
+  if (g.setBag) bag = addBag(bag, g.setBag);
+  else if (gearSuits[g.suitId]) bag = addBag(bag, suitBag(gearSuits[g.suitId]));
   return bag;
 }
 
@@ -589,6 +593,11 @@ export function bestTeamsFor(id: string, n = 3): BestTeam[] {
 /** 연계 발동 조건 요약 (화면 표시용) */
 export function comboRequirementOf(id: string): ComboRequirement {
   return comboRequirement(synergyIndex()[id]?.comboDesc ?? null, findTerms);
+}
+
+/** (보정 테스트용) 가정값을 바꾼 뒤 캐시 비우기 */
+export function resetBuildCache() {
+  dealerCache = undefined;
 }
 
 /** (테스트·디버그용) 오퍼레이터 무기 평가 정보 */

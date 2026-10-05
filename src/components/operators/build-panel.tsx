@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Rich } from "@/components/rich-text";
-import { BASIC_CHAIN_SECONDS, DMG_TYPE_LABEL, DMG_TYPES } from "@/lib/calc/build";
+import { ASSUME, BASIC_CHAIN_SECONDS, DMG_TYPE_LABEL, DMG_TYPES } from "@/lib/calc/build";
 import { STAGGER_UPTIME } from "@/lib/calc/weapon-value";
 import type { BuildRecommendation } from "@/lib/data";
 import type { GearSuit } from "@/types/build";
@@ -11,6 +11,7 @@ import { RARITY_BG } from "@/lib/operator-meta";
 import { GearLoadout, type LoadoutSet } from "@/components/gear/gear-loadout";
 import { gearImages, gearPieces, getCombatCharacter } from "@/lib/data";
 import attrTypesJson from "@data/combat/attr-types.json";
+import communityGear from "@data/benchmarks/endfieldtools-community-gear.json";
 import { TeamCard, type TeamMate, type TeamView } from "@/components/teams/team-card";
 
 const pct = (v: number, d = 1) => `${(v * 100).toFixed(d)}%`;
@@ -36,6 +37,9 @@ export function BuildPanel({
   ];
   const topGear = rec.gear.slice(0, 3);
   // 추천 장비 화면용 데이터 (클라이언트에는 필요한 장비만 넘김)
+  // 커뮤니티 빌드에서 이 오퍼레이터가 그 세트를 쓴 비율 (표본 5개 이상일 때만)
+  const comm = (communityGear as unknown as { operators: Record<string, { entries: number; suits: { suitId: string; count: number }[] }> }).operators[opId];
+  const communityShare = (sid: string) => (comm && comm.entries >= 5 ? { share: (comm.suits.find((x) => x.suitId === sid)?.count ?? 0) / comm.entries, n: comm.entries } : undefined);
   const loadoutSets: LoadoutSet[] = topGear.map((g) => {
     const suit = suits[g.suitId];
     const effect = suit?.effects.find((e) => e.pieces === 3) ?? suit?.effects[0];
@@ -47,6 +51,7 @@ export function BuildPanel({
       pieces: g.pieces.map((p) => ({ id: p.id, name: p.name, inSuit: p.inSuit, src: gearImages.pieces[p.id] })),
       effect: effect ? { desc: effect.desc, bb: effect.bb } : null,
       need: effect?.pieces ?? 3,
+      community: communityShare(g.suitId),
       summary: `${DMG_TYPES.map((t) => `${DMG_TYPE_LABEL[t]} +${pct(g.score.dmgPct[t], 0)}`).join(" · ")} · 치명 ${pct(g.score.critRate, 0)}`,
     };
   });
@@ -201,7 +206,7 @@ export function BuildPanel({
       <section className="border bg-card">
         <header className="flex flex-wrap items-baseline justify-between gap-2 border-b px-4 py-3">
           <h3 className="text-lg font-bold">추천 장비 세트</h3>
-          <p className="text-xs text-muted-foreground">1위 무기 착용 · 무기와 같은 역할별 점수 · 세트 효과도 조건·가동률 반영 · 세트 3개 + 1칸 자유 · 최고 등급</p>
+          <p className="text-xs text-muted-foreground">1위 무기 착용 · 무기와 같은 역할별 점수 · 세트 효과도 조건·가동률 반영 · 세트 3개 + 1칸 자유(같은 부품 2개 가능) · 최고 등급</p>
         </header>
         <GearLoadout sets={loadoutSets} pieces={loadoutPieces} attrTypes={attrTypesJson.attrTypes} attrs={loadoutAttrs} />
         <p className="border-t px-4 py-2 text-xs text-muted-foreground">
@@ -292,7 +297,7 @@ export function BuildPanel({
             &quot;반영하지 않은 효과&quot;에 이유를 적었어요.
           </p>
           <p>
-            일반 공격 피해는 1세트에 걸리는 시간이 실측되지 않아 넣지 않아요(가정값으로 넣으면 일반 공격이 피해의 대부분을 차지해 공격력% 무기가 과대평가돼요). 가정값(실측 필요): 강력한 일격·치명타 빈도 계산용 일반 공격 1세트 {BASIC_CHAIN_SECONDS}초 · 적 불균형 가동 {Math.round(STAGGER_UPTIME * 100)}% · &quot;생명력 N% 이상&quot; 조건은 항상 유지.
+            일반 공격은 1세트에 걸리는 시간이 실측되지 않아, 1세트를 {BASIC_CHAIN_SECONDS}초마다 계속 친다고 본 피해의 {Math.round(ASSUME.basicScale * 100)}%만 넣어요(스킬 사이사이에만 친다고 보고 커뮤니티 빌드와 가장 잘 맞는 값으로 보정). 가정값(실측 필요): 치명타 조건 발동 빈도 ×{ASSUME.critHitScale} · 적 불균형 가동 {Math.round(STAGGER_UPTIME * 100)}% · &quot;생명력 N% 이상&quot; 조건은 항상 유지.
           </p>
           <p>
             <b className="text-foreground">무기 ↔ 장비</b>: 무기만으로 1위를 정하고 → 그 무기로 장비 세트를 고른 뒤 → 그 장비(치명률·아츠 강도 등)를 낀 상태로 무기를 다시 비교해요. 장비
@@ -300,8 +305,14 @@ export function BuildPanel({
             일반 공격 피해&quot; 버프를 궁극기 내내 받는다고 봐요.
           </p>
           <p>
-            검증: 커뮤니티 빌드 집계(endfieldtools.dev Best Build)의 1위 무기·장비가 우리 추천에서 몇 위인지 테스트로 확인해요. 커뮤니티 집계는 무기 보유 여부·인기도
-            영향도 있어서 점수에 직접 쓰지는 않아요.
+            <b className="text-foreground">장비 조합 탐색</b>: 세트마다 세트 효과(3개)가 켜지는 모든 4칸 조합(4칸 모두 세트, 또는 1칸만 세트 밖)을 점수로 비교해 가장 높은 조합을 골라요. 부품 2칸에는 같은 부품
+            2개도 낄 수 있어요. 세트 밖 1칸은 그 칸 장비 중 단독 점수 상위 16개만 보는데, 전체를 다 본 결과와 같은지 테스트로 확인해요. 치명타 조건 세트(M. I. 경찰용)는 그 조합의 치명률로, 연계 스킬 쿨타임
+            감소(개척·청파)는 늘어난 연계 빈도로, &quot;다음 배틀 스킬 피해&quot;(본 크러셔·응룡 50식)는 쌓이는 빈도 ÷ 그 스킬 빈도로 계산해요.
+          </p>
+          <p>
+            검증: endfieldtools.dev 공개 커뮤니티 빌드 1,214개(장비 4칸 3,439세트)와 캐릭터 페이지 Best Build 집계의 1위 무기·장비가 우리 추천에서 몇 위인지 테스트로 확인해요.
+            커뮤니티 집계는 보유 여부·인기도 영향도 있어서 점수에 직접 쓰지 않고, 게임 데이터로 정해지지 않는 가정값(일반 공격 비율 등)을 맞추는 데만 써요. 장비 탭의
+            &quot;커뮤니티&quot; 비율은 이 오퍼레이터 빌드 중 그 세트를 쓴 비율이에요.
           </p>
           <p>점수는 1위 무기를 100%로 나눈 값이에요. 방어력·저항은 같은 오퍼레이터끼리 비교하면 똑같이 곱해지므로 빼요. 게임 추천 표시는 공식 위키 기준이에요.</p>
           <p>공격력 = (캐릭터 + 무기 기초 공격력) × (1 + 공격력%) × (1 + 0.5% × 주 능력치 + 0.2% × 보조 능력치)</p>

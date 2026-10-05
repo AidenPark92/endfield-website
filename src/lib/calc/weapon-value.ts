@@ -19,7 +19,7 @@
 //   - 일반 공격 피해 (일반 공격 회전 속도 데이터 없음) — TODO
 import type { Blackboard } from "@/types/combat";
 import type { CombatWeapon, GearPiece, GearSuit } from "@/types/build";
-import { addBag, emptyBag, bagFromKey, gearBag, rates, score, BASIC_CHAIN_SECONDS, INCLUDE_BASIC_ATTACK, type GearRank, ELEM_OF, type DmgType, type OperatorBase, type Rotation, type ScoreResult, type StatBag } from "./build";
+import { ASSUME, basicCounted, addBag, emptyBag, bagFromKey, gearBag, rates, score, BASIC_CHAIN_SECONDS, type GearRank, ELEM_OF, type DmgType, type OperatorBase, type Rotation, type ScoreResult, type StatBag } from "./build";
 import type { AttrName } from "@/types/game";
 
 export type SkillKind = "basic" | "battle" | "combo" | "ult";
@@ -86,6 +86,40 @@ export const ANOMALY_SCALE = { 아츠폭발: 1.6, 강타: 1.5 + 1.5 * 4, "갑옷
 /** 팀원 수 (4인 편성) */
 export const TEAMMATES = 3;
 
+/**
+ * 중첩 효과의 평균 스택 · 최대 스택 가동률
+ * - 주기형 발동(스킬 쿨마다): 결정적. 지속 갱신형은 간격 ≤ 지속이면 계속 쌓여 최대 유지, 독립 지속형은 min(최대, 빈도 × 지속)
+ * - 무작위 발동(치명타): 독립 지속형은 포아송(λ = 빈도 × 지속), 지속 갱신형은 "다음 발동이 지속 안에 올 확률 q = 1 − e^(−λ)"의 마르코프 사슬
+ */
+export function stackModel(rate: number, duration: number, maxStack: number, opts: { random: boolean; separate: boolean }): { mean: number; full: number } {
+  const lam = rate * duration;
+  if (!(lam > 0)) return { mean: 0, full: 0 };
+  const M = Math.max(1, maxStack);
+  if (!opts.random) {
+    if (opts.separate || !ASSUME.stackRefresh || M === 1) return { mean: Math.min(M, lam), full: lam >= M ? 1 : 0 };
+    return lam >= 1 ? { mean: M, full: 1 } : { mean: lam, full: 0 };
+  }
+  if (opts.separate || !ASSUME.stackRefresh) {
+    // E[min(N, M)] · P(N ≥ M)
+    let term = Math.exp(-lam);
+    let mean = 0;
+    let below = 0;
+    for (let i = 0; i < M; i++) {
+      mean += i * term;
+      below += term;
+      term *= lam / (i + 1);
+    }
+    return { mean: mean + M * (1 - below), full: Math.max(0, 1 - below) };
+  }
+  // 갱신형: 발동 직후 상태 s(1..M) — q 확률로 s+1(최대 M), 1−q 확률로 끊겨 1부터. 정상 분포 π_s ∝ q^(s−1), π_M = q^(M−1)
+  // 시간 가중: 발동 사이 시간 중 지속(최대 duration) 동안만 효과 → 가동 비율 = E[min(간격, 지속)] / E[간격] = (1 − e^(−λ))
+  const q = 1 - Math.exp(-lam);
+  const pi = Array.from({ length: M }, (_, i) => (i < M - 1 ? (1 - q) * q ** i : q ** (M - 1)));
+  const cover = q;
+  const mean = pi.reduce((acc, p, i) => acc + p * (i + 1), 0) * cover;
+  return { mean, full: pi[M - 1] * cover };
+}
+
 /** n명 중 k명이 조건을 만들 수 있을 때, 무작위 3명 편성에 1명 이상 들어갈 확률 */
 export function atLeastOne(n: number, k: number, pick = TEAMMATES): number {
   if (k <= 0 || n <= 0) return 0;
@@ -97,7 +131,7 @@ export function atLeastOne(n: number, k: number, pick = TEAMMATES): number {
 
 // ───────── 특성 문장 파싱 ─────────
 
-type Zone = "atk" | "flatAtk" | "hpFlat" | "crit" | "critDmg" | "main" | "sub" | "allAttr" | "arts" | "ultGain" | "dmg" | "taken" | "heal" | "hp" | "def" | "shield";
+type Zone = "comboCdr" | "atk" | "flatAtk" | "hpFlat" | "crit" | "critDmg" | "main" | "sub" | "allAttr" | "arts" | "ultGain" | "dmg" | "taken" | "heal" | "hp" | "def" | "shield";
 
 export interface TraitEffect {
   /** 화면 표시용 원문 조각 */
@@ -129,6 +163,10 @@ export interface TraitEffect {
   extraScale?: number;
   /** "N스택일 때 / N스택까지 중첩된 후" — 바로 앞 효과가 가득 찼을 때 */
   afterFull?: "while" | "reset";
+  /** "다음 배틀 스킬의 피해 +X" — 쌓아 두었다가 그 스킬 1회에 소모 (본 크러셔·응룡 50식) */
+  consumeBy?: SkillKind;
+  /** "중첩될 때마다 지속 시간은 따로 계산" — 스택마다 지속 시간이 독립 (없으면 새 스택이 지속 시간을 갱신) */
+  separate?: boolean;
 }
 
 const ELEM_WORDS = ["물리", "열기", "전기", "냉기", "자연", "아츠"];
@@ -147,6 +185,9 @@ function valueOf(part: string, bb: Blackboard): number | undefined {
   if (f) return (f[1] ? Number(bb[key(f[1])] ?? 0) : 0) + Number(bb[key(f[2])] ?? 0) * 4;
   const m = part.match(/\+⟦([^⟧*]+)⟧/);
   if (m && bb[key(m[1])] !== undefined) return Number(bb[key(m[1])]);
+  // "+{1-comboskill_cooldown:0%}" → 1 − 값 (쿨타임 감소)
+  const inv = m?.[1].match(/^1-(\w+)%?$/);
+  if (inv && bb[inv[1]] !== undefined) return 1 - Number(bb[inv[1]]);
   return undefined;
 }
 
@@ -183,6 +224,7 @@ function zoneOnly(phrase: string): Omit<ZoneInfo, "self" | "others" | "othersDif
   // "해당 강력한 일격이 주는 피해" 처럼 특정 공격 1회에만 붙는 효과
   if (/^\s*해당 .*(이|가) 주는/.test(phrase)) return { zone: null, skip: "특정 공격 1회에만 붙는 효과" };
   if (/궁극기 충전 효율/.test(phrase)) return { zone: "ultGain" };
+  if (/연계 스킬 쿨타임 감소/.test(phrase)) return { zone: "comboCdr" };
   if (/오리지늄 아츠 강도/.test(phrase)) return { zone: "arts" };
   if (/치명타 확률/.test(phrase)) return { zone: "crit", enemyState };
   if (/치명타 피해/.test(phrase)) return { zone: "critDmg", enemyState };
@@ -225,6 +267,7 @@ export function parseTrait(desc: string | null | undefined, bb: Blackboard): Tra
   let gate: TraitEffect["gate"];
   let lastDuration: number | undefined;
   let lastCond = "";
+  let lastSentenceStart = 0;
   for (const rawLine of text.split("\n")) {
     let line = rawLine.trim();
     if (!line) continue;
@@ -239,6 +282,8 @@ export function parseTrait(desc: string | null | undefined, bb: Blackboard): Tra
     }
     for (const sentence of line.split(/(?<=\.)\s*/)) {
       if (!sentence.trim()) continue;
+      // "…중첩될 때마다 지속 시간은 따로 계산됩니다" → 이 문장과 바로 앞 문장의 중첩 효과
+      if (/지속 시간은 따로 계산/.test(sentence)) for (const e of out.slice(lastSentenceStart)) e.separate = true;
       if (/메인 컨트롤 오퍼레이터일 경우/.test(sentence)) continue; // 배수 조정 문장 — 조작 여부 가정 안 함
       if (/^(같은 이름|두 효과|각 효과|해당 효과)/.test(sentence.trim())) { applyInfo(sentence); continue; }
       const cm = sentence.match(/^(.*?(?:때마다|마다|때|후|경우|으면|하면|시))(?:,\s*|\s+)(.*)$/);
@@ -252,6 +297,12 @@ export function parseTrait(desc: string | null | undefined, bb: Blackboard): Tra
       const duration = durM ? Number(bb[durM[1]] ?? 0) : cond ? lastDuration : undefined;
       if (durM) lastDuration = duration;
       const inlineStack = sentence.match(/최대 ⟦([^⟧]+)⟧스택까지 중첩|최대 중첩 ⟦([^⟧]+)⟧스택|최대 ⟦([^⟧]+)⟧스택까지만 중첩/);
+      // "본 크러셔의 압박은 최대 N스택까지만 중첩" · "강화 상태는 최대 N스택까지 중첩" — 수치 없이 중첩 한도만 말하는 문장 → 앞 문장의 조건부 효과에
+      if (inlineStack && !/\+⟦/.test(sentence)) {
+        const n = Number(bb[inlineStack[1] ?? inlineStack[2] ?? inlineStack[3]] ?? 1) || 1;
+        for (const e of out.slice(lastSentenceStart)) if (e.cond && e.maxStack === 1) e.maxStack = n;
+        continue;
+      }
       const afterFull: TraitEffect["afterFull"] = /스택일 때|최대 중첩 시/.test(cond) ? "while" : /스택까지 중첩된 후/.test(cond) ? "reset" : undefined;
       const sentenceStart = out.length;
       // "N초 내에 사용한 다음 배틀 스킬(혹은 궁극기)의 지속 시간 동안 주는 X 피해" → 그 스킬에만
@@ -299,9 +350,17 @@ export function parseTrait(desc: string | null | undefined, bb: Blackboard): Tra
           gate,
           afterFull,
         };
+        // "다음 배틀 스킬의 피해 +X" → 그 스킬 1회에 소모되는 누적 효과
+        const nextM = phrase.match(/다음 (배틀 스킬|연계 스킬|궁극기)의? ?피해/);
+        if (nextM && eff.zone === "dmg") {
+          eff.consumeBy = KIND_WORD[nextM[1]];
+          eff.types = [KIND_WORD[nextM[1]] as DmgType];
+        }
+        if (/지속 시간은 따로 계산/.test(sentence)) eff.separate = true;
         out.push(eff);
         pending.push(eff);
       }
+      if (out.length > sentenceStart) lastSentenceStart = sentenceStart;
     }
   }
   return out;
@@ -338,6 +397,11 @@ const STATE_WORDS: Record<string, string[]> = {
   연타: ["연타"],
   // 아츠 폭발: 같은 속성 부착을 다시 하면 발동 ✅ → 자기 속성 부착을 하는 오퍼레이터는 혼자 가능
   "아츠 폭발": ["아츠 폭발", "열기 부착", "전기 부착", "냉기 부착", "자연 부착"],
+  // 속성별 아츠 폭발 (관문 "자연 폭발, 냉기 폭발 피해를 줄 때") — 그 속성 부착을 거듭하면 발동
+  "열기 폭발": ["열기 폭발", "열기 부착"],
+  "전기 폭발": ["전기 폭발", "전기 부착"],
+  "냉기 폭발": ["냉기 폭발", "냉기 부착"],
+  "자연 폭발": ["자연 폭발", "자연 부착"],
   "스킬 게이지": ["스킬 게이지를 회복", "스킬 게이지 회복"],
   증폭: ["증폭"],
   비호: ["비호"],
@@ -387,7 +451,7 @@ export function triggerRate(cond: string, kit: OperatorKit, r: Record<"battle" |
       (s, k) => s + (k === "basic" ? ((kit.basicHits ?? 5) / BASIC_CHAIN_SECONDS) * cr : r[k] * (1 - (1 - cr) ** (kit.skillHits?.[k] ?? 1))),
       0,
     );
-    return { rate, via: `${label(kinds)} 치명타 (치명률 ${Math.round(cr * 100)}%)` };
+    return { rate: rate * ASSUME.critHitScale, via: `${label(kinds)} 치명타 (치명률 ${Math.round(cr * 100)}%)` };
   }
   // 3-2) "스킬이 적에게 명중할 때마다" 처럼 종류 없이 스킬 전체 (상태 조건이 없을 때)
   if (!named.length && /스킬(이|을|로)/.test(cond) && /명중|사용|피해를 (줄|준)/.test(cond) && !STATE_ORDER.some((x) => cond.includes(x))) {
@@ -464,6 +528,7 @@ export function effectBag(e: TraitEffect, kit: OperatorKit, value: number): Stat
     case "allAttr": b.mainPct += value; b.subPct += value; break;
     case "arts": b.artsIntensity += value; break;
     case "ultGain": b.ultGain += value; break;
+    case "comboCdr": b.comboCdr += value; break;
     case "heal": b.healEff += value; break;
     case "hp": b.hpPct += value; break;
     case "hpFlat": b.hpPct += value / (kit.hp || 5000); break; // 고정 생명력 → 기초 생명력 대비 비율로
@@ -475,7 +540,7 @@ export function effectBag(e: TraitEffect, kit: OperatorKit, value: number): Stat
       break;
     case "dmg": {
       if (!elemOk) return undefined;
-      if (!INCLUDE_BASIC_ATTACK && e.types?.every((t) => t === "basic")) return undefined;
+      if (!basicCounted() && e.types?.every((t) => t === "basic")) return undefined;
       if (e.types) for (const t of e.types) b.dmg[t] += value;
       else b.dmg.all += value;
       break;
@@ -599,7 +664,7 @@ export function evaluateWeapon(w: CombatWeapon, kit: OperatorKit, baseAttrs: Rec
     } else
       excluded.push({
         text: e.text,
-        reason: !INCLUDE_BASIC_ATTACK && e.zone === "dmg" && e.types?.every((t) => t === "basic") ? "일반 공격 피해 — 일반 공격 시간 실측 전이라 미반영" : "속성이 맞지 않음 → 0",
+        reason: !basicCounted() && e.zone === "dmg" && e.types?.every((t) => t === "basic") ? "일반 공격 피해 — 일반 공격 시간 실측 전이라 미반영" : "속성이 맞지 않음 → 0",
       });
   };
   if (trait) {
@@ -612,11 +677,18 @@ export function evaluateWeapon(w: CombatWeapon, kit: OperatorKit, baseAttrs: Rec
     // 충전 효율이 궁극기 빈도에 영향 → 조건 없는 효과를 먼저 더한 뒤 빈도 계산
     const always = effects.filter((e) => !e.cond && !e.enemyState && !e.skip && !e.extraScale);
     for (const e of always) take(e, 1, 1, "항상");
-    const r = rates(kit.rotation, bag.ultGain);
+    const r = rates(kit.rotation, bag.ultGain, bag.comboCdr);
     kit = { ...kit, critRate: (kit.critRate ?? 0.05) + bag.critRate };
-    let prev: { rate: number; stacks: number; maxStack: number } | undefined;
+    let prev: { rate: number; stacks: number; maxStack: number; duration?: number; full?: number } | undefined;
     /** 조건 → 빈도 (혼자 → 안 되면 동료 기대값) */
     const resolve = (cond: string): { rate: number; p: number; via: string } | { why: string } => {
+      // "팀 내 임의의 오퍼레이터가 배틀 스킬을 사용할 때" → 본인 + 팀원 3명의 그 스킬 빈도 (팀원은 동료 평균)
+      const anyM = cond.match(/팀 내 (?:임의의|모든) 오퍼레이터가 (배틀 스킬|연계 스킬|궁극기)/);
+      if (anyM) {
+        const k = KIND_WORD[anyM[1]] as "battle" | "combo" | "ult";
+        const mates = pool?.others.length ? pool.others.reduce((sum, o) => sum + o.rates[k], 0) / pool.others.length : r[k];
+        return { rate: r[k] + TEAMMATES * mates, p: 1, via: `팀 전체 ${anyM[1]} (본인 + 팀원 ${TEAMMATES}명 평균)` };
+      }
       const t = triggerRate(cond, kit, r);
       if (t.rate > 0) return { rate: t.rate, p: 1, via: "via" in t ? t.via : "" };
       const pt = pool ? poolTrigger(cond, pool) : undefined;
@@ -658,8 +730,16 @@ export function evaluateWeapon(w: CombatWeapon, kit: OperatorKit, baseAttrs: Rec
       if (e.afterFull && prev) {
         const full = prev.rate > 0 ? prev.maxStack / prev.rate : Infinity;
         const dur = e.duration ?? 0;
-        // while: 스택마다 독립 지속 → 모두 살아 있을 확률 ≈ (평균 스택/최대)^최대 (근사) · reset: 쌓는 시간 + 유지 시간 주기
-        const u = e.afterFull === "while" ? Math.min(1, prev.stacks / prev.maxStack) ** prev.maxStack : dur > 0 ? dur / (dur + full) : 0;
+        // while: 스택마다 지속 시간이 따로 → 최근 지속 시간 안의 발동 횟수 N ~ 포아송(빈도 × 지속), 최대 스택일 확률 = P(N ≥ 최대)
+        //        (지속 시간을 모르면 예전 근사 (평균 스택/최대)^최대) · reset: 쌓는 시간 + 유지 시간 주기
+        const u =
+          e.afterFull === "while"
+            ? prev.full !== undefined
+              ? prev.full
+              : Math.min(1, prev.stacks / prev.maxStack) ** prev.maxStack
+            : dur > 0
+              ? dur / (dur + full)
+              : 0;
         if (u <= 0) { excluded.push({ text: e.text, reason: "앞 효과가 가득 차지 않음" }); continue; }
         take(e, u, u, e.afterFull === "while" ? "앞 효과 최대 스택일 때" : `최대 스택 → ${dur}초 유지 후 초기화`);
         continue;
@@ -688,7 +768,16 @@ export function evaluateWeapon(w: CombatWeapon, kit: OperatorKit, baseAttrs: Rec
       const dur = e.duration ?? 0;
       let stacks: number;
       if (!Number.isFinite(rate)) stacks = e.maxStack * HIGH_HP_UPTIME; // 상시 조건
-      else if (dur > 0) stacks = res.p * Math.min(e.maxStack, rate * dur);
+      // 다음 스킬에 소모: 그 스킬 1회가 받는 평균 스택 = min(최대, 쌓는 빈도 ÷ 그 스킬 빈도)
+      else if (e.consumeBy && e.consumeBy !== "basic" && r[e.consumeBy] > 0) stacks = res.p * Math.min(e.maxStack, rate / r[e.consumeBy]);
+      else if (dur > 0) {
+        // 치명타처럼 무작위로 터지는 조건은 확률 모델, 스킬 사용처럼 주기적인 조건은 결정적 모델 (stackModel)
+        const sm = stackModel(rate, dur, e.maxStack, { random: /치명타/.test(res.via), separate: !!e.separate });
+        stacks = res.p * sm.mean;
+        prev = { rate: rate * res.p, stacks, maxStack: e.maxStack, duration: dur, full: res.p * sm.full };
+        take(e, stacks, stacks / e.maxStack, res.via);
+        continue;
+      }
       else if (e.maxStack > 1) {
         // 지속 시간 없는 누적형: 뒤에 "가득 찬 뒤 N초 후 초기화"가 있으면 (쌓는 시간 평균 절반 + 유지 시간 가득) 평균
         const reset = effects.slice(effects.indexOf(e) + 1).find((x) => x.afterFull === "reset");
@@ -697,7 +786,7 @@ export function evaluateWeapon(w: CombatWeapon, kit: OperatorKit, baseAttrs: Rec
         stacks = res.p * (reset && Number.isFinite(T) ? ((e.maxStack / 2) * T + e.maxStack * D) / (T + D) : e.maxStack);
       }
       else { excluded.push({ text: e.text, reason: "지속 시간 정보 없음" }); continue; }
-      prev = { rate: rate * res.p, stacks, maxStack: e.maxStack };
+      prev = { rate: rate * res.p, stacks, maxStack: e.maxStack, duration: dur || undefined };
       take(e, stacks, stacks / e.maxStack, res.via);
     }
   }
@@ -790,7 +879,7 @@ function healRate(kit: OperatorKit, k: SkillKind, r: Record<"battle" | "combo" |
 
 /** 초당 치유량 지수 = Σ 빈도 × (기초 + 계수 × 능력치) × (1 + 치유 효율) */
 export function healIndex(kit: OperatorKit, attrs: Record<AttrName, number>, bag: StatBag): number {
-  const r = rates(kit.rotation, bag.ultGain);
+  const r = rates(kit.rotation, bag.ultGain, bag.comboCdr);
   let sum = 0;
   for (const [k, list] of Object.entries(kit.heals ?? {}) as [SkillKind, { base: number; coef: number; attr?: AttrName }[]][]) {
     const amount = list.reduce((s, h) => s + h.base + h.coef * (h.attr ? attrs[h.attr] : 0), 0);
@@ -829,7 +918,7 @@ export function teamGainOf(team: TeamEffectLine[], kit: OperatorKit, dealers: De
  * 이상 피해 = (자기 이상 빈도 × 배율 + "강타 피해로 간주" 피해) × 공격력 × (1 + 아츠 강도/100) × 레벨 계수 — 피해 보너스·치명 ⚠️ 미확인 → 미적용
  */
 export function selfDamageOf(kit: OperatorKit, sc: ScoreResult, bag: StatBag, extraHits: { rate: number; scale: number }[] = []): number {
-  const r = rates(kit.rotation, bag.ultGain);
+  const r = rates(kit.rotation, bag.ultGain, bag.comboCdr);
   const anomalyKinds: [string, number][] =
     kit.element === "물리"
       ? [["강타", ANOMALY_SCALE.강타], ["갑옷 파괴", ANOMALY_SCALE["갑옷 파괴"]], ["물리 이상", ANOMALY_SCALE.띄우기]]
@@ -959,10 +1048,18 @@ export function rankWeaponsByValue(
 
 // ───────── 장비 (무기와 같은 수식) ─────────
 
+/** 세트 밖 1칸 후보: 칸마다 단독 점수 상위 N개 (전체 탐색과 결과가 같은지 gear-search.test 로 확인) */
+export const GEAR_SEARCH = { offCandidates: 16 };
+
 /**
- * 장비 세트 추천 — 무기와 같은 역할별 지표(본인 피해·메인 딜러 강화·치유·생존)로 비교
- * 세트 효과(3세트)는 무기 고유 특성과 같은 해석기(조건부·가동률·팀 효과·이상 피해)로 평가
- * 탐색: 세트별 방어구 1·장갑 1·부품 2 중 세트 3개 이상, 세트 밖 1칸은 칸별 단독 점수 상위 8개 후보, 최고 등급(Lv70+)
+ * 추천 장비 — 세트별 최적 4칸 (방어구 1 · 장갑 1 · 부품 2)
+ *
+ * 탐색 (세트마다 정확한 최적화)
+ *   - 세트 효과(3개)를 켠 조합만: 4칸 모두 세트 · 또는 1칸만 세트 밖
+ *   - 부품 2칸은 같은 부품 2개도 가능 (게임에서 같은 이름 부품을 두 칸에 장착 가능, 커뮤니티 빌드에서도 흔함)
+ *   - 세트 밖 1칸 후보 = 그 칸 전체 장비 중 단독 점수 상위 GEAR_SEARCH.offCandidates개
+ * 평가 = 무기와 같은 역할별 점수 (본인 피해 · 메인 딜러 강화 · 치유 · 생존)
+ *   - 세트 효과는 고유 특성 해석기 그대로. 치명타 조건 세트(M. I. 경찰용 등)는 그 조합의 치명률로 다시 평가
  */
 export function rankGearByValue(
   op: OperatorBase,
@@ -975,6 +1072,7 @@ export function rankGearByValue(
   dealers: DealerRef[] = [],
   pool?: TeamPool,
   forge = 0,
+  offCandidates = GEAR_SEARCH.offCandidates,
 ): GearRank[] {
   const w = effectiveRole(role, kit, dealers);
   const heals = Object.keys(kit.heals ?? {}).length > 0;
@@ -985,15 +1083,26 @@ export function rankGearByValue(
     heal: heals ? Math.max(1e-9, healIndex(kit, sc0.attrs, base)) : 1,
     surv: Math.max(1e-9, survivalIndex(kit, base)),
   };
-  const setInfo = new Map<string, { bag: StatBag; gain: number; extra: { rate: number; scale: number }[] }>();
-  for (const [sid, suit] of suits) {
-    const e = suit.effects.find((x) => x.pieces === 3) ?? suit.effects[0];
-    if (!e) continue;
-    const ev = evaluateSuitEffect(e.desc, e.bb as Blackboard, kit, attrs, pool);
-    setInfo.set(sid, { bag: ev.bag, gain: teamGainOf(ev.team, kit, dealers), extra: ev.extraHits });
-  }
-  const objective = (bag: StatBag, sid: string) => {
-    const si = setInfo.get(sid);
+  // 세트 효과 평가 (치명타 조건이 있는 세트는 치명률 1% 단위로 캐시)
+  const suitById = new Map(suits);
+  const critSensitive = new Set(suits.filter(([, s]) => (s.effects.find((x) => x.pieces === 3) ?? s.effects[0])?.desc?.includes("치명타를")).map(([sid]) => sid));
+  const setCache = new Map<string, { bag: StatBag; gain: number; extra: { rate: number; scale: number }[] }>();
+  const setEval = (sid: string, critRate: number) => {
+    const key = critSensitive.has(sid) ? `${sid}|${Math.round(critRate * 100)}` : sid;
+    let v = setCache.get(key);
+    if (!v) {
+      const suit = suitById.get(sid);
+      const e = suit?.effects.find((x) => x.pieces === 3) ?? suit?.effects[0];
+      if (!e) v = { bag: emptyBag(), gain: 0, extra: [] };
+      else {
+        const ev = evaluateSuitEffect(e.desc, e.bb as Blackboard, { ...kit, critRate }, attrs, pool);
+        v = { bag: ev.bag, gain: teamGainOf(ev.team, kit, dealers), extra: ev.extraHits };
+      }
+      setCache.set(key, v);
+    }
+    return v;
+  };
+  const objective = (bag: StatBag, si?: { gain: number; extra: { rate: number; scale: number }[] }) => {
     const sc = score(op, weaponAtk, bag);
     return (
       w.self * (selfDamageOf(kit, sc, bag, si?.extra ?? []) / ref.self) +
@@ -1005,43 +1114,57 @@ export function rankGearByValue(
   const poolP = pieces.filter(([, p]) => p.minWearLv >= 70);
   const byId = new Map(poolP);
   const pb = new Map(poolP.map(([id, p]) => [id, gearBag(p, forge)]));
-  const solo = (id: string) => objective(addBag(base, pb.get(id)!), "");
+  const solo = new Map(poolP.map(([id]) => [id, objective(addBag(base, pb.get(id)!))]));
   const bySlot = (pred: (p: GearPiece) => boolean, slot: number) => poolP.filter(([, p]) => p.partType === slot && pred(p)).map(([id]) => id);
-  const topOff = (slot: number) => bySlot(() => true, slot).sort((a, b) => solo(b) - solo(a)).slice(0, 8);
+  const topOff = (slot: number) => bySlot(() => true, slot).sort((a, b) => solo.get(b)! - solo.get(a)!).slice(0, offCandidates);
   const off = [topOff(0), topOff(1), topOff(2)];
+  /** 4칸 조합 평가: 장비 합 → (치명률에 맞춘) 세트 효과 → 점수 */
+  const evalLoadout = (sid: string, ids: string[]) => {
+    let gearSum = base;
+    for (const id of ids) gearSum = addBag(gearSum, pb.get(id)!);
+    const si = setEval(sid, Math.min(1, (kit.critRate ?? op.critRate) + gearSum.critRate));
+    const bag = addBag(gearSum, si.bag);
+    return { v: objective(bag, si), bag, setBag: si.bag };
+  };
   const results: (GearRank & { value: number })[] = [];
   for (const [sid, suit] of suits) {
     const inSuit = (p: GearPiece) => p.suitId === sid;
     const sb = [bySlot(inSuit, 0), bySlot(inSuit, 1), bySlot(inSuit, 2)];
     if (!sb[0].length && !sb[1].length && sb[2].length < 2) continue;
-    const setBag = setInfo.get(sid)?.bag ?? emptyBag();
-    let best: { ids: string[]; v: number; bag: StatBag } | undefined;
-    const cand = (slot: number, offSuit: boolean) => (offSuit ? off[slot] : sb[slot]);
-    for (let offIdx = -1; offIdx < 4; offIdx++) {
-      for (const b of cand(0, offIdx === 0))
-        for (const h of cand(1, offIdx === 1))
-          for (const e1 of cand(2, offIdx === 2))
-            for (const e2 of cand(2, offIdx === 3)) {
-              if (e1 === e2 || (offIdx === -1 && e2 < e1)) continue;
-              const ids = [b, h, e1, e2];
-              if (ids.filter((id) => byId.get(id)!.suitId === sid).length < 3) continue;
-              let bag = addBag(base, setBag);
-              for (const id of ids) bag = addBag(bag, pb.get(id)!);
-              const v = objective(bag, sid);
-              if (!best || v > best.v) best = { ids, v, bag };
-            }
-    }
-    if (best)
+    const offOnly = off.map((l) => l.filter((id) => byId.get(id)!.suitId !== sid));
+    let best: { ids: string[]; v: number; bag: StatBag; setBag: StatBag } | undefined;
+    const tryIds = (ids: string[]) => {
+      const r = evalLoadout(sid, ids);
+      if (!best || r.v > best.v) best = { ids, ...r };
+    };
+    // 부품 2칸 (같은 부품 허용, 순서 무시)
+    const edcPairs = (a: string[], b: string[], same: boolean) => {
+      const out: [string, string][] = [];
+      a.forEach((x, i) => (same ? a.slice(i) : b).forEach((y) => out.push([x, y])));
+      return out;
+    };
+    const inPairs = edcPairs(sb[2], sb[2], true);
+    // 4칸 모두 세트
+    for (const b of sb[0]) for (const h of sb[1]) for (const [e1, e2] of inPairs) tryIds([b, h, e1, e2]);
+    // 방어구만 세트 밖
+    for (const b of offOnly[0]) for (const h of sb[1]) for (const [e1, e2] of inPairs) tryIds([b, h, e1, e2]);
+    // 장갑만 세트 밖
+    for (const b of sb[0]) for (const h of offOnly[1]) for (const [e1, e2] of inPairs) tryIds([b, h, e1, e2]);
+    // 부품 1칸만 세트 밖
+    for (const b of sb[0]) for (const h of sb[1]) for (const [e1, e2] of edcPairs(sb[2], offOnly[2], false)) tryIds([b, h, e1, e2]);
+    const found = best as { ids: string[]; v: number; bag: StatBag; setBag: StatBag } | undefined;
+    if (found)
       results.push({
         suitId: sid,
         suitName: suit.name,
-        pieces: best.ids.map((id) => {
+        pieces: found.ids.map((id) => {
           const p = byId.get(id)!;
           return { id, name: p.name, partType: p.partType, inSuit: p.suitId === sid };
         }),
-        score: score(op, weaponAtk, best.bag),
+        setBag: found.setBag,
+        score: score(op, weaponAtk, found.bag),
         relative: 0,
-        value: best.v,
+        value: found.v,
       });
   }
   results.sort((a, b) => b.value - a.value);
