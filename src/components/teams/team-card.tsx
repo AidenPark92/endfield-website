@@ -1,9 +1,9 @@
-// 베스트 조합 카드 (서버·클라이언트 공용, 상태 없음) — 평가는 lib/calc/team.ts
+// 베스트 조합 카드 (서버·클라이언트 공용, 상태 없음) — 평가는 lib/calc/rotation.ts(팀 피해) · team.ts(연계 조건)
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import type { ComboStatus, TeamEval } from "@/lib/calc/team";
-import type { TeamGearView } from "@/lib/data";
+import type { TeamGearView, TeamPowerView } from "@/lib/data";
 import { GearCard } from "@/components/gear/gear-card";
 
 export interface TeamMate {
@@ -14,7 +14,7 @@ export interface TeamMate {
   cls?: string;
 }
 
-export type TeamView = TeamEval & { classes: number; healer: boolean; gear?: TeamGearView };
+export type TeamView = TeamEval & { classes: number; healer: boolean; gear?: TeamGearView; power?: TeamPowerView; contribution?: number };
 
 const STATUS: Record<ComboStatus, { label: string; tone: string }> = {
   team: { label: "동료가 조건을 만들어 줌", tone: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" },
@@ -40,15 +40,22 @@ export function TeamCard({
     <article className="border bg-background">
       <header className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-3 py-2">
         {rank !== undefined && <span className={cn("font-mono text-lg font-bold", rank === 1 && "text-accent-strong")}>{rank}</span>}
+        {team.power && (
+          <span className="text-sm" title="전체 1위 조합 대비 팀 피해 기대치 (파티 장비 · SP 배분 · 버프 가동률 반영)">
+            팀 화력 <b className="font-mono text-base">{Math.round(team.power.relative * 100)}</b>
+          </span>
+        )}
+        {focus && team.contribution !== undefined && (
+          <span className="text-sm" title="이 오퍼레이터가 빠지면 줄어드는 팀 피해 비율 (본인 피해 + 버프·디버프 + 연계 조건 + 궁극기 에너지)">
+            {name(focus)} 기여 <b className="font-mono text-base">{Math.round(team.contribution * 100)}%</b>
+          </span>
+        )}
         <span className="text-sm">
           연계 발동 <b className="font-mono text-base">{team.active}/4</b>
         </span>
-        <span className="text-sm">
-          동료 연결 <b className="font-mono text-base">{team.links}</b>
-        </span>
         <span className="ml-auto flex flex-wrap gap-1 text-[11px]">
           <span className={cn("border px-1.5", team.healer ? "" : "text-muted-foreground")}>{team.healer ? "치유 담당 있음" : "치유 담당 없음"}</span>
-          <span className="border px-1.5">시너지 {team.score}점</span>
+          <span className="border px-1.5" title="연계 시너지 점수 (연계 발동 인원 × 10 + 동료 연결)">시너지 {team.score}점</span>
         </span>
       </header>
       <ul className="grid grid-cols-4 border-b">
@@ -64,11 +71,27 @@ export function TeamCard({
                 <span className="block truncate text-[10px] text-muted-foreground">
                   {[m?.element, m?.cls].filter(Boolean).join(" · ")}
                 </span>
+                {team.power && (() => {
+                  const pm = team.power.members.find((x) => x.id === id);
+                  if (!pm) return null;
+                  return (
+                    <span className="mt-1 block" title="팀 피해 중 이 오퍼레이터 비중">
+                      <span className="block h-1 bg-muted">
+                        <span className={cn("block h-full", team.power.mainId === id ? "bg-accent-strong" : "bg-foreground/40")} style={{ width: `${Math.round(pm.share * 100)}%` }} />
+                      </span>
+                      <span className="mt-0.5 block font-mono text-[10px] leading-3">
+                        {team.power.mainId === id ? "메인 " : ""}
+                        {Math.round(pm.share * 100)}%
+                      </span>
+                    </span>
+                  );
+                })()}
               </Link>
             </li>
           );
         })}
       </ul>
+      {team.power && <CycleSection power={team.power} name={name} />}
       {team.gear && (
         <div className="border-b px-3 py-2">
           <p className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-2 text-[11px] text-muted-foreground">
@@ -117,5 +140,55 @@ export function TeamCard({
         ))}
       </ul>
     </article>
+  );
+}
+
+const sec = (v: number) => (Number.isFinite(v) ? `${v < 10 ? v.toFixed(1) : Math.round(v)}초` : "—");
+const EFFECT: Record<TeamPowerView["buffs"][number]["effect"], string> = { amp: "증폭", vuln: "취약", atk: "공격력" };
+
+/** 스킬 사이클: SP 수입, 멤버별 배틀 스킬(SP 배분)·연계·궁극기 간격, 가동 중인 버프 */
+function CycleSection({ power, name }: { power: TeamPowerView; name: (id: string) => string }) {
+  return (
+    <div className="border-b px-3 py-2 text-[11px] leading-4">
+      <p className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-2 text-muted-foreground">
+        <span className="font-semibold text-foreground">스킬 사이클</span>
+        <span>
+          SP 수입 <b className="font-mono text-foreground">{power.spIncome.toFixed(1)}</b>/초 · 조작 {name(power.controlId)} · 연계 가동 {Math.round(power.comboUptime * 100)}%
+        </span>
+      </p>
+      <table className="w-full table-fixed text-left">
+        <thead className="text-muted-foreground">
+          <tr>
+            <th className="w-1/4 font-normal" />
+            <th className="font-normal">배틀(SP)</th>
+            <th className="font-normal">연계</th>
+            <th className="font-normal">궁극기</th>
+          </tr>
+        </thead>
+        <tbody className="font-mono">
+          {power.members.map((m) => (
+            <tr key={m.id}>
+              <td className="truncate font-sans font-semibold">{name(m.id)}</td>
+              <td>{m.spShare > 0.005 ? `${sec(m.battleEvery)} · ${Math.round(m.spShare * 100)}%` : "—"}</td>
+              <td>{sec(m.comboEvery)}</td>
+              <td>{sec(m.ultEvery)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {power.buffs.length > 0 && (
+        <ul className="mt-1.5 flex flex-wrap gap-1">
+          {power.buffs
+            .slice()
+            .sort((a, b) => b.value * b.uptime - a.value * a.uptime)
+            .slice(0, 6)
+            .map((b, i) => (
+              <li key={i} className="border px-1.5 py-0.5" title={b.text}>
+                <b>{b.from}</b> {EFFECT[b.effect]} +{Math.round(b.value * 100)}% · 가동 {Math.round(b.uptime * 100)}%
+              </li>
+            ))}
+        </ul>
+      )}
+    </div>
   );
 }

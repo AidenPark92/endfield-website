@@ -17,8 +17,10 @@ import { addBag, rates, score, synergy, talentBag, gearBag, suitBag, SP_REGEN_IN
 import { splitTerms } from "@/lib/glossary";
 import type { Blackboard, CombatCharacter, SkillForm, SkillGroup } from "@/types/combat";
 import { optimizeParty, type PartyMember } from "@/lib/calc/party";
+import { extractSkillBuffs, type SkillBuff } from "@/lib/calc/team-buffs";
+import { quickTeamDamage, simulateTeam, type RotMember, type RotationResult } from "@/lib/calc/rotation";
 import { damageWeight, evaluateSuitEffect, rankGearByValue, rankWeaponsByValue, ROLE_WEIGHT, STAGGER_UPTIME, type DealerRef, type OperatorKit, type RoleWeight, type TeamPool, type WeaponValueRank } from "@/lib/calc/weapon-value";
-import { comboRequirement, rankTeams, type ComboRequirement, type TeamCandidate, type TeamEval } from "@/lib/calc/team";
+import { comboRequirement, evaluateTeam, rankTeams, type ComboRequirement, type TeamCandidate, type TeamEval } from "@/lib/calc/team";
 import type { AttrName, EssenceRegion, EssenceStats, Operator, OperatorDetails, OperatorProfile, OperatorStats, Weapon } from "@/types/game";
 import { buildWeaponUsers } from "@/lib/weapon-users";
 
@@ -145,8 +147,30 @@ function operatorBase(id: string): OperatorBase | undefined {
 }
 
 type RawLevel = { costValue: number; coolDown: number; bb: Record<string, number | string>; display?: { label: string; value: string }[] };
+/**
+ * 세부 스킬별 만렙 수치. 배틀·연계 스킬의 "궁극기 사용 중" 변형(레바테인 normal_skill_during_ult, 장방이 normal_skill_ult·combo_skill_ult)은
+ * 평소 스킬과 배율 이름이 달라 함께 합치면 두 번 세어진다 → 제외 (TODO: 궁극기 지속 중 변형 피해를 궁극기 모드 피해로)
+ */
+const ULT_VARIANT = /(^|_)(during_)?ult$/;
 const lastLevel = (id: string, type: string): RawLevel[] =>
-  (combatChars[id]?.skillGroups.find((g) => g.type === type)?.skills ?? []).map((s) => s.levels.at(-1) as unknown as RawLevel).filter(Boolean);
+  (combatChars[id]?.skillGroups.find((g) => g.type === type)?.skills ?? [])
+    .filter((s) => type === "궁극기" || !ULT_VARIANT.test((s as unknown as { part?: string }).part ?? ""))
+    .map((s) => s.levels.at(-1) as unknown as RawLevel)
+    .filter(Boolean);
+
+/**
+ * 스킬 표의 "…궁극기 에너지" 항목 (본인 획득). base = 연계처럼 기본 획득량 항목이 있는 경우.
+ * "N명의 적에게 명중할 때"는 1명 기준, "스택을 소모할 때마다 추가로"는 1스택 소모로 계산 — TODO(실측): 평균 소모 스택
+ */
+function energyOf(levels: RawLevel[], base: boolean): number | undefined {
+  const ds = levels.flatMap((l) => l.display ?? []).filter((d) => /궁극기 에너지/.test(d.label) && !/[2-9]명|이상의 적/.test(d.label));
+  if (!ds.length) return undefined;
+  const v = (d: { value: string }) => parseFloat(d.value) || 0;
+  const main = ds.filter((d) => !/추가로/.test(d.label) || !base);
+  const extra = base ? ds.filter((d) => /추가로/.test(d.label)) : [];
+  const total = main.reduce((s, d) => s + v(d), 0) + extra.reduce((s, d) => s + v(d), 0);
+  return base && !main.length ? undefined : total;
+}
 
 /** 스킬 회전 (만렙 스킬 기준) — calc/build.ts Rotation 설명 참고 */
 function rotationOf(id: string): Rotation | undefined {
@@ -160,8 +184,10 @@ function rotationOf(id: string): Rotation | undefined {
     comboRate: comboCd > 0 ? 1 / comboCd : 0,
     ultCost: Math.max(...ult.map((l) => l.costValue)),
     ultCooldown: Math.max(...ult.map((l) => l.coolDown)),
-    // 연계 스킬이 주는 궁극기 에너지 (스킬 데이터 usp, 없으면 공통 10 ✅)
-    comboEnergy: Number(combo[0].bb.usp ?? 10),
+    // 연계 스킬이 주는 궁극기 에너지: 표시 항목("획득하는 궁극기 에너지", 적 1명 명중 기준) → 스킬 데이터 usp → 공통 10 ✅
+    comboEnergy: energyOf(combo, true) ?? Number(combo[0].bb.usp ?? 10),
+    battleEnergy: energyOf(battle, false) ?? 0,
+    selfEnergyOnly: /자신의 .*통해서만 궁극기 에너지를 획득/.test(JSON.stringify(combatChars[id]?.skillGroups.find((g) => g.type === "궁극기")?.desc ?? "")),
     weight: {
       battle: damageWeight(keep(id, "배틀 스킬", battle)),
       combo: damageWeight(keep(id, "연계 스킬", combo)),
@@ -592,10 +618,10 @@ export function allTeams(): BestTeam[] {
   return (teamCache = ranked.map((t) => ({ ...t, classes: classes(t.ids), healer: healer(t.ids) })));
 }
 
-/** 시너지 상위 몇 개를 파티 장비까지 계산해 다시 줄 세울지 */
-const PARTY_RERANK_WINDOW = 12;
+/** 2차(정밀) 평가 인원: 1차 근사 순위 상위 몇 개를 파티 장비 + 로테이션 그리디로 다시 계산할지 */
+const STAGE2_WINDOW = 12;
 
-export type BestTeamWithGear = BestTeam & { party?: PartyBuild };
+export type BestTeamWithGear = BestTeam & { party?: PartyBuild; rotation?: RotationResult };
 
 /** 베스트 조합 카드의 파티 장비 */
 export interface TeamGearView {
@@ -604,46 +630,227 @@ export interface TeamGearView {
   members: { id: string; suitId: string; suitName: string | null; icon?: string; same: boolean; reason?: string }[];
 }
 
+/** 베스트 조합 카드의 팀 화력 · 스킬 사이클 */
+export interface TeamPowerView {
+  /** 전체 1위 조합 대비 팀 피해 */
+  relative: number;
+  mainId: string;
+  /** 조작 캐릭터 */
+  controlId: string;
+  /** SP 수입 (SP/s) */
+  spIncome: number;
+  /** 궁극기 평균 간격(초) */
+  ultInterval: number;
+  /** 연계 가동률 (쿨타임 대비) */
+  comboUptime: number;
+  members: { id: string; share: number; spShare: number; battleEvery: number; comboEvery: number; ultEvery: number }[];
+  buffs: { from: string; text: string; effect: "amp" | "vuln" | "atk"; value: number; uptime: number; to: string[] }[];
+}
+
+/** 임의의 멤버 묶음(3~4명)의 연계 평가 — 기여도 계산(한 명 뺀 3인)용 */
+function teamEvalOf(ids: string[]): TeamEval {
+  const idx = synergyIndex();
+  const cands = ids.map((id) => ({ id, group: id, comboDesc: idx[id]?.comboDesc ?? null, tags: idx[id]?.tags ?? [] }));
+  return evaluateTeam(cands, comboRequirementOf);
+}
+
+let quickCache: Map<string, number> | undefined;
+let soloCache: Map<string, number> | undefined;
+let byDamage: BestTeam[] | undefined;
+const keyOf = (ids: string[]) => [...ids].sort().join("+");
+
+/** 1차 근사 팀 피해 (quickTeamDamage) — 3인 묶음도 같은 캐시 */
+function quickOf(ids: string[], t?: TeamEval): number {
+  quickCache ??= new Map();
+  soloCache ??= new Map();
+  const key = keyOf(ids);
+  const hit = quickCache.get(key);
+  if (hit !== undefined) return hit;
+  const ms = rotMembers(t ?? teamEvalOf(ids));
+  const solo = soloCache;
+  // 메인 컨트롤 후보 점수 = 본인 피해 비중 × 혼자일 때 피해 (오퍼레이터마다 1번)
+  const soloOf = (m: RotMember) => {
+    if (!solo.has(m.id)) solo.set(m.id, m.roleSelf * simulateTeam([m], { steps: 1, main: 0 }).total);
+    return solo.get(m.id)!;
+  };
+  const v = ms ? quickTeamDamage(ms, ms.map(soloOf)).total : 0;
+  quickCache.set(key, v);
+  return v;
+}
+
 /**
- * 시너지 순위 상위 조합을 파티 장비까지 계산해 다시 정렬: 시너지 점수 → (같으면) 파티 화력
- * 파티 화력 = 파티별로 최적화한 장비를 낀 딜러들의 피해 기대치 합 (lib/calc/party.ts)
+ * 1차: 모든 4인 조합을 팀 로테이션 근사(quickTeamDamage — 개인 추천 장비, 버프 유지 + 나머지 SP 메인)로 평가해 팀 피해 순으로.
+ * 연계 시너지(allTeams)는 연계 발동 여부(빈도)로 그 안에 들어간다
  */
-export function rerankWithGear(teams: BestTeam[], n: number): BestTeamWithGear[] {
+export function teamsByDamage(): BestTeam[] {
+  if (byDamage) return byDamage;
+  const q = new Map(allTeams().map((t) => [t, quickOf(t.ids, t)]));
+  return (byDamage = [...allTeams()].sort((a, b) => q.get(b)! - q.get(a)! || b.score - a.score));
+}
+
+/**
+ * 오퍼레이터 기여도 = 1 − (그 오퍼레이터를 뺀 3인 팀 피해 ÷ 4인 팀 피해) — 1차 근사 기준.
+ * 본인 피해 + 버프·디버프 + 연계 조건 제공 + 궁극기 에너지(배틀 스킬)까지 "이 사람이 빠지면 잃는 것"
+ */
+export function contributionOf(ids: string[], id: string): number {
+  const full = quickOf(ids);
+  if (full <= 0) return 0;
+  return Math.max(0, Math.min(1, 1 - quickOf(ids.filter((x) => x !== id)) / full));
+}
+
+const stage2Cache = new Map<string, BestTeamWithGear>();
+function stage2(t: BestTeam): BestTeamWithGear {
+  const key = t.ids.join("+");
+  let hit = stage2Cache.get(key);
+  if (!hit) {
+    const party = partyBuild(t.ids);
+    stage2Cache.set(key, (hit = { ...t, party, rotation: teamRotation(t, party) }));
+  }
+  return hit;
+}
+
+/**
+ * 2차: 1차 순위 상위 조합을 파티 장비(lib/calc/party.ts) + 로테이션 그리디(SP 배분)로 다시 계산해 팀 피해 순으로.
+ * teams 는 1차 순서(점수 내림차순)인 부분집합. weight = 정렬 가중치(오퍼레이터별 순위의 기여도)
+ */
+export function rerankWithGear(teams: BestTeam[], n: number, weight: (t: BestTeam) => number = () => 1): BestTeamWithGear[] {
   return teams
-    .slice(0, Math.max(PARTY_RERANK_WINDOW, n))
-    .map((t) => ({ ...t, party: partyBuild(t.ids) }))
-    .sort((a, b) => b.score - a.score || (b.party?.power ?? 0) - (a.party?.power ?? 0))
+    .slice(0, Math.max(STAGE2_WINDOW, n * 2))
+    .map(stage2)
+    .sort((a, b) => (b.rotation?.total ?? 0) * weight(b) - (a.rotation?.total ?? 0) * weight(a))
     .slice(0, n);
 }
 
+/** 전체 순위에서 같은 메인 딜러 조합은 몇 개까지 (한 딜러 조합만 줄 서지 않게) */
+const PER_MAIN = 2;
+
+/**
+ * 전체 베스트 조합: 딜러(본인 피해 비중 ≥ 0.5)마다 그 딜러가 메인인 상위 조합을 모아 팀 피해 순으로, 메인 딜러별 최대 PER_MAIN개.
+ * (팀 피해만으로 줄 세우면 가장 센 딜러 한 명의 조합만 나열됨) — 관리자 남/여는 같은 캐릭터 → 한쪽만
+ */
+let overallCache: BestTeamWithGear[] | undefined;
+export function bestTeams(n: number): BestTeamWithGear[] {
+  if (!overallCache) {
+    const seen = new Set<string>();
+    const pool: BestTeamWithGear[] = [];
+    for (const o of operators) {
+      if (o.id === "3" || roleOf(o.id).self < 0.5) continue;
+      for (const t of bestTeamsFor(o.id, PER_MAIN * 2)) {
+        if (t.ids.includes("3") || t.rotation?.mainId !== o.id || seen.has(t.ids.join("+"))) continue;
+        seen.add(t.ids.join("+"));
+        const { contribution, ...rest } = t;
+        void contribution;
+        pool.push(rest);
+      }
+    }
+    pool.sort((x, y) => (y.rotation?.total ?? 0) - (x.rotation?.total ?? 0));
+    const count = new Map<string, number>();
+    overallCache = pool.filter((t) => {
+      const main = t.rotation!.mainId;
+      count.set(main, (count.get(main) ?? 0) + 1);
+      return count.get(main)! <= PER_MAIN;
+    });
+  }
+  return overallCache.slice(0, n);
+}
+
+let topTotal: number | undefined;
+export const OVERALL_N = 12;
+/** 팀 화력 기준 = 전체 1위 */
+const bestTotal = () => (topTotal ??= bestTeams(1)[0]?.rotation?.total ?? 1);
+
 /** 화면용 (직렬화 가능한 최소 정보) */
-export function teamView(t: BestTeamWithGear): BestTeam & { gear?: TeamGearView } {
-  const { party, ...rest } = t;
-  if (!party) return rest;
+export function teamView(t: BestTeamWithGear & { contribution?: number }): BestTeam & { gear?: TeamGearView; power?: TeamPowerView; contribution?: number } {
+  const { party, rotation, ...rest } = t;
+  const every = (r: number) => (r > 0 ? 1 / r : Infinity);
+  const nameOf = (id: string) => operators.find((o) => o.id === id)?.name ?? id;
   return {
     ...rest,
-    gear: {
-      gain: party.gain,
-      members: party.members.map((m) => ({
-        id: m.id,
-        suitId: m.gear.suitId,
-        suitName: m.gear.suitName,
-        icon: gearImages.suits[m.gear.suitId],
-        same: m.same,
-        reason: m.reason,
-      })),
-    },
+    gear: party
+      ? {
+          gain: party.gain,
+          members: party.members.map((m) => ({
+            id: m.id,
+            suitId: m.gear.suitId,
+            suitName: m.gear.suitName,
+            icon: gearImages.suits[m.gear.suitId],
+            same: m.same,
+            reason: m.reason,
+          })),
+        }
+      : undefined,
+    power: rotation
+      ? {
+          relative: rotation.total / bestTotal(),
+          mainId: rotation.mainId,
+          controlId: rotation.controlId,
+          spIncome: rotation.spIncome,
+          ultInterval: rotation.ultInterval,
+          comboUptime: rotation.comboUptime,
+          members: rotation.members.map((m) => ({
+            id: m.id,
+            share: m.share,
+            spShare: m.spShare,
+            battleEvery: every(m.rates.battle),
+            comboEvery: every(m.rates.combo),
+            ultEvery: every(m.rates.ult),
+          })),
+          // 상태 디버프는 이름(감전 등)이 from — 화면에선 그대로, 오퍼레이터는 이름으로
+          buffs: rotation.buffs
+            .filter((b) => b.uptime * b.value >= 0.005)
+            .map((b) => ({ ...b, from: /^\d+$/.test(b.from) ? nameOf(b.from) : b.from })),
+        }
+      : undefined,
   };
 }
 
-/** 이 오퍼레이터가 들어간 베스트 조합 (파티 장비 포함) */
-export function bestTeamsFor(id: string, n = 3): BestTeamWithGear[] {
-  return rerankWithGear(allTeams().filter((t) => t.ids.includes(id)), n);
+/**
+ * 이 오퍼레이터가 들어간 베스트 조합 (파티 장비 · 로테이션 포함)
+ * 점수 = 팀 피해 × √기여도 — 가장 센 딜러 조합에 끼워 넣기만 한 조합(기여 5%)보다 이 오퍼레이터가 핵심인 조합을 위로
+ */
+const perOpCache = new Map<string, BestTeam[]>();
+export function bestTeamsFor(id: string, n = 3): (BestTeamWithGear & { contribution: number })[] {
+  let pool = perOpCache.get(id);
+  if (!pool) {
+    teamsByDamage();
+    const w = new Map(allTeams().filter((t) => t.ids.includes(id)).map((t) => [t, quickOf(t.ids) * Math.sqrt(contributionOf(t.ids, id))]));
+    pool = [...w.keys()].sort((a, b) => w.get(b)! - w.get(a)!);
+    perOpCache.set(id, pool);
+  }
+  return rerankWithGear(pool, n, (t) => Math.sqrt(contributionOf(t.ids, id))).map((t) => ({ ...t, contribution: contributionOf(t.ids, id) }));
 }
 
 /** 연계 발동 조건 요약 (화면 표시용) */
+const comboReqCache = new Map<string, ComboRequirement>();
 export function comboRequirementOf(id: string): ComboRequirement {
-  return comboRequirement(synergyIndex()[id]?.comboDesc ?? null, findTerms);
+  if (!comboReqCache.has(id)) comboReqCache.set(id, comboRequirement(synergyIndex()[id]?.comboDesc ?? null, findTerms));
+  return comboReqCache.get(id)!;
+}
+
+/** 스킬이 주는 팀 버프·적 디버프 (lib/calc/team-buffs.ts) */
+const skillBuffCache = new Map<string, SkillBuff[]>();
+export function skillBuffsOf(id: string): SkillBuff[] {
+  if (skillBuffCache.has(id)) return skillBuffCache.get(id)!;
+  const cc = getCombatCharacter(id);
+  const base = operatorBase(id);
+  const out =
+    cc && base
+      ? extractSkillBuffs(
+          cc.skillGroups.map((g) => ({
+            type: g.type,
+            text: [g.desc ?? "", ...(g.forms ?? []).map((f) => f.desc)].join("\n"),
+            // 스킬 표: 세부 스킬별 마지막 레벨 값을 합침 (같은 키는 큰 값)
+            bb: g.skills.reduce<Record<string, number>>((acc, sk) => {
+              for (const [k, v] of Object.entries((sk.levels.at(-1) as unknown as { bb?: Record<string, number | string> })?.bb ?? {}))
+                if (typeof v === "number") acc[k] = Math.max(acc[k] ?? 0, v);
+              return acc;
+            }, {}),
+          })),
+          base.attrs,
+        )
+      : [];
+  skillBuffCache.set(id, out);
+  return out;
 }
 
 /** (보정 테스트용) 가정값을 바꾼 뒤 캐시 비우기 */
@@ -651,6 +858,14 @@ export function resetBuildCache() {
   dealerCache = undefined;
   recCache.clear();
   partyCache.clear();
+  indivCache.clear();
+  stage2Cache.clear();
+  perOpCache.clear();
+  overallCache = undefined;
+  byDamage = undefined;
+  quickCache = undefined;
+  soloCache = undefined;
+  topTotal = undefined;
 }
 
 // ───────── 파티별 장비 (lib/calc/party.ts) ─────────
@@ -674,6 +889,8 @@ export interface PartyBuild {
   teamDamage: number;
   /** 파티 화력 (딜러 피해 합 — 파티끼리 비교) */
   power: number;
+  /** 멤버별 최종 능력치·추가 타격 (팀 로테이션 입력, 화면에는 안 씀) */
+  finals: { bag: StatBag; extra: { rate: number; scale: number }[] }[];
 }
 
 const partyCache = new Map<string, PartyBuild | undefined>();
@@ -721,6 +938,7 @@ export function partyBuild(ids: string[]): PartyBuild | undefined {
     gain: res.gain,
     teamDamage: res.teamDamage,
     power: res.power,
+    finals: res.finals,
   };
   partyCache.set(key, out);
   return out;
@@ -729,4 +947,171 @@ export function partyBuild(ids: string[]): PartyBuild | undefined {
 /** (테스트·디버그용) 오퍼레이터 무기 평가 정보 */
 export function debugKit(id: string) {
   return { kit: operatorKit(id), base: operatorBase(id), pool: teamPool(id) };
+}
+
+// ───────── 팀 로테이션 (lib/calc/rotation.ts) ─────────
+
+/** 스킬 표의 SP 항목: 소모(costValue) · 반환(atb_return*) · 회복(atb, atb_N …) · 강력한 일격 SP */
+const spCache = new Map<string, RotMember["sp"]>();
+function spOf(id: string): RotMember["sp"] {
+  if (!spCache.has(id)) spCache.set(id, spOfRaw(id));
+  return spCache.get(id)!;
+}
+function spOfRaw(id: string): RotMember["sp"] {
+  const groups = combatChars[id]?.skillGroups ?? [];
+  const levels = (type: string) =>
+    (groups.find((g) => g.type === type)?.skills ?? []).map((sk) => ({ part: (sk as unknown as { part: string }).part, lv: sk.levels.at(-1) as unknown as RawLevel })).filter((x) => x.lv);
+  const num = (v: unknown) => (typeof v === "number" ? v : 0);
+  /** 회복 SP: atb·atb_final·atb_trigger 는 합, atb_display 가 있으면 그 값 */
+  const recoverOf = (bb: Record<string, number | string>) => {
+    if (num(bb.atb_display) > 0) return num(bb.atb_display);
+    // 단계별(atb_1… / atb1…)은 소모 스택에 따라 달라서 팀 로테이션에서 따로 (spTierOf)
+    // atb_sp(알레쉬 "추가로 회복" — 진귀한 린수 10% 확률)·atb_ex(조건부 추가)는 조건 빈도를 몰라 제외 (TODO(실측))
+    return ["atb", "atb_final", "atb_trigger"].reduce((s, k) => s + num(bb[k]), 0);
+  };
+  const returnOf = (bb: Record<string, number | string>) => Math.max(0, ...Object.keys(bb).filter((k) => k.startsWith("atb_return")).map((k) => num(bb[k])));
+  const kindMax = (type: string, f: (bb: Record<string, number | string>) => number) => Math.max(0, ...levels(type).map((x) => f(x.lv.bb ?? {})));
+  const battle = levels("배틀 스킬");
+  // 설명이 "스킬 게이지를 반환"인데 표에는 atb 로만 있으면(라스트 라이트) 반환으로 — 반환은 궁극기 에너지를 만들지 않음 ✅
+  const battleText = (groups.find((g) => g.type === "배틀 스킬")?.desc ?? "").replace(/<[^>]*>/g, "");
+  const retAsAtb = /스킬 게이지를 반환/.test(battleText) && !battle.some((x) => Object.keys(x.lv.bb ?? {}).some((k) => k.startsWith("atb_return")));
+  const battleAtb = kindMax("배틀 스킬", recoverOf);
+  return {
+    // 연속 초식(미브 단운 100 → 추형 50 → 개천 50)은 피해 배율을 모두 합쳐 1회로 보므로 SP도 합. 궁극기 중 변형(…_ult)은 제외
+    cost: battle.filter((x) => !/ult/.test(x.part)).reduce((s, x) => s + (x.lv.costValue ?? 0), 0) || 100,
+    ret: kindMax("배틀 스킬", returnOf) + (retAsAtb ? battleAtb : 0),
+    recover: { battle: retAsAtb ? 0 : battleAtb, combo: kindMax("연계 스킬", recoverOf), ult: kindMax("궁극기", recoverOf) },
+    finalStrike: Math.max(0, ...levels("일반 공격").filter((x) => /^attack\d+$/.test(x.part)).map((x) => num(x.lv.bb?.atb))),
+  };
+}
+
+/** 개인 추천 그대로의 능력치 (1차 선별용) */
+const indivCache = new Map<string, { bag: StatBag; extra: { rate: number; scale: number }[]; weaponAtk: number } | undefined>();
+function indivInput(id: string) {
+  if (indivCache.has(id)) return indivCache.get(id);
+  const rec = getBuildRecommendation(id);
+  const w = rec?.weapons[0];
+  const out =
+    rec && w
+      ? {
+          bag: addBag(addBag(addBag(talentBag(combatChars[id].talents.attributes), selfKitBag(id)), w.bag), gearSetBag(rec.gear[0])),
+          extra: w.extraHits.map((x) => ({ rate: x.rate, scale: x.scale })),
+          weaponAtk: combatWeapons[w.id].baseAtk.at(-1) ?? 0,
+        }
+      : undefined;
+  indivCache.set(id, out);
+  return out;
+}
+
+function rotMembers(t: TeamEval, party?: PartyBuild): RotMember[] | undefined {
+  const out: RotMember[] = [];
+  for (const id of t.ids) {
+    const op = operatorBase(id);
+    const kit = operatorKit(id);
+    const ind = indivInput(id);
+    if (!op || !kit || !ind) return undefined;
+    const me = t.members.find((m) => m.id === id)!;
+    const f = party?.finals[party.ids.indexOf(id)];
+    out.push({
+      id,
+      op,
+      kit,
+      weaponAtk: ind.weaponAtk,
+      // 파티 최종 능력치는 재능·자체 버프·무기를 이미 포함
+      bag: f ? f.bag : ind.bag,
+      extra: f ? [...ind.extra, ...f.extra] : ind.extra,
+      roleSelf: roleOf(id).self,
+      combo: { status: me.status, teamCombo: comboRequirementOf(id).kind === "teamCombo", providers: me.from.flatMap((x) => x.ids) },
+      buffs: skillBuffsOf(id),
+      stackConsume: stackConsumeOf(id),
+      charged: chargedOf(id),
+      spTier: spTierOf(id),
+      vulnStack: vulnStackOf(id),
+      sp: spOf(id),
+    });
+  }
+  return out;
+}
+
+/** 부착 스택 소모형 피해 (스킬 표 "중첩된 부착 스택을 소모할 때마다 추가되는 피해 배율") */
+const stackCache = new Map<string, RotMember["stackConsume"]>();
+function stackConsumeOf(id: string): RotMember["stackConsume"] {
+  if (stackCache.has(id)) return stackCache.get(id);
+  const kit = operatorKit(id);
+  const out: NonNullable<RotMember["stackConsume"]> = [];
+  for (const [type, kind] of Object.entries(KIND_OF_TYPE)) {
+    const ds = lastLevel(id, type).flatMap((l) => l.display ?? []);
+    const per = ds.find((d) => /부착 스택을 소모할 때마다 추가되는 피해 배율/.test(d.label));
+    if (!per || !kit) continue;
+    const energy = ds.find((d) => /부착 스택을 소모할 때마다 추가로 획득하는 궁극기 에너지/.test(d.label));
+    // 어떤 부착을 소모하는지: 스킬 설명에 나온 속성 부착, 없으면 아츠 부착 전부
+    const named = ["열기", "전기", "냉기", "자연"].filter((e) => kit.texts[kind].includes(`${e} 부착`));
+    out.push({
+      kind,
+      perStack: parseFloat(per.value) / 100,
+      energyPerStack: energy ? parseFloat(energy.value) || 0 : 0,
+      states: (named.length ? named : ["열기", "전기", "냉기", "자연"]).map((e) => `${e} 부착`),
+    });
+  }
+  stackCache.set(id, out.length ? out : undefined);
+  return stackCache.get(id);
+}
+
+/** 소모 스택에 따른 SP 회복 (스킬 표 atb_1~4 / atb1~4) — 어떤 스택인지는 스킬 설명(방어 불능 / 부착) */
+const tierCache = new Map<string, RotMember["spTier"]>();
+function spTierOf(id: string): RotMember["spTier"] {
+  if (tierCache.has(id)) return tierCache.get(id);
+  const kit = operatorKit(id);
+  const out: NonNullable<RotMember["spTier"]> = [];
+  for (const [type, kind] of Object.entries(KIND_OF_TYPE)) {
+    if (!kit || kind === "ult") continue;
+    for (const lv of lastLevel(id, type)) {
+      const bb = lv.bb ?? {};
+      const keys = Object.keys(bb).filter((k) => /^atb_?[1-4]$/.test(k)).sort();
+      if (keys.length < 2) continue;
+      const states = /방어 불능/.test(kit.texts[kind]) ? ["방어 불능"] : ["열기 부착", "전기 부착", "냉기 부착", "자연 부착"];
+      out.push({ kind, tiers: keys.map((k) => Number(bb[k]) || 0), states });
+    }
+  }
+  tierCache.set(id, out.length ? out : undefined);
+  return tierCache.get(id);
+}
+
+/** 스킬별 방어 불능 스택 부여 (띄우기·넘어뜨리기 = 물리 이상, 또는 직접 부여) */
+const vulnCache = new Map<string, RotMember["vulnStack"]>();
+function vulnStackOf(id: string): RotMember["vulnStack"] {
+  if (vulnCache.has(id)) return vulnCache.get(id);
+  const kit = operatorKit(id);
+  const has = (k: "battle" | "combo" | "ult") => (kit && /띄우기|넘어뜨리기|방어 불능 (?:상태|스택)?(?:을|를) 부여/.test(kit.texts[k]) ? 1 : 0);
+  const v = kit ? { battle: has("battle"), combo: has("combo"), ult: has("ult") } : undefined;
+  vulnCache.set(id, v && v.battle + v.combo + v.ult > 0 ? v : undefined);
+  return vulnCache.get(id);
+}
+
+/** 스택 추가 공격 (배틀 스킬 "N스택이 쌓였을 경우 … 추가로 1회 공격") — 지금은 레바테인만 해당 */
+const chargedCache = new Map<string, RotMember["charged"]>();
+function chargedOf(id: string): RotMember["charged"] {
+  if (chargedCache.has(id)) return chargedCache.get(id);
+  const kit = operatorKit(id);
+  const m = kit?.texts.battle.match(/([가-힣 ]+?) (\d+)스택이 쌓였을 경우[^\n]*추가로 1회 공격/);
+  let out: RotMember["charged"];
+  if (kit && m) {
+    const stack = m[1].trim().split(" ").slice(-2).join(" ");
+    const ds = lastLevel(id, "배틀 스킬").flatMap((l) => l.display ?? []);
+    const weight = ds.filter((d) => /^추가 (피해|공격) 배율$/.test(d.label)).reduce((t, d) => t + parseFloat(d.value) / 100, 0);
+    const energy = ds.filter((d) => /추가 공격으로 획득하는 궁극기 에너지/.test(d.label)).reduce((t, d) => t + (parseFloat(d.value) || 0), 0);
+    // 스택 획득: 스킬 설명에 "…명중하면 <스택> 1스택" 이 있는 스킬, 재능 "X 부착을 1스택 흡수할 때마다 … <스택>"
+    const gain = (k: "battle" | "combo" | "ult") => (new RegExp(`${stack}.{0,20}획득|1스택의 ${stack}`).test(kit.texts[k]) ? 1 : 0);
+    const talents = (opDetails[id]?.talents ?? []).map((t) => t.stages.at(-1)?.effect ?? "").join("\n");
+    const absorb = [...talents.matchAll(new RegExp(`([가-힣]+ 부착)을 1스택 흡수할 때마다[^\n]*${stack}`, "g"))].map((x) => x[1]);
+    if (weight > 0) out = { kind: "battle", weight, energy, need: Number(m[2]), gainPerUse: { battle: gain("battle"), combo: gain("combo"), ult: gain("ult") }, gainStates: [...new Set(absorb)] };
+  }
+  chargedCache.set(id, out);
+  return out;
+}
+
+/** 팀 로테이션 결과 (party 가 있으면 파티 장비 기준) */
+export function teamRotation(t: TeamEval, party?: PartyBuild, steps?: number): RotationResult | undefined {
+  const ms = rotMembers(t, party);
+  return ms ? simulateTeam(ms, { steps }) : undefined;
 }

@@ -39,6 +39,8 @@ export interface StatBag {
   comboCdr: number;
   /** 적이 받는 피해 증가 (이 오퍼레이터 속성에 해당하는 것만, 받는 피해 증가·취약 구간) */
   taken: number;
+  /** 증폭 (이 오퍼레이터 속성에 해당하는 것만) — 피해 공식의 별도 곱연산 구간 1 + Σ증폭 (combat-mechanics §7) */
+  amp: number;
   /** 생존·치유 (피해 지수 밖, 무기 평가의 치유·생존 지표에서 사용) */
   healEff: number;
   hpPct: number;
@@ -70,6 +72,7 @@ export const emptyBag = (): StatBag => ({
   ultGain: 0,
   comboCdr: 0,
   taken: 0,
+  amp: 0,
   healEff: 0,
   hpPct: 0,
   defPct: 0,
@@ -84,7 +87,7 @@ export function addBag(a: StatBag, b: StatBag): StatBag {
     r.critBy[k] += b.critBy?.[k] ?? 0;
     r.critDmgBy[k] += b.critDmgBy?.[k] ?? 0;
   }
-  for (const k of ["str", "agi", "int", "wil", "main", "sub", "mainPct", "subPct", "atkPct", "flatAtk", "critRate", "critDmg", "artsIntensity", "ultGain", "comboCdr", "taken", "healEff", "hpPct", "defPct", "shieldEff"] as const) r[k] += b[k];
+  for (const k of ["str", "agi", "int", "wil", "main", "sub", "mainPct", "subPct", "atkPct", "flatAtk", "critRate", "critDmg", "artsIntensity", "ultGain", "comboCdr", "taken", "amp", "healEff", "hpPct", "defPct", "shieldEff"] as const) r[k] += b[k];
   for (const k of Object.keys(r.dmg) as (keyof StatBag["dmg"])[]) r.dmg[k] += b.dmg[k];
   return r;
 }
@@ -245,6 +248,15 @@ export interface Rotation {
    * from 스킬의 빈도로 쓰고, to 종류의 피해 보너스를 받음. to = "anomaly" 면 이상 피해(아츠 강도)로
    */
   moved?: { from: "battle" | "combo" | "ult"; to: DmgType | "anomaly"; weight: number; name: string; synced?: boolean }[];
+  /**
+   * 초당 사용 횟수를 직접 지정 (팀 로테이션 모델 lib/calc/rotation.ts 가 SP 공유·연계 기회·궁극기 에너지로 계산한 값).
+   * 있으면 rates() 는 이 값을 그대로 돌려준다 (쿨타임 감소·궁극기 효율은 이미 반영된 값)
+   */
+  fixedRates?: Record<"battle" | "combo" | "ult", number>;
+  /** 배틀 스킬 1회에 본인만 추가로 얻는 궁극기 에너지 (레바테인 추가 공격 100, 라스트 라이트 16 …) */
+  battleEnergy?: number;
+  /** 팀 배틀 스킬 에너지를 받지 못함 (라스트 라이트: "자신의 배틀 스킬, 연계 스킬을 통해서만 궁극기 에너지를 획득") */
+  selfEnergyOnly?: boolean;
 }
 
 /**
@@ -276,9 +288,10 @@ export const ASSUME = { comboCdrRealized: 1, stackRefresh: false, critHitScale: 
 export const basicCounted = () => INCLUDE_BASIC_ATTACK || ASSUME.basicScale > 0;
 
 export function rates(r: Rotation, ultGain: number, comboCdr = 0): Record<"battle" | "combo" | "ult", number> {
+  if (r.fixedRates) return r.fixedRates;
   // 연계 스킬 쿨타임 감소 → 쿨타임마다 쓴다고 보고 빈도 증가 (최대 70% 감소까지)
   const comboRate = r.comboRate / (1 - Math.min(0.7, Math.max(0, comboCdr * ASSUME.comboCdrRealized)));
-  const energyPerSec = BATTLE_ULT_ENERGY * r.battleRate + r.comboEnergy * comboRate;
+  const energyPerSec = (r.selfEnergyOnly ? 0 : BATTLE_ULT_ENERGY * r.battleRate) + (r.battleEnergy ?? 0) * r.battleRate + r.comboEnergy * comboRate;
   const ultInterval = Math.max(r.ultCooldown, energyPerSec > 0 ? r.ultCost / (energyPerSec * (1 + ultGain)) : Infinity);
   return { battle: r.battleRate, combo: comboRate, ult: Number.isFinite(ultInterval) && ultInterval > 0 ? 1 / ultInterval : 0 };
 }
@@ -317,7 +330,7 @@ export function score(op: OperatorBase, weaponAtk: number, bag: StatBag): ScoreR
   const crit = 1 + critRate * critDmg;
   const types: DmgType[] = ["basic", "battle", "combo", "ult"];
   const dmgPct = Object.fromEntries(types.map((t) => [t, elemDmg + bag.dmg[t]])) as Record<DmgType, number>;
-  const taken = 1 + bag.taken;
+  const taken = (1 + bag.taken) * (1 + bag.amp);
   const critOf = (k: CritScope | "basic") =>
     k === "basic" ? crit : 1 + Math.min(1, critRate + (bag.critBy?.[k] ?? 0)) * (critDmg + (bag.critDmgBy?.[k] ?? 0));
   const byType = Object.fromEntries(types.map((t) => [t, atk * (1 + dmgPct[t]) * critOf(t) * taken])) as Record<DmgType, number>;

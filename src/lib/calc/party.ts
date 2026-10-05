@@ -69,6 +69,8 @@ export interface PartyResult {
   /** 파티 화력 = Σ 멤버 피해 × 본인 피해 비중(역할) — 서포터 본인 피해는 빼고 딜러 피해만 (파티끼리 비교용) */
   power: number;
   iterations: number;
+  /** 멤버별 최종 능력치(장비 + 세트 효과 + 받은 세트 팀 효과)와 추가 타격 — 팀 로테이션 모델 입력 */
+  finals: { bag: StatBag; extra: { rate: number; scale: number }[] }[];
 }
 
 /** 상태를 소모·부여하는 문장 판정 — 발동 조건 문장("…일 때 사용할 수 있습니다")은 제외 */
@@ -77,7 +79,25 @@ const effectSentences = (text: string) => text.split(/(?<=[.。])\s*|\n/).filter
 const consumes = (text: string, st: string) => effectSentences(text).some((x) => new RegExp(`${st}(?: 상태)?(?:을|를) 소모`).test(x));
 const applies = (text: string, st: string) => effectSentences(text).some((x) => new RegExp(`${st}(?: 상태)?(?:을|를) (?:부여|일으)|${st} 상태로 만`).test(x));
 
+// 문장 판정은 정규식이라 느림 → 같은 스킬 설명(kit.texts 객체)이면 결과 재사용 (팀 로테이션은 수만 번 호출)
+const consumedCache = new WeakMap<object, ReturnType<typeof consumedStatesRaw>>();
+const appliesCache = new WeakMap<object, Map<string, boolean>>();
+const appliesK = (kit: OperatorKit, k: "battle" | "combo" | "ult", st: string) => {
+  let m = appliesCache.get(kit.texts);
+  if (!m) appliesCache.set(kit.texts, (m = new Map()));
+  const key = `${k}|${st}`;
+  let v = m.get(key);
+  if (v === undefined) m.set(key, (v = applies(kit.texts[k] ?? "", st)));
+  return v;
+};
+
 export function consumedStates(kit: OperatorKit): { state: string; kinds: ("battle" | "combo" | "ult")[]; levels: boolean }[] {
+  let v = consumedCache.get(kit.texts);
+  if (!v) consumedCache.set(kit.texts, (v = consumedStatesRaw(kit)));
+  return v;
+}
+
+function consumedStatesRaw(kit: OperatorKit): { state: string; kinds: ("battle" | "combo" | "ult")[]; levels: boolean }[] {
   const out: { state: string; kinds: ("battle" | "combo" | "ult")[]; levels: boolean }[] = [];
   for (const st of CONSUMABLE) {
     const kinds = (["battle", "combo", "ult"] as const).filter((k) => consumes(kit.texts[k] ?? "", st));
@@ -90,7 +110,7 @@ export function consumedStates(kit: OperatorKit): { state: string; kinds: ("batt
 
 /** 파티가 그 상태를 거는 초당 횟수 — 부여하는 스킬 빈도의 합 (각자 장비가 반영된 빈도) */
 export function stateSupply(state: string, party: { kit: OperatorKit; rates: Rates }[]): number {
-  return party.reduce((s, m) => s + (["battle", "combo", "ult"] as const).reduce((t, k) => t + (applies(m.kit.texts[k] ?? "", state) ? m.rates[k] : 0), 0), 0);
+  return party.reduce((s, m) => s + (["battle", "combo", "ult"] as const).reduce((t, k) => t + (appliesK(m.kit, k, state) ? m.rates[k] : 0), 0), 0);
 }
 
 /**
@@ -301,7 +321,8 @@ export function optimizeParty(members: PartyMember[], pieces: Map<string, GearPi
       received: rec.list.map((r) => ({ suitName: members[r.from].candidates[picks[r.from]].suitName, from: members[r.from].id, text: r.line.text })),
     };
   });
-  return { picks: picksOut, gain: indivTeam > 0 ? teamDamage / indivTeam : 1, teamDamage, power, iterations };
+  const finals = members.map((_, i) => ({ bag: damageOf(i, final).bag, extra: final[i].extra }));
+  return { picks: picksOut, gain: indivTeam > 0 ? teamDamage / indivTeam : 1, teamDamage, power, iterations, finals };
 
   /** 개인 1위 대신 다른 세트를 고른 이유 (한 줄) */
   function reasonOf(i: number, evals: CandEval[], recv: typeof receivedBag): string {

@@ -221,7 +221,7 @@ export function BuildPanel({
         <section className="border bg-card">
           <header className="flex flex-wrap items-baseline justify-between gap-2 border-b px-4 py-3">
             <h3 className="text-lg font-bold">베스트 조합</h3>
-            <p className="text-xs text-muted-foreground">연계 스킬이 서로 이어지는 4인 조합 · 동점이면 파티 화력 순 · 파티마다 장비를 다시 맞춤</p>
+            <p className="text-xs text-muted-foreground">팀 피해(SP 공유 · 연계 빈도 · 버프 가동률) × 이 오퍼레이터 기여도 · 파티마다 장비를 다시 맞춤</p>
           </header>
           <div className="grid gap-3 p-4 lg:grid-cols-3">
             {teams.map((t, i) => (
@@ -232,7 +232,7 @@ export function BuildPanel({
             <Link href={`/teams?op=${opId}`} className="font-semibold text-foreground underline underline-offset-2">
               조합 더 보기 →
             </Link>{" "}
-            점수 = 연계 발동 가능 인원 × 10 + 동료 연결 점수
+            점수 = 팀 화력 × √기여도 — 가장 센 딜러 조합에 끼워 넣기만 한 조합보다 이 오퍼레이터가 핵심인 조합을 위로
           </p>
         </section>
       )}
