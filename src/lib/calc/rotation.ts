@@ -74,7 +74,8 @@ export interface RotMember {
 export interface RotBuffView {
   from: string;
   text: string;
-  effect: SkillBuff["effect"];
+  /** amp 증폭 · vuln 취약 · taken 받는 피해 증가 · atk 공격력 · dmg 피해 보너스 · res 저항 감소(값 = 포인트/100) */
+  effect: SkillBuff["effect"] | "taken" | "dmg" | "res";
   value: number;
   uptime: number;
   /** 받는 팀원 */
@@ -95,6 +96,8 @@ export interface RotationResult {
   /** 연계 발동 가능한 멤버의 연계 빈도 ÷ 쿨타임 상한 평균 */
   comboUptime: number;
   buffs: RotBuffView[];
+  /** 전투 중 발생한 아츠 폭발·이상·물리 이상 횟수 (팀 시뮬레이터) */
+  reactions?: Record<string, number>;
 }
 
 const comboCd = (m: RotMember) => {

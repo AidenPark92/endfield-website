@@ -5,7 +5,7 @@ import type { TeamMate } from "@/components/teams/team-card";
 
 export const metadata: Metadata = {
   title: "베스트 조합",
-  description: "엔드필드 4인 조합을 팀 피해(SP 공유 · 연계 · 시너지 버프 · 스킬 사이클)로 계산한 베스트 조합",
+  description: "엔드필드 4인 조합을 전투 시뮬레이션(아츠·물리 이상, SP 공유, 연계 조건, 버프 가동률)으로 계산한 베스트 조합",
 };
 
 export default function TeamsPage() {
@@ -22,7 +22,7 @@ export default function TeamsPage() {
         <h1 className="mt-2 text-3xl font-bold tracking-tight">베스트 조합</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
           오퍼레이터 {operators.length}명으로 만들 수 있는 4인 조합 {all.length.toLocaleString()}개를 <b className="text-foreground">팀 피해</b>로 평가했어요. 팀
-          SP를 누가 쓰는지, 연계가 얼마나 자주 열리는지, 서포터 버프·디버프가 얼마나 유지되는지까지 넣어 메인 딜과 서브 딜이 함께 가장 높게 나오는 조합을 찾아요.
+          4명이 실제로 90초 싸우는 전투를 시뮬레이션해 부착·이상 반응, SP를 누가 쓰는지, 연계가 열리는 조건, 버프 유지까지 게임 규칙대로 계산해요.
           오퍼레이터를 고르면 그 오퍼레이터가 핵심 역할을 하는 조합을 보여 줘요.
         </p>
       </header>
@@ -30,31 +30,32 @@ export default function TeamsPage() {
       <details className="mt-8 border bg-card px-4 py-3 text-sm">
         <summary className="cursor-pointer font-semibold">점수는 어떻게 계산하나요?</summary>
         <div className="mt-2 space-y-1 text-[13px] leading-6 text-muted-foreground">
-          <p className="font-semibold text-foreground">팀 화력 = 4명의 피해 합 (스킬 사이클 시뮬레이션)</p>
+          <p className="font-semibold text-foreground">팀 화력 = 4명이 보스 1명과 90초 싸우는 전투 시뮬레이션의 초당 피해</p>
           <p>
-            ① <b className="text-foreground">SP는 팀 공유</b>: 자연 회복(초당 약 8) + 조작 캐릭터의 강력한 일격 + 뱅가드 회복을 네 명이 나눠 써요. SP를 조금씩
-            나눠 주며 팀 피해가 가장 많이 오르는 사람에게 배틀 스킬을 주는 방식으로 배분해요 — 보통 메인 딜러가 대부분, 버프를 거는 서포터가 버프 유지만큼 써요.
+            오퍼레이터 33명의 스킬을 게임 데이터(스킬 표 수치·설명)대로 하나씩 옮겨, 실제 전투처럼 시간 순서로 돌려요. 적에게는{" "}
+            <b className="text-foreground">아츠 부착(같은 속성 최대 4스택)·아츠 폭발·아츠 이상(연소·감전·동결·부식)·쇄빙</b>,{" "}
+            <b className="text-foreground">방어 불능·띄우기·넘어뜨리기·강타·갑옷 파괴</b>, 불균형이 실제로 쌓이고 사라져요. 그래서 같은 속성끼리 모인 팀은
+            스택이 유지되고(라스트 라이트·티프로스·레바테인처럼 스택을 먹는 딜러가 강해짐), 다른 속성이 섞이면 반응으로 스택이 날아가요.
           </p>
           <p>
-            ② <b className="text-foreground">궁극기</b>: 배틀 스킬은 소모 SP 100당 팀 전원에게 6.5 에너지, 연계는 본인에게(스킬 표 수치). 레바테인 추가 공격처럼
-            스택을 모아 얻는 에너지, 라스트 라이트처럼 본인 스킬로만 에너지를 얻는 경우도 반영해요.
+            ① <b className="text-foreground">SP는 팀 공유</b>(초당 약 8 + 조작 캐릭터의 강력한 일격 + 스킬 회복). 누가 배틀 스킬을 쓸지는 메인 딜러 후보와 SP
+            배분 방식(메인 딜러 우선 / 조건이 없을 때 서포터 / 딜러가 원하는 상태 먼저 깔기 / 지금 쓰면 피해가 가장 큰 사람)을 바꿔 가며 돌려 보고 가장 강한 운영을 써요.
           </p>
           <p>
-            ③ <b className="text-foreground">연계</b>: 쿨타임이 끝나도 조건을 만들어 줄 동료의 스킬이 와야 쓸 수 있어요. 빈도 = 1 ÷ (쿨타임 + 다음 기회까지 평균
-            대기). 조건을 못 채우는 연계는 0이에요.
+            ② <b className="text-foreground">연계</b>는 동료가 만든 상태·이벤트(강력한 일격, 부착, 이상, 방어 불능 3스택…)가 생긴 뒤 7초 안에, 쿨타임이 끝났을 때만 나가요.
+            장방이(감전 소모 → 청뢰검), 아크라이트(감전 중 SP 회수), 관리자(다른 연계 → 오리지늄 결정) 같은 연쇄가 그대로 일어나요.
           </p>
           <p>
-            ④ <b className="text-foreground">시너지 버프</b>: 스킬이 주는 증폭·취약·공격력과 감전·갑옷 파괴·부식 디버프를 가동률(스킬 빈도 × 지속 시간)만큼,
-            속성이 맞는 팀원에게 더해요. 부착 스택을 소모하는 스킬(이본·라스트 라이트·로시)은 같은 속성 부착 동료가 많을수록 세지고, 다른 속성이 섞이면 아츠
-            이상으로 스택이 사라져 약해져요.
+            ③ <b className="text-foreground">궁극기</b>: 배틀 스킬마다 팀 전원 6.5(반환 SP 제외), 연계는 본인, 스킬 표의 추가 에너지(이본 스택당 30 등). 궁극기 모드(레바테인·장방이·이본)는
+            그 동안 조작 캐릭터가 바뀌어요.
           </p>
           <p>
-            순위: 1차로 모든 조합을 빠른 근사(개인 추천 장비)로 계산하고, 상위 조합만 파티 장비까지 맞춘 정밀 계산으로 다시 줄 세워요. 전체 순위는 메인 딜러마다
-            최대 2개까지만 보여 줘요. 오퍼레이터별 순위는 팀 화력 × √기여도(그 오퍼레이터가 빠지면 줄어드는 팀 피해 비율)예요.
+            ④ <b className="text-foreground">버프·디버프</b>(증폭·취약·받는 피해·공격력·저항 감소)는 걸린 시간 동안만, 맞는 속성에만 적용돼요. 순위 점수에는 치유 담당이 없는 조합에 ×0.9
+            생존 보정을 곱해요.
           </p>
           <p>
-            검증: endfieldtools.dev 인기 4인 조합(스트라이커 기준)이 그 오퍼레이터 조합 약 4,900개 중 평균 341위(기하 평균) — 연계 시너지만 볼 때는 509위였어요.
-            아츠 반응 피해, 처형·조작 실력은 아직 넣지 않았어요.
+            검증: 해외 공략 사이트(Prydwen·endfieldhub·Game8·GameWith·genshin-builds) 상위 조합 23개가 전체 3만6천 개 조합 중 기하평균 약 2,000위(그 딜러 조합 4,500개 중 약 270위)예요.
+            이전 모델은 4,800위 / 870위였어요. 1위 조합(장방이·펠리카·아크라이트·리노)은 해외 SS 조합과 같아요. 회피·처형·다수 적·조작 실력은 넣지 않았어요.
           </p>
           <p className="font-semibold text-foreground">파티 장비 — 같은 오퍼레이터도 파티마다 장비가 달라요</p>
           <p>

@@ -1,0 +1,596 @@
+{
+  "_meta": {
+    "note": "게임 수치 아님. 베스트 조합 알고리즘 검증용 — 해외 공략 사이트가 공통으로 꼽은 상위 조합. tier 는 출처 표기 그대로(SS/T0 = 1, S/T0.5 = 2, A/T1 = 3). core = 그 조합의 메인 딜러",
+    "collectedAt": "2026-10-06",
+    "sources": [
+      "https://www.prydwen.gg/arknights-endfield/team-tier-list",
+      "https://endfieldhub.org/team-tier-list",
+      "https://game8.co/games/Arknights-Endfield/archives/535997",
+      "https://gamewith.net/akendfield/72598",
+      "https://genshin-builds.com/en/arknights-endfield/teams",
+      "https://www.prydwen.gg/arknights-endfield/tier-list"
+    ],
+    "names": {
+      "Arcane": "결(1040)",
+      "Typhoeus": "티프로스(1173)",
+      "Zhuang Fangyi": "장방이(838)",
+      "Mi Fu": "미브(995)",
+      "Liino": "리노(1041)",
+      "Camille": "카뮤(996)",
+      "Rossi": "로시(615)",
+      "Purrchena": "푸치나(1174)"
+    },
+    "archetypeNote": "archetypes: 출처들이 그 딜러(core)와 함께 쓴다고 적은 오퍼레이터 전체(supports + flex/substitutes 합집합). 우리 조합의 메인 딜러가 core 이고 나머지 3명이 pool 안이면 '메타 아키타입 일치'"
+  },
+  "teams": [
+    {
+      "name": "Dawnstar Authority",
+      "core": "838",
+      "ids": [
+        "838",
+        "1",
+        "7",
+        "1041"
+      ],
+      "tier": 1,
+      "sources": [
+        "endfieldhub SS",
+        "genshin-builds Best Electric",
+        "prydwen T0 Zhuang Hyper"
+      ]
+    },
+    {
+      "name": "Wuling Authority",
+      "core": "838",
+      "ids": [
+        "838",
+        "1",
+        "7",
+        "9"
+      ],
+      "tier": 1,
+      "sources": [
+        "endfieldhub SS",
+        "prydwen T0 flex"
+      ]
+    },
+    {
+      "name": "Zhuang Antal",
+      "core": "838",
+      "ids": [
+        "838",
+        "1",
+        "7",
+        "22"
+      ],
+      "tier": 1,
+      "sources": [
+        "gamewith S",
+        "genshin-builds"
+      ]
+    },
+    {
+      "name": "Winter Hunt",
+      "core": "1173",
+      "ids": [
+        "1173",
+        "1040",
+        "13",
+        "9"
+      ],
+      "tier": 1,
+      "sources": [
+        "endfieldhub SS",
+        "prydwen T0 Typhoeus flex"
+      ]
+    },
+    {
+      "name": "Corrosion Volley",
+      "core": "1173",
+      "ids": [
+        "1173",
+        "1040",
+        "1",
+        "9"
+      ],
+      "tier": 2,
+      "sources": [
+        "endfieldhub S"
+      ]
+    },
+    {
+      "name": "Typhoeus Hyper",
+      "core": "1173",
+      "ids": [
+        "1173",
+        "1",
+        "19",
+        "24"
+      ],
+      "tier": 1,
+      "sources": [
+        "prydwen T0"
+      ]
+    },
+    {
+      "name": "Corrosion Arcana",
+      "core": "1040",
+      "ids": [
+        "1040",
+        "25",
+        "9",
+        "13"
+      ],
+      "tier": 1,
+      "sources": [
+        "endfieldhub SS",
+        "genshin-builds Best Burst"
+      ]
+    },
+    {
+      "name": "Arcane Hyper",
+      "core": "1040",
+      "ids": [
+        "1040",
+        "25",
+        "1",
+        "13"
+      ],
+      "tier": 1,
+      "sources": [
+        "prydwen T0",
+        "genshin-builds"
+      ]
+    },
+    {
+      "name": "Melt Queen",
+      "core": "11",
+      "ids": [
+        "11",
+        "6",
+        "5",
+        "19"
+      ],
+      "tier": 1,
+      "sources": [
+        "endfieldhub SS",
+        "game8 Best Heat",
+        "gamewith S",
+        "genshin-builds",
+        "community #1 (48)"
+      ]
+    },
+    {
+      "name": "Sanguine Pyre",
+      "core": "11",
+      "ids": [
+        "11",
+        "996",
+        "6",
+        "19"
+      ],
+      "tier": 1,
+      "sources": [
+        "endfieldhub SS",
+        "prydwen T0.5 flex"
+      ]
+    },
+    {
+      "name": "Cryo-Nature Executioners",
+      "core": "17",
+      "ids": [
+        "17",
+        "14",
+        "9",
+        "19"
+      ],
+      "tier": 1,
+      "sources": [
+        "endfieldhub SS"
+      ]
+    },
+    {
+      "name": "Fists of No Regrets",
+      "core": "995",
+      "ids": [
+        "995",
+        "4",
+        "20",
+        "12"
+      ],
+      "tier": 1,
+      "sources": [
+        "endfieldhub SS"
+      ]
+    },
+    {
+      "name": "Mi Fu Hyper",
+      "core": "995",
+      "ids": [
+        "995",
+        "4",
+        "20",
+        "19"
+      ],
+      "tier": 1,
+      "sources": [
+        "prydwen T0"
+      ]
+    },
+    {
+      "name": "Rossi Core",
+      "core": "615",
+      "ids": [
+        "615",
+        "1",
+        "995",
+        "25"
+      ],
+      "tier": 1,
+      "sources": [
+        "prydwen T0"
+      ]
+    },
+    {
+      "name": "Rossi Mi Fu Burst",
+      "core": "615",
+      "ids": [
+        "615",
+        "1",
+        "9",
+        "995"
+      ],
+      "tier": 2,
+      "sources": [
+        "genshin-builds Advanced Burst"
+      ]
+    },
+    {
+      "name": "Cryo Burst Control",
+      "core": "14",
+      "ids": [
+        "14",
+        "25",
+        "13",
+        "9"
+      ],
+      "tier": 2,
+      "sources": [
+        "endfieldhub S",
+        "game8 Best Cryo",
+        "gamewith S",
+        "genshin-builds",
+        "community (18)"
+      ]
+    },
+    {
+      "name": "Last Rite Cryo",
+      "core": "17",
+      "ids": [
+        "17",
+        "13",
+        "25",
+        "24"
+      ],
+      "tier": 2,
+      "sources": [
+        "gamewith S",
+        "game8 Cryo 2",
+        "genshin-builds"
+      ]
+    },
+    {
+      "name": "Last Rite Hyper",
+      "core": "17",
+      "ids": [
+        "17",
+        "13",
+        "25",
+        "19"
+      ],
+      "tier": 2,
+      "sources": [
+        "prydwen T0.5"
+      ]
+    },
+    {
+      "name": "Pure Physical Gold",
+      "core": "2",
+      "ids": [
+        "2",
+        "4",
+        "20",
+        "12"
+      ],
+      "tier": 2,
+      "sources": [
+        "endfieldhub S",
+        "genshin-builds",
+        "community (30)"
+      ]
+    },
+    {
+      "name": "Premium Electro",
+      "core": "10",
+      "ids": [
+        "10",
+        "1",
+        "7",
+        "9"
+      ],
+      "tier": 2,
+      "sources": [
+        "endfieldhub S",
+        "game8 Best Electric",
+        "community (11)"
+      ]
+    },
+    {
+      "name": "Zhuang Rossi",
+      "core": "838",
+      "ids": [
+        "838",
+        "615",
+        "1",
+        "9"
+      ],
+      "tier": 2,
+      "sources": [
+        "gamewith S"
+      ]
+    },
+    {
+      "name": "Endmin Physical",
+      "core": "2",
+      "ids": [
+        "2",
+        "20",
+        "4",
+        "19"
+      ],
+      "tier": 3,
+      "sources": [
+        "gamewith",
+        "game8",
+        "genshin-builds F2P"
+      ]
+    },
+    {
+      "name": "Da Pan Physical",
+      "core": "8",
+      "ids": [
+        "8",
+        "4",
+        "20",
+        "12"
+      ],
+      "tier": 3,
+      "sources": [
+        "prydwen T1",
+        "genshin-builds"
+      ]
+    }
+  ],
+  "archetypes": [
+    {
+      "core": "838",
+      "name": "Zhuang",
+      "pool": [
+        "1",
+        "7",
+        "1041",
+        "9",
+        "22",
+        "1040",
+        "5",
+        "10",
+        "18",
+        "19",
+        "615"
+      ]
+    },
+    {
+      "core": "1173",
+      "name": "Typhoeus",
+      "pool": [
+        "1040",
+        "13",
+        "9",
+        "1",
+        "19",
+        "24",
+        "1041",
+        "1174"
+      ]
+    },
+    {
+      "core": "1040",
+      "name": "Arcane",
+      "pool": [
+        "25",
+        "1",
+        "13",
+        "9",
+        "5",
+        "1041",
+        "996",
+        "6",
+        "1173"
+      ]
+    },
+    {
+      "core": "11",
+      "name": "Laevatain",
+      "pool": [
+        "6",
+        "5",
+        "996",
+        "19",
+        "22",
+        "1040",
+        "9"
+      ]
+    },
+    {
+      "core": "17",
+      "name": "LastRite",
+      "pool": [
+        "13",
+        "25",
+        "19",
+        "1040",
+        "1",
+        "24",
+        "5",
+        "14",
+        "9",
+        "16",
+        "21"
+      ]
+    },
+    {
+      "core": "14",
+      "name": "Yvonne",
+      "pool": [
+        "13",
+        "9",
+        "21",
+        "25",
+        "1040",
+        "18",
+        "1",
+        "19",
+        "16",
+        "17",
+        "24",
+        "5"
+      ]
+    },
+    {
+      "core": "995",
+      "name": "MiFu",
+      "pool": [
+        "4",
+        "20",
+        "19",
+        "12",
+        "15",
+        "615",
+        "1",
+        "9",
+        "25",
+        "996",
+        "2"
+      ]
+    },
+    {
+      "core": "615",
+      "name": "Rossi",
+      "pool": [
+        "1",
+        "995",
+        "25",
+        "22",
+        "20",
+        "996",
+        "9",
+        "19",
+        "5",
+        "2",
+        "8",
+        "6",
+        "21",
+        "16",
+        "15",
+        "11",
+        "838"
+      ]
+    },
+    {
+      "core": "2",
+      "name": "Endministrator",
+      "pool": [
+        "4",
+        "20",
+        "12",
+        "19",
+        "15",
+        "8",
+        "5",
+        "23",
+        "1",
+        "16",
+        "18",
+        "21",
+        "615",
+        "9"
+      ]
+    },
+    {
+      "core": "8",
+      "name": "DaPan",
+      "pool": [
+        "4",
+        "20",
+        "12",
+        "2",
+        "19",
+        "15",
+        "615",
+        "9",
+        "6",
+        "5"
+      ]
+    },
+    {
+      "core": "10",
+      "name": "Avywenna",
+      "pool": [
+        "7",
+        "5",
+        "1041",
+        "1",
+        "22",
+        "9",
+        "16",
+        "19",
+        "838"
+      ]
+    },
+    {
+      "core": "25",
+      "name": "Tangtang",
+      "pool": [
+        "9",
+        "13",
+        "1",
+        "1040",
+        "14",
+        "17"
+      ]
+    },
+    {
+      "core": "21",
+      "name": "Estella",
+      "pool": [
+        "18",
+        "19",
+        "4",
+        "2",
+        "995",
+        "16"
+      ]
+    },
+    {
+      "core": "20",
+      "name": "Pogranichnik",
+      "pool": [
+        "4",
+        "2",
+        "8",
+        "12",
+        "19"
+      ]
+    }
+  ]
+}

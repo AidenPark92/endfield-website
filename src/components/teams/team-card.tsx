@@ -144,16 +144,16 @@ export function TeamCard({
 }
 
 const sec = (v: number) => (Number.isFinite(v) ? `${v < 10 ? v.toFixed(1) : Math.round(v)}초` : "—");
-const EFFECT: Record<TeamPowerView["buffs"][number]["effect"], string> = { amp: "증폭", vuln: "취약", atk: "공격력" };
+const EFFECT: Record<TeamPowerView["buffs"][number]["effect"], string> = { amp: "증폭", vuln: "취약", atk: "공격력", taken: "받는 피해", dmg: "피해", res: "저항 감소" };
 
-/** 스킬 사이클: SP 수입, 멤버별 배틀 스킬(SP 배분)·연계·궁극기 간격, 가동 중인 버프 */
+/** 스킬 사이클(전투 시뮬레이션 90초): SP 수입, 멤버별 배틀 스킬(SP 배분)·연계·궁극기 간격, 아츠·물리 이상 횟수, 가동 중인 버프 */
 function CycleSection({ power, name }: { power: TeamPowerView; name: (id: string) => string }) {
   return (
     <div className="border-b px-3 py-2 text-[11px] leading-4">
       <p className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-2 text-muted-foreground">
         <span className="font-semibold text-foreground">스킬 사이클</span>
         <span>
-          SP 수입 <b className="font-mono text-foreground">{power.spIncome.toFixed(1)}</b>/초 · 조작 {name(power.controlId)} · 연계 가동 {Math.round(power.comboUptime * 100)}%
+          SP 수입 <b className="font-mono text-foreground">{power.spIncome.toFixed(1)}</b>/초 · 조작 {name(power.controlId)}
         </span>
       </p>
       <table className="w-full table-fixed text-left">
@@ -176,6 +176,15 @@ function CycleSection({ power, name }: { power: TeamPowerView; name: (id: string
           ))}
         </tbody>
       </table>
+      {Object.keys(power.reactions).length > 0 && (
+        <p className="mt-1.5 text-muted-foreground">
+          90초 동안{" "}
+          {Object.entries(power.reactions)
+            .sort((a, b) => b[1] - a[1])
+            .map(([k, v]) => `${k} ${v}회`)
+            .join(" · ")}
+        </p>
+      )}
       {power.buffs.length > 0 && (
         <ul className="mt-1.5 flex flex-wrap gap-1">
           {power.buffs
@@ -184,7 +193,7 @@ function CycleSection({ power, name }: { power: TeamPowerView; name: (id: string
             .slice(0, 6)
             .map((b, i) => (
               <li key={i} className="border px-1.5 py-0.5" title={b.text}>
-                <b>{b.from}</b> {EFFECT[b.effect]} +{Math.round(b.value * 100)}% · 가동 {Math.round(b.uptime * 100)}%
+                <b>{b.from}</b> {EFFECT[b.effect]} +{b.effect === "res" ? Math.round(b.value * 100) : `${Math.round(b.value * 100)}%`} · 가동 {Math.round(b.uptime * 100)}%
               </li>
             ))}
         </ul>
