@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import type { ComboStatus, TeamEval } from "@/lib/calc/team";
-import type { TeamGearView, TeamPowerView } from "@/lib/data";
+import type { MemberAlignment, TeamGearView, TeamPowerView } from "@/lib/data";
 import { GearCard } from "@/components/gear/gear-card";
 
 export interface TeamMate {
@@ -14,7 +14,7 @@ export interface TeamMate {
   cls?: string;
 }
 
-export type TeamView = TeamEval & { classes: number; healer: boolean; sustain?: boolean; gear?: TeamGearView; power?: TeamPowerView; contribution?: number };
+export type TeamView = TeamEval & { classes: number; healer: boolean; alignment?: MemberAlignment[]; gear?: TeamGearView; power?: TeamPowerView; contribution?: number };
 
 const STATUS: Record<ComboStatus, { label: string; tone: string }> = {
   team: { label: "동료가 조건을 만들어 줌", tone: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" },
@@ -41,7 +41,7 @@ export function TeamCard({
       <header className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-3 py-2">
         {rank !== undefined && <span className={cn("font-mono text-lg font-bold", rank === 1 && "text-accent-strong")}>{rank}</span>}
         {team.power && (
-          <span className="text-sm" title="전체 1위 조합 대비 팀 피해 기대치 (파티 장비 · SP 배분 · 버프 가동률 반영)">
+          <span className="text-sm" title="전체 1위 조합 대비 순위 점수 (팀 피해 기대치 × 시너지 정렬 — 파티 무기·장비 · SP 배분 · 버프 가동률 반영)">
             팀 화력 <b className="font-mono text-base">{Math.round(team.power.relative * 100)}</b>
           </span>
         )}
@@ -54,12 +54,15 @@ export function TeamCard({
           연계 발동 <b className="font-mono text-base">{team.active}/4</b>
         </span>
         <span className="ml-auto flex flex-wrap gap-1 text-[11px]">
-          {team.sustain && (
-            <span className="border px-1.5 text-muted-foreground" title="치유 스킬 또는 디펜더 — 고난이도 콘텐츠용. 순위 점수에는 쓰지 않음">
-              생존 담당 있음
+          {team.alignment && (
+            <span
+              className={cn("border px-1.5", team.alignment.some((a) => !a.aligned) && "text-accent-strong")}
+              title="메인 딜러와 속성 · 상태 공급 · 속성 버프로 맞물리는 멤버 수 (범용 멤버는 순위 점수 −30%)"
+            >
+              시너지 정렬 {team.alignment.filter((a) => a.aligned).length}/4
             </span>
           )}
-          <span className="border px-1.5" title="연계 시너지 점수 (연계 발동 인원 × 10 + 동료 연결)">시너지 {team.score}점</span>
+          <span className="border px-1.5" title="연계 시너지 점수 (연계 발동 인원 × 10 + 동료 연결)">연계 {team.score}점</span>
         </span>
       </header>
       <ul className="grid grid-cols-4 border-b">
@@ -145,6 +148,12 @@ export function TeamCard({
           <li key={m.id} className="flex flex-wrap items-baseline gap-x-2 gap-y-1 px-3 py-1.5">
             <b className="w-24 shrink-0 truncate">{name(m.id)}</b>
             <span className={cn("px-1.5 text-[11px] font-semibold", STATUS[m.status].tone)}>{STATUS[m.status].label}</span>
+            {(() => {
+              const a = team.alignment?.find((x) => x.id === m.id);
+              return a?.why ? (
+                <span className={cn("border px-1.5 text-[11px]", a.aligned ? "text-muted-foreground" : "border-accent-strong text-accent-strong")}>{a.why}</span>
+              ) : null;
+            })()}
             {m.from.map((f) => (
               <span key={f.keyword} className="text-muted-foreground">
                 <b className="bg-accent/30 px-1 font-semibold text-foreground">{f.keyword}</b> ← {f.ids.map(name).join(", ")}

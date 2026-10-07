@@ -757,6 +757,12 @@ const snowshine: Factory = (T) =>
 /** 질베르타: 배틀 = 자연 부착 / 연계(아츠 이상 부여) = 강제 띄우기 / 궁극기 = 아츠 취약 30% + 방어 불능 스택당 */
 const gilberta: Factory = (T) =>
   base(T, 0.3, {
+    // 재능 전달자의 노래: 팀 내 가드·캐스터·서포터의 궁극기 충전 효율 +4% (직업군 조건)
+    init: (c) => {
+      c.members.forEach((m, i) => {
+        if (m.cls && ["가드", "캐스터", "서포터"].includes(m.cls)) c.rt[i].s.ultGainAdd = (c.rt[i].s.ultGainAdd ?? 0) + 0.04;
+      });
+    },
     battle: {
       pri: () => 1,
       makes: ["자연 부착"],
@@ -929,9 +935,10 @@ const arcane: Factory = (T) => {
 /** 티프로스: 자연 부착 1스택 소모 → 계시, 계시 8 → 연계로 사냥 화살, 화살 → 강제 자연 폭발(×1.3 ×1.6) */
 const typhoeus: Factory = (T) => {
   const burstMult = T.v(B, "강력한 사격 자연 폭발 피해 배율") || 1.3;
-  const shoot = (c: Ctx, consumed: boolean) => {
-    // 강력한 사격: 자연 폭발 강제 1회 (160% ✅) × 자연 부착 소모 시 1.3 × 재능 1.6 · 화살진 안 +10%
-    c.hit(1.6 * (consumed ? burstMult : 1) * 1.6 * (c.markOn("화살진") ? 1.1 : 1), { anomaly: true, elem: "자연" });
+  const shoot = (c: Ctx, consumed: boolean, arrow: boolean) => {
+    // 강력한 사격: 자연 폭발 강제 1회 (160% ✅) × 자연 부착 소모 시 1.3 · 화살진 안 +10%
+    // 재능 사냥감 청소 1.6배는 "사냥 화살을 소모하는 강화된 공격"만 — 조작 중 다섯 번째 공중 공격(화살 미소모)은 제외
+    c.hit(1.6 * (consumed ? burstMult : 1) * (arrow ? 1.6 : 1) * (c.markOn("화살진") ? 1.1 : 1), { anomaly: true, elem: "자연" });
     c.emit({ type: "artsBurst", elem: "자연" });
   };
   const aerial = (c: Ctx, k: number, mult: number) => {
@@ -945,7 +952,7 @@ const typhoeus: Factory = (T) => {
     const fifthAsControl = k === 5 && c.isControl();
     if ((s.arrows ?? 0) > 0 || fifthAsControl) {
       if (!fifthAsControl) s.arrows!--;
-      shoot(c, consumed);
+      shoot(c, consumed, !fifthAsControl);
     }
   };
   return base(T, 1, {

@@ -1,35 +1,28 @@
 import type { Metadata } from "next";
-import { allTeams, bestTeams, bestTeamsFor, operators, OVERALL_N, TEAM_MODES, teamView } from "@/lib/data";
+import { getTeamsCache } from "@/lib/teams-cache";
 import { TeamFinder } from "@/components/teams/team-finder";
-import type { TeamMate } from "@/components/teams/team-card";
 
 export const metadata: Metadata = {
   title: "베스트 조합",
   description: "엔드필드 4인 조합을 전투 시뮬레이션(무기·장비·재능·스킬, 아츠·물리 이상, SP 공유, 연계 조건, 버프 가동률)으로 계산한 베스트 조합",
 };
 
-export default function TeamsPage() {
-  const all = allTeams();
-  const overall = Object.fromEntries(TEAM_MODES.map((m) => [m, bestTeams(OVERALL_N, m).map(teamView)])) as Record<(typeof TEAM_MODES)[number], ReturnType<typeof teamView>[]>;
-  const byOperator = Object.fromEntries(
-    TEAM_MODES.map((m) => [m, Object.fromEntries(operators.map((o) => [o.id, bestTeamsFor(o.id, 6, m).map(teamView)]))]),
-  ) as Record<(typeof TEAM_MODES)[number], Record<string, ReturnType<typeof teamView>[]>>;
-  const mates: Record<string, TeamMate> = Object.fromEntries(
-    operators.map((o) => [o.id, { id: o.id, name: o.name, face: o.face, element: o.element, cls: o.profile?.class }]),
-  );
+export default async function TeamsPage() {
+  // 4만여 개 조합 계산 결과는 data/generated/teams.json 에 미리 (npm run teams:build) — 없거나 오래되면 그때 계산
+  const { overall, byOperator, total, mates, order } = await getTeamsCache();
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
       <header className="mb-6 border-b pb-6">
         <p className="ef-label">MOD-04 // Squad</p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight">베스트 조합</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          오퍼레이터 {operators.length}명으로 만들 수 있는 4인 조합 {all.length.toLocaleString()}개를 <b className="text-foreground">팀 피해</b>로 평가했어요. 팀
+          오퍼레이터 {order.length}명으로 만들 수 있는 4인 조합 {total.toLocaleString()}개를 <b className="text-foreground">팀 피해</b>로 평가했어요. 팀
           4명이 각자의 <b className="text-foreground">무기·장비·재능·스킬</b>을 갖추고 90초 싸우는 전투를 시뮬레이션해 부착·이상 반응, SP를 누가 쓰는지, 연계가 열리는
-          조건, 버프 유지까지 게임 규칙대로 계산해요. 일반 콘텐츠는 치유 담당이 필요 없어서 팀 피해만으로 순위를 매기고, 고난이도는 생존 담당이 들어간 조합만 보여 줘요.
+          조건, 버프 유지까지 게임 규칙대로 계산하고, 메인 딜러와 속성·상태로 맞물리는 <b className="text-foreground">시너지 조합</b>을 위로 올려요. 치유 담당은 필수가 아니에요.
           오퍼레이터를 고르면 그 오퍼레이터가 핵심 역할을 하는 조합을 보여 줘요.
         </p>
       </header>
-      <TeamFinder overall={overall} byOperator={byOperator} mates={mates} order={operators.map((o) => o.id)} />
+      <TeamFinder overall={overall} byOperator={byOperator} mates={mates} order={order} />
       <details className="mt-8 border bg-card px-4 py-3 text-sm">
         <summary className="cursor-pointer font-semibold">점수는 어떻게 계산하나요?</summary>
         <div className="mt-2 space-y-1 text-[13px] leading-6 text-muted-foreground">
@@ -54,8 +47,12 @@ export default function TeamsPage() {
           </p>
           <p>
             ④ <b className="text-foreground">버프·디버프</b>(증폭·취약·받는 피해·공격력·저항 감소)는 걸린 시간 동안만, 맞는 속성에만 적용돼요. 치유량은 점수에 넣지 않아요 —
-            일반 콘텐츠는 치유 서포터 없이도 깰 수 있어서, 치유 오퍼레이터도 버프·딜로만 평가해요. <b className="text-foreground">고난이도</b>를 고르면 치유 스킬이 있거나
-            디펜더인 생존 담당이 1명 이상 들어간 조합만 같은 점수로 줄 세워요.
+            치유 서포터 없이도 깰 수 있어서, 치유 오퍼레이터도 버프·딜로만 평가해요.
+          </p>
+          <p>
+            ⑥ <b className="text-foreground">시너지 정렬</b>: 메인 딜러와 ① 같은 속성이거나 ② 메인 딜러가 쓰는 상태(티프로스의 자연 부착, 장방이의 감전, 물리 딜러의
+            방어 불능 …)를 공급하거나 ③ 메인 딜러 속성에 걸리는 증폭·취약·받는 피해를 주는 멤버는 &quot;맞물림&quot;, 공격력·SP처럼 아무 팀에나 들어가는 효과만 주는 다른 속성
+            멤버는 &quot;범용&quot;이에요. 다른 속성 부착은 실전에서 메인 딜러의 부착 스택을 반응으로 날려 버리는 등 마찰이 있어서, 범용 멤버 1명마다 순위 점수를 30% 낮춰요.
           </p>
           <p>
             ⑤ <b className="text-foreground">무기·장비·재능</b>: 재능(능력치 재능 + 오퍼레이터 재능 효과)과 스킬은 오퍼레이터마다 전투 동작으로 옮겼고, 무기·장비는{" "}
@@ -64,9 +61,9 @@ export default function TeamsPage() {
             팀원에게 중첩 규칙대로 전달되고, 추가 타격 효과도 전투에 들어가요.
           </p>
           <p>
-            검증: 해외 공략 사이트(Prydwen·endfieldhub·Game8·GameWith·genshin-builds) 상위 조합 23개가 전체 3만6천 개 조합 중 기하평균 약 1,600위(그 딜러 조합 4,500개
-            중 약 210위)예요. 치유 보정·팀 무기를 넣기 전 시뮬레이터는 2,000위 / 270위, 처음 모델은 4,800위 / 870위였어요. 해외 SS 1위 조합(장방이·펠리카·아크라이트·리노)은
-            전체 3위예요. 회피·처형·다수 적·조작 실력은 넣지 않았어요.
+            검증: 해외 공략 사이트(Prydwen·endfieldhub·Game8·GameWith·genshin-builds) 상위 조합 23개가 전체 3만6천 개 조합 중 기하평균 약 300위, endfieldtools.dev
+            커뮤니티 공개 팀 상위 30개가 약 260위예요(시너지 정렬 전 1,500위 / 1,450위, 처음 모델 4,800위). 해외 SS 1위 조합(장방이·펠리카·아크라이트·리노)은 전체 1위예요.
+            회피·처형·다수 적·조작 실력은 넣지 않았어요.
           </p>
           <p className="font-semibold text-foreground">파티 무기·장비 — 같은 오퍼레이터도 파티마다 무기·장비가 달라요</p>
           <p>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { comboRequirement, evaluateTeam, rankTeams, teamStates, type TeamCandidate } from "./team";
-import { allTeams, bestTeamsFor, comboRequirementOf, hasSustain, partyBuild, teamRoleOf, teamScore, teamSim, teamWeaponsOf } from "@/lib/data";
+import { alignmentOf, allTeams, bestTeamsFor, comboRequirementOf, hasSustain, partyBuild, synergyFactor, teamRoleOf, teamScore, teamSim, teamWeaponsOf } from "@/lib/data";
 
 // 용어 찾기 대역 (테스트용 — 실제는 glossary 의 splitTerms)
 const TERMS = ["전기 부착", "냉기 부착", "열기 부착", "자연 부착", "아츠 부착", "아츠 이상", "감전", "방어 불능", "강력한 일격", "불균형"];
@@ -64,16 +64,22 @@ describe("실데이터", () => {
   });
 });
 
-describe("일반 / 고난이도 · 팀 무기", () => {
-  it("일반 콘텐츠 점수 = 시뮬레이션 초당 피해 그대로 (치유 담당 없어도 보정 없음)", () => {
+describe("치유 무보정 · 시너지 정렬 · 팀 무기", () => {
+  it("점수 = 시뮬레이션 초당 피해 × 시너지 정렬 (치유 담당 유무는 영향 없음)", () => {
     const noHeal = ["17", "25", "24", "5"]; // 라스트 라이트·탕탕·플루라이트·아케쿠리
     expect(hasSustain(noHeal)).toBe(false);
-    expect(teamScore(noHeal)).toBeCloseTo(teamSim(noHeal)!.dps, 6);
+    const r = teamSim(noHeal)!;
+    expect(teamScore(noHeal)).toBeCloseTo(r.dps * synergyFactor(noHeal, r), 6);
   });
-  it("고난이도 조합은 생존 담당(치유 또는 디펜더) 포함", { timeout: 300000 }, () => {
-    const hard = bestTeamsFor("838", 3, "hard");
-    expect(hard.length).toBeGreaterThan(0);
-    for (const t of hard) expect(hasSustain(t.ids)).toBe(true);
+  it("티프로스 팀: 결(같은 자연)은 맞물림, 아케쿠리(열기·SP·공격력만)는 범용", () => {
+    const ids = ["1173", "1040", "1041", "5"];
+    const al = alignmentOf(ids, teamSim(ids)!);
+    expect(al.find((a) => a.id === "1040")!.aligned).toBe(true);
+    expect(al.find((a) => a.id === "5")!.aligned).toBe(false);
+  });
+  it("장방이 팀: 펠리카·아크라이트(전기) 맞물림", () => {
+    const ids = ["838", "1", "7", "1041"];
+    expect(alignmentOf(ids, teamSim(ids)!).every((a) => a.aligned)).toBe(true);
   });
   it("팀 역할 비중에 치유·생존 없음 (직업군 비중은 유지)", () => {
     for (const id of ["1041", "19", "13", "15", "16"]) {

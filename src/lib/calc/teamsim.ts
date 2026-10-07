@@ -196,6 +196,8 @@ export interface SimMember {
   id: string;
   kit: Kit;
   stats: MemberStats;
+  /** 직업군 (가드·캐스터·스트라이커·뱅가드·디펜더·서포터) — 직업 조건 효과(질베르타 재능 등) */
+  cls?: string;
   /** 선택한 스킬 형태 (Kit.forms) */
   form?: string;
 }
@@ -322,6 +324,7 @@ const FREEZE_DUR = (L: number) => 5.75 + (L - 1);
 
 /**
  * share: SP 배분 정책 — 0 = 메인 딜러 우선(서포터는 SP가 남을 때만), 1 = 메인 딜러가 지금 조건이 없으면 서포터도 바로 사용,
+ * 5 = 공동 딜러(딜 구조 carry ≥ 0.5 멤버 모두 메인 딜러처럼 번갈아), 6 = 먹이 게이트(메인 딜러가 원하는 상태가 없으면 그 상태를 만드는 동료가 먼저, 메인 딜러는 상태가 생기거나 SP가 넘칠 때),
  * 2 = 메인 딜러가 이득을 보는 상태(likes)를 만드는 서포터 배틀 스킬 먼저, 3 = 상태를 깔아 주는 배틀 스킬 우선권 없음(연계·궁극기로 충분할 때),
  * 4 = 가치 정책(지금 쓰면 바로 나오는 팀 피해 ÷ SP 가 큰 사람, 버프 유지·조건 열기는 먼저)
  */
@@ -393,7 +396,7 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
     },
     energy: (x, who) => {
       const i = who ?? c.me;
-      rt[i].energy += x * (1 + members[i].stats.ultGain);
+      rt[i].energy += x * (1 + members[i].stats.ultGain + (rt[i].s.ultGainAdd ?? 0));
     },
     link: (x) => void (link = Math.min(4, link + x)),
     takeLink: () => {
@@ -855,10 +858,13 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
         if (c.sp < cost) continue;
         let p = k.battle.pri(c);
         if (p <= 0) continue;
+        const sinkLike = i === o.sink || (share === 5 && k.carry >= 0.5);
         // 2.5~3 = "지금 쓰면 이득"(본인 조건 성립) — 메인 딜러가 아니면 SP 우선권은 없음 (share 정책이면 그대로)
-        if (i !== o.sink && p > 2.5 && p < 3 && share !== 1) p = 2;
+        if (!sinkLike && p > 2.5 && p < 3 && share !== 1) p = 2;
         if (p < 3 && k.battle.makes && share !== 3) p = Math.max(p, enables(i));
-        if (i === o.sink && p >= 2) p = Math.max(p, 2.5);
+        if (sinkLike && p >= 2) p = Math.max(p, 2.5);
+        // 먹이 게이트: 원하는 상태가 없고 동료가 만들 수 있으면 메인 딜러는 기다림 (SP가 넘치기 직전은 예외)
+        if (share === 6 && i === o.sink && p < 3 && c.sp < SIM.maxSp - 50 && sinkStarved()) p = 1;
         const reserve = p >= 2.5 ? 0 : share === 1 && sinkIdle() ? 0 : p >= 2 ? 100 : 200;
         if (c.sp < cost + reserve) continue;
         // 같은 우선순위면 배틀 스킬을 오래 안 쓴 멤버 먼저 (서포터끼리 번갈아)
@@ -902,6 +908,25 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
     return v;
   }
 
+  /** 상태가 지금 적에게 있는지 (방어 불능 · 아츠 부착 · "X 부착" · 반응 · 표식) */
+  function present(x: string): boolean {
+    const inflE = c.infl.until > c.t ? c.infl.elem : null;
+    return x === "방어 불능"
+      ? c.vuln.until > c.t && c.vuln.stacks > 0
+      : x === "아츠 부착"
+        ? !!inflE
+        : x.endsWith(" 부착")
+          ? inflE === x.slice(0, -3)
+          : has(x as Reaction) > 0 || (c.marks.get(x)?.until ?? 0) > c.t;
+  }
+  /** 메인 딜러가 원하는 상태(likes·wants)가 지금 없고, 그걸 배틀 스킬로 만드는 동료가 있는지 */
+  function sinkStarved(): boolean {
+    const k = members[o.sink].kit;
+    const want = [...(k.likes ?? []), ...(k.battle.wants ?? [])];
+    if (!want.length || want.some(present)) return false;
+    return members.some((m, j) => j !== o.sink && m.kit.battle.makes?.some((x) => want.includes(x) || (want.includes("아츠 부착") && x.endsWith(" 부착"))));
+  }
+
   /** 메인 딜러가 지금 배틀 스킬을 쓸 이유가 약한지 (조건 미성립) */
   function sinkIdle(): boolean {
     const k = members[o.sink].kit;
@@ -938,7 +963,7 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
       if (comboSoon && opens(k.combo.needs)) return 3;
       if (j === o.sink && opens(k.battle.wants)) return 3;
       // share 2(먹이 주기) 정책: 메인 딜러가 이득을 보는 상태를 만드는 배틀 스킬이 메인 딜러 기본 사용보다 먼저
-      if (opens(k.likes)) best = Math.max(best, j === o.sink && share === 2 ? 2.6 : 2);
+      if (opens(k.likes)) best = Math.max(best, j === o.sink && (share === 2 || share === 6) ? 2.6 : 2);
     }
     return best;
   }
@@ -1009,26 +1034,17 @@ export function simulateBest(members: SimMember[], o: { duration?: number; sinks
   const variants: SimMember[][] = formIdx < 0 ? [members] : members[formIdx].kit.forms!.map((f) => members.map((m, i) => (i === formIdx ? { ...m, form: f } : m)));
   let best: SimResult | undefined;
   let bestMs = members;
-  // fast(1차 선별): 메인 딜러 후보 × 정책 3·4 (전체 탐색과 상위 5% 겹침 ~90%) / 정밀: 후보 × 정책 0 → 1위 후보로 1~4
-  const first = o.fast ? [3, 4] : [0];
+  // fast(1차 선별): 메인 딜러 후보 × 정책 3·4 (전체 탐색과 상위 5% 겹침 ~90%) / 정밀(2차): 메인 딜러 후보 × 정책 0~6 전부
+  const policies = o.fast ? [3, 4] : [0, 1, 2, 3, 4, 5, 6];
   for (const ms of variants)
     for (const { i } of list)
-      for (const share of first) {
+      for (const share of policies) {
         const r = simulate(ms, { sink: i, duration: o.duration, share });
         if (!best || r.total > best.total) {
           best = r;
           bestMs = ms;
         }
       }
-  if (o.fast) {
-    best!.forms = bestMs.map((m) => m.form ?? "");
-    return best!;
-  }
-  // 가장 좋은 메인 딜러로 SP 정책 2가지 더: 1 = 메인 딜러 조건이 없을 때 서포터 사용, 2 = 메인 딜러가 이득 보는 상태를 먼저 깔기
-  for (const share of [1, 2, 3, 4]) {
-    const r2 = simulate(bestMs, { sink: best!.sink, duration: o.duration, share });
-    if (r2.total > best!.total) best = r2;
-  }
   best!.forms = bestMs.map((m) => m.form ?? "");
   return best!;
 }
