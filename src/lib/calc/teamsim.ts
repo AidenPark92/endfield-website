@@ -46,6 +46,12 @@ export const SIM = {
   hitTakenEvery: 10,
   /** 생명력 60% 이하로 떨어지는 주기(초) — 스노우샤인 연계 (TODO) */
   lowHpEvery: 40,
+  /** 롤아웃 정책(7): 배틀 스킬을 누구에게 줄지 앞으로 이 시간(초)만큼 실제로 돌려 보고 결정 */
+  rolloutHorizon: 12,
+  /** 롤아웃에서 "기다림"을 고른 뒤 다시 따져 보기까지(초) */
+  rolloutWait: 1,
+  /** 롤아웃 이후 구간의 배틀 스킬 배분(기본 정책) */
+  rolloutBase: 3,
 };
 
 /** 아츠/물리 이상 피해 레벨 계수 (오퍼레이터 레벨 90) 📘 */
@@ -270,6 +276,8 @@ export interface Ctx {
   isControl: () => boolean;
   /** 다른 멤버의 연계(쿨 2초 이내)·메인 딜러가 이 상태를 기다리는지 — 소모형 스킬이 동료 몫을 빼앗지 않게 */
   othersNeed: (state: string) => boolean;
+  /** 조작 캐릭터의 스킬이 일반 공격 1세트(강력한 일격 포함)를 대신했을 때 — 일반 공격 주기를 처음부터 (티프로스 공중 공격) */
+  resetChain: () => void;
 }
 
 export interface HitOpt {
@@ -325,10 +333,11 @@ const FREEZE_DUR = (L: number) => 5.75 + (L - 1);
 /**
  * share: SP 배분 정책 — 0 = 메인 딜러 우선(서포터는 SP가 남을 때만), 1 = 메인 딜러가 지금 조건이 없으면 서포터도 바로 사용,
  * 5 = 공동 딜러(딜 구조 carry ≥ 0.5 멤버 모두 메인 딜러처럼 번갈아), 6 = 먹이 게이트(메인 딜러가 원하는 상태가 없으면 그 상태를 만드는 동료가 먼저, 메인 딜러는 상태가 생기거나 SP가 넘칠 때),
+ * 7 = 롤아웃(배틀 스킬마다 후보별로 SIM.rolloutHorizon 초를 실제로 돌려 보고 결정, 이후 구간은 rolloutBase 정책),
  * 2 = 메인 딜러가 이득을 보는 상태(likes)를 만드는 서포터 배틀 스킬 먼저, 3 = 상태를 깔아 주는 배틀 스킬 우선권 없음(연계·궁극기로 충분할 때),
  * 4 = 가치 정책(지금 쓰면 바로 나오는 팀 피해 ÷ SP 가 큰 사람, 버프 유지·조건 열기는 먼저)
  */
-export function simulate(members: SimMember[], o: { sink: number; control?: number; duration?: number; share?: number; log?: string[] }): SimResult {
+export function simulate(members: SimMember[], o: { sink: number; control?: number; duration?: number; share?: number; rolloutBase?: number; log?: string[] }): SimResult {
   const n = members.length;
   const D = o.duration ?? SIM.duration;
   const rt: Runtime[] = members.map(() => ({ energy: 0, comboReadyAt: 0, comboWindowUntil: -1, ultReadyAt: 0, modeUntil: -1, dmg: 0, by: {}, casts: { battle: 0, combo: 0, ult: 0 }, spSpent: 0, s: {} }));
@@ -346,7 +355,9 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
   let spGain = 0;
   let castReturn = 0;
   const baseControl = o.control ?? o.sink;
-  const share = o.share ?? 0;
+  /** 지금 배틀 스킬 배분에 쓰는 정책 (롤아웃 중에는 기본 정책으로 바뀜) */
+  let share = o.share ?? 0;
+  const policy0 = share;
   /** 지속 피해 표식 (dot:속성:멤버) */
   const dotKeys = new Set<string>();
   const lastBattle = members.map(() => 0);
@@ -416,6 +427,7 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
     },
     emit,
     isControl: () => c.me === c.control,
+    resetChain: () => {},
     othersNeed: (x) => {
       for (let j = 0; j < n; j++) {
         if (j === c.me) continue;
@@ -762,8 +774,19 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
   let nextHit = SIM.hitTakenEvery;
   let nextLow = SIM.lowHpEvery;
   let lockUntil = 0;
+  c.resetChain = () => {
+    const m = rt[c.control].modeUntil > c.t ? members[c.control].kit.ult.mode : undefined;
+    nextFs = c.t + (m ? m.every : SIM.finalStrikeEvery);
+  };
   const steps = Math.round(D / SIM.dt);
-  for (let s = 0; s < steps; s++) {
+  let inRollout = false;
+  let waitUntil = -1;
+  /** 롤아웃에서 "기다림"을 고른 갈래는 실제와 같게 SIM.rolloutWait 초 동안 배틀 스킬을 쓰지 않음 */
+  let blockUntil = -1;
+  for (let s = 0; s < steps; s++) step(s);
+
+  /** 0.25초 한 칸 진행 (롤아웃에서도 그대로 씀) */
+  function step(s: number) {
     c.t = s * SIM.dt;
     // 자연 회복
     c.spRecover(8 * SIM.dt);
@@ -805,7 +828,7 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
       c.me = i;
       hit(ex.reduce((a, x) => a + x.rate * x.scale, 0) * SIM.dt, { kind: "extra" });
     }
-    if (c.t < lockUntil) continue;
+    if (c.t < lockUntil) return;
 
     // 1) 궁극기
     let acted = false;
@@ -832,6 +855,20 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
       }
     }
     // 3) 배틀 스킬 (SP 배분)
+    // 롤아웃 정책: 후보(기다림 · 쓸 수 있는 멤버)마다 앞으로 SIM.rolloutHorizon 초를 실제로 돌려 보고 팀 피해가 가장 큰 쪽
+    //   — 결 연계(구속) 뒤 배틀 스킬(SP 반환·추가 피해), 부착을 먼저 깔고 메인 딜러가 소모 같은 "몇 초 뒤에 이득"을 찾음
+    if (policy0 === 7 && !inRollout) {
+      if (!acted && c.sp >= minCost && c.t >= waitUntil) {
+        const pick = rolloutChoice(s);
+        if (pick >= 0) {
+          castBattle(pick);
+          acted = true;
+        } else waitUntil = c.t + SIM.rolloutWait;
+      }
+      if (acted) lockUntil = c.t + SIM.actionGap;
+      return;
+    }
+    if (inRollout && c.t < blockUntil) acted = true;
     if (!acted && c.sp >= minCost && share === 4) {
       // 가치 정책: 버프 유지·조건 열어 주기(3)는 먼저, 나머지는 "지금 쓰면 바로 나오는 팀 피해 ÷ SP"가 가장 큰 사람 (시험 사용 후 되돌림)
       let best = -1;
@@ -883,34 +920,93 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
     if (acted) lockUntil = c.t + SIM.actionGap;
   }
 
-  /** i 가 지금 배틀 스킬을 쓰면 바로 나오는 팀 피해 (상태를 저장했다가 되돌림) */
-  function dryValue(i: number): number {
-    const snapState = {
+  /** 전투 상태 전체 저장 (dryValue·롤아웃이 시험해 본 뒤 되돌림) */
+  function snapshot() {
+    return {
       sp: c.sp, link, linkUsed, poise, nodesHit, spGain, castReturn, staggerUntil: c.staggerUntil, control: c.control,
+      nextFs, nextHit, nextLow, lockUntil,
       infl: { ...c.infl }, vuln: { ...c.vuln }, reactions: { ...c.reactions }, breach: c.breach,
       marks: new Map(c.marks), teamMods: new Map(teamMods), enemyMods: new Map(enemyMods),
       rt: rt.map((r) => ({ ...r, by: { ...r.by }, casts: { ...r.casts }, s: cloneS(r.s) })),
       uptime: new Map([...uptime].map(([k, u]) => [k, { ...u }])), reactionCount: { ...reactionCount }, applied: applied.map((x) => ({ ...x })), lastBattle: [...lastBattle], dotKeys: new Set(dotKeys),
     };
-    const before = rt.reduce((a, r) => a + r.dmg, 0);
+  }
+  function restore(snapState: ReturnType<typeof snapshot>) {
+    c.sp = snapState.sp; link = snapState.link; linkUsed = snapState.linkUsed; poise = snapState.poise; nodesHit = snapState.nodesHit;
+    spGain = snapState.spGain; castReturn = snapState.castReturn; c.staggerUntil = snapState.staggerUntil; c.control = snapState.control;
+    nextFs = snapState.nextFs; nextHit = snapState.nextHit; nextLow = snapState.nextLow; lockUntil = snapState.lockUntil;
+    c.infl = { ...snapState.infl }; c.vuln = { ...snapState.vuln }; c.reactions = { ...snapState.reactions }; c.breach = snapState.breach; c.marks = new Map(snapState.marks);
+    teamMods.clear(); for (const [k, m] of snapState.teamMods) teamMods.set(k, m);
+    enemyMods.clear(); for (const [k, m] of snapState.enemyMods) enemyMods.set(k, m);
+    snapState.rt.forEach((r, j) => (rt[j] = { ...r, by: { ...r.by }, casts: { ...r.casts }, s: cloneS(r.s) }));
+    uptime.clear(); for (const [k, u] of snapState.uptime) uptime.set(k, { ...u });
+    for (const k of Object.keys(reactionCount)) delete reactionCount[k];
+    Object.assign(reactionCount, snapState.reactionCount);
+    snapState.applied.forEach((x, j) => (applied[j] = { ...x }));
+    snapState.lastBattle.forEach((x, j) => (lastBattle[j] = x));
+    dotKeys.clear(); for (const k of snapState.dotKeys) dotKeys.add(k);
+  }
+  function teamDmg() {
+    return rt.reduce((a, r) => a + r.dmg, 0);
+  }
+
+  /** i 가 지금 배틀 스킬을 쓰면 바로 나오는 팀 피해 (상태를 저장했다가 되돌림) */
+  function dryValue(i: number): number {
+    const snapState = snapshot();
+    const before = teamDmg();
     const log0 = o.log;
     o.log = undefined;
     castBattle(i);
-    const v = rt.reduce((a, r) => a + r.dmg, 0) - before;
+    const v = teamDmg() - before;
     o.log = log0;
-    c.sp = snapState.sp; link = snapState.link; linkUsed = snapState.linkUsed; poise = snapState.poise; nodesHit = snapState.nodesHit;
-    spGain = snapState.spGain; castReturn = snapState.castReturn; c.staggerUntil = snapState.staggerUntil; c.control = snapState.control;
-    c.infl = snapState.infl; c.vuln = snapState.vuln; c.reactions = snapState.reactions; c.breach = snapState.breach; c.marks = snapState.marks;
-    teamMods.clear(); for (const [k, m] of snapState.teamMods) teamMods.set(k, m);
-    enemyMods.clear(); for (const [k, m] of snapState.enemyMods) enemyMods.set(k, m);
-    snapState.rt.forEach((r, j) => (rt[j] = r));
-    uptime.clear(); for (const [k, u] of snapState.uptime) uptime.set(k, u);
-    for (const k of Object.keys(reactionCount)) delete reactionCount[k];
-    Object.assign(reactionCount, snapState.reactionCount);
-    snapState.applied.forEach((x, j) => (applied[j] = x));
-    snapState.lastBattle.forEach((x, j) => (lastBattle[j] = x));
-    dotKeys.clear(); for (const k of snapState.dotKeys) dotKeys.add(k);
+    restore(snapState);
     return v;
+  }
+
+  /**
+   * 롤아웃 정책: 기다림(-1) · 지금 배틀 스킬을 쓸 수 있는 멤버마다, 그 행동 뒤 SIM.rolloutHorizon 초를 기본 정책(SIM.rolloutBase)으로
+   * 실제로 진행해 본 팀 피해를 비교 → 가장 큰 행동. 롤아웃 안에서는 다시 롤아웃하지 않음
+   */
+  function rolloutChoice(s: number): number {
+    // 같은 값이면 지금 쓰는 쪽(우선순위 높은 멤버 먼저), 기다림은 맨 끝
+    const cands: number[] = [];
+    for (let i = 0; i < n; i++) {
+      c.me = i;
+      const k = members[i].kit;
+      const cost = k.battle.costOf?.(c) ?? k.battle.cost;
+      if (c.sp >= cost && k.battle.pri(c) > 0) cands.push(i);
+    }
+    if (!cands.length) return -1;
+    cands.push(-1);
+    const end = Math.min(steps, s + 1 + Math.round(SIM.rolloutHorizon / SIM.dt));
+    const snap = snapshot();
+    const log0 = o.log;
+    o.log = undefined;
+    inRollout = true;
+    share = o.rolloutBase ?? SIM.rolloutBase;
+    let best = -1;
+    let bestV = -Infinity;
+    for (const i of cands) {
+      const before = teamDmg();
+      if (i >= 0) {
+        castBattle(i);
+        lockUntil = c.t + SIM.actionGap;
+        blockUntil = -1;
+      } else blockUntil = c.t + SIM.rolloutWait;
+      for (let ss = s + 1; ss < end; ss++) step(ss);
+      const v = teamDmg() - before;
+      restore(snap);
+      c.t = s * SIM.dt;
+      if (v > bestV * (1 + 1e-9) + 1e-9) {
+        bestV = v;
+        best = i;
+      }
+    }
+    inRollout = false;
+    blockUntil = -1;
+    share = policy0;
+    o.log = log0;
+    return best;
   }
 
   /** 상태가 지금 적에게 있는지 (방어 불능 · 아츠 부착 · "X 부착" · 반응 · 표식) */
@@ -1030,7 +1126,7 @@ export function memberStats(op: OperatorBase, weaponAtk: number, bag: StatBag, e
  * 팀 평가: 메인 딜러(SP를 몰아 줄 사람) 후보를 바꿔 가며 시뮬레이션 → 팀 피해가 가장 큰 운영.
  * 후보 = 딜 구조(carry ≥ 0.5) 상위 2명 (없으면 1위)
  */
-export function simulateBest(members: SimMember[], o: { duration?: number; sinks?: number; fast?: boolean } = {}): SimResult {
+export function simulateBest(members: SimMember[], o: { duration?: number; sinks?: number; fast?: boolean; rollout?: boolean } = {}): SimResult {
   const order = members.map((m, i) => ({ i, c: m.kit.carry })).sort((a, b) => b.c - a.c);
   const cands = order.filter((x) => x.c >= 0.5).slice(0, o.sinks ?? 2);
   const list = cands.length ? cands : order.slice(0, 1);
@@ -1039,8 +1135,9 @@ export function simulateBest(members: SimMember[], o: { duration?: number; sinks
   const variants: SimMember[][] = [members];
   let best: SimResult | undefined;
   let bestMs = members;
-  // fast(1차 선별): 메인 딜러 후보 × 정책 3·4 (전체 탐색과 상위 5% 겹침 ~90%) / 정밀(2차): 메인 딜러 후보 × 정책 0~6 전부
-  const policies = o.fast ? [3, 4] : [0, 1, 2, 3, 4, 5, 6];
+  // fast(1차 선별): 메인 딜러 후보 × 정책 1·3·4·5·6 (0·2 는 다른 정책보다 앞선 적이 거의 없음)
+  // 정밀(2차): 정책 0~6 전부 → 가장 좋은 정책을 기본으로 한 롤아웃(7)까지 — 몇 초 뒤 이득(부착 깔기·결 구속 뒤 배틀)을 찾음
+  const policies = o.fast ? [1, 3, 4, 5, 6] : [0, 1, 2, 3, 4, 5, 6];
   for (const ms of variants)
     for (const { i } of list)
       for (const share of policies) {
@@ -1050,6 +1147,10 @@ export function simulateBest(members: SimMember[], o: { duration?: number; sinks
           bestMs = ms;
         }
       }
+  if (!o.fast && o.rollout !== false && best) {
+    const r = simulate(bestMs, { sink: best.sink, duration: o.duration, share: 7, rolloutBase: best.share });
+    if (r.total > best.total) best = r;
+  }
   best!.forms = bestMs.map((m) => m.form ?? "");
   return best!;
 }

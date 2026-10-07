@@ -967,9 +967,10 @@ const typhoeus: Factory = (T) => {
         c.hit(T.v(B, "점프 사격 피해 배율"), { kind: "battle", linkable: true });
         for (let k = 1; k <= 5; k++) aerial(c, k, k < 5 ? T.v(B, "공중 일반 공격 피해") : c.isControl() ? T.v(B, "공중 강력한 일격 피해") : T.v(B, "공중 일반 공격 피해"));
         if (c.isControl()) {
-          // 다섯 번째 공중 공격 = 강력한 일격
-          c.spRecover(23);
+          // 다섯 번째 공중 공격 = 강력한 일격 ✅ — 공중 일반 공격 5회가 일반 공격 1세트를 대신하므로 일반 공격 주기를 처음부터 (강력한 일격 SP 중복 방지)
+          c.spRecover(T.basic.fsSp || 23);
           c.emit({ type: "finalStrike", snap: { infl: c.inflNow().elem, stacks: c.inflNow().stacks, vuln: c.vulnNow(), reactions: [], marks: [] } });
+          c.resetChain();
         }
       },
     },

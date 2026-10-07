@@ -160,3 +160,15 @@ describe("무기·장비 추가 타격", () => {
     expect(r.members[0].by.extra).toBeGreaterThan(0);
   });
 });
+
+describe("SP 배분 롤아웃 정책", () => {
+  it("몇 초 뒤 이득(동료가 상태를 깔면 메인 딜러 배틀 스킬 5배)을 메인 딜러 몰아주기보다 잘 찾음", () => {
+    const carry = kit("a", "자연", (c) => void c.hit(c.markOn("준비") ? 5 : 1, { kind: "battle" }));
+    const feeder = kit("b", "자연", (c) => c.mark("준비", 10), { carry: 0.2, battle: { cost: 100, poise: 0, pri: () => 1, cast: (c) => c.mark("준비", 10) } });
+    const ms = [member(carry), member(feeder)];
+    const greedy = simulate(ms, { sink: 0, share: 3, duration: 60 });
+    const roll = simulate(ms, { sink: 0, share: 7, rolloutBase: 3, duration: 60 });
+    expect(roll.members[1].casts.battle).toBeGreaterThan(0);
+    expect(roll.total).toBeGreaterThanOrEqual(greedy.total * 1.5);
+  });
+});

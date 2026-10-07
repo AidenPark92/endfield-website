@@ -57,7 +57,7 @@ export function TeamCard({
           {team.alignment && (
             <span
               className={cn("border px-1.5", team.alignment.some((a) => !a.aligned) && "text-accent-strong")}
-              title="메인 딜러와 속성 · 상태 공급 · 속성 버프로 맞물리는 멤버 수 (범용 멤버는 순위 점수 −30%)"
+              title="메인 딜러와 속성 · 상태 공급 · 속성 버프로 맞물리는 멤버 수 (범용 멤버는 순위 점수 −40%)"
             >
               시너지 정렬 {team.alignment.filter((a) => a.aligned).length}/4
             </span>

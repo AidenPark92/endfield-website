@@ -1039,11 +1039,12 @@ export function partyBuild(ids: string[]): PartyBuild | undefined {
   const plain = toBuild(optimizeParty(inputs.map((x) => x.m), pieceMap, suitMap, 0, { shares }));
   // 형태별 빌드 후보(결 진결·의지 등)를 고정하고 나머지를 다시 맞춘 파티
   const alts = inputs.flatMap((x, i) => x.formAlts.map((c) => toBuild(optimizeParty(inputs.map((y) => y.m), pieceMap, suitMap, 6, { shares, fixed: { [i]: c } }))));
-  const dPlain = teamSim(ids, plain)?.dps ?? 0;
+  // 빌드 비교는 롤아웃 없는 정밀 탐색으로 (롤아웃은 서포터 SP 사용을 늘리는데, 팀 버프 세트의 가동률은 고정 추정값이라 딜 세트 쪽으로 기움)
+  const dPlain = teamSim(ids, plain, { rollout: false })?.dps ?? 0;
   let out = plain;
   let dBest = dPlain;
   for (const b of [opt, ...alts]) {
-    const d = teamSim(ids, b)?.dps ?? 0;
+    const d = teamSim(ids, b, { rollout: false })?.dps ?? 0;
     if (d > dBest) {
       dBest = d;
       out = b;
@@ -1329,9 +1330,11 @@ function simMembers(ids: string[], party?: PartyBuild, choice?: number[]): SimMe
 
 const simCache = new Map<string, { r: SimResult; order: string[] } | undefined>();
 /** 팀 시뮬레이션 (메인 딜러 후보·SP 정책별로 돌려 가장 큰 운영). 결과의 멤버 순서는 ids 순서 */
-export function teamSim(ids: string[], party?: PartyBuild): SimResult | undefined {
+export function teamSim(ids: string[], party?: PartyBuild, o: { rollout?: boolean } = {}): SimResult | undefined {
   // 파티 빌드는 무기·장비 선택까지 키에 (같은 4명도 빌드가 다르면 다른 결과)
-  const key = party ? `P|${party.members.map((m) => `${m.id}:${m.weapon?.id ?? ""}:${m.gear.pieces.map((p) => p.id).join("/")}`).sort().join(",")}` : keyOf(ids);
+  const key =
+    (party ? `P|${party.members.map((m) => `${m.id}:${m.weapon?.id ?? ""}:${m.gear.pieces.map((p) => p.id).join("/")}`).sort().join(",")}` : keyOf(ids)) +
+    (o.rollout === false ? "|nr" : "");
   let hit = simCache.get(key);
   if (!simCache.has(key)) {
     // 1차: 형태별 빌드가 있는 멤버(결)는 빌드마다 돌려 큰 쪽 / 2차(파티 빌드)는 그대로
@@ -1341,7 +1344,7 @@ export function teamSim(ids: string[], party?: PartyBuild): SimResult | undefine
       // 편성 순서(연계 우선순위 1→4)를 딜 구조 순으로 고정 — 같은 4명이면 넣은 순서와 무관하게 같은 결과
       const ms = simMembers(ids, party, choice)?.sort((a, b) => b.kit.carry - a.kit.carry || Number(a.id) - Number(b.id));
       // 1차(팀 무기·장비)는 빠른 탐색, 파티 빌드(2차)는 정밀 탐색
-      const r = ms ? simulateBest(ms, { fast: !party }) : undefined;
+      const r = ms ? simulateBest(ms, { fast: !party, rollout: o.rollout }) : undefined;
       if (r && (!hit || r.total > hit.r.total)) hit = { r, order: ms!.map((m) => m.id) };
     }
     simCache.set(key, hit);
@@ -1417,10 +1420,10 @@ export function teamScore(ids: string[], party?: PartyBuild): number {
 }
 
 /**
- * 시너지 정렬 보정 — 범용 멤버 1명당 30% (보정값: 해외 메타 23개·커뮤니티 공개 팀 30개 순위가 좋아지는 구간 0.3~0.5 중 가장 약한 값)
- *   보정 없음 1490위 / 1434위 → 0.3 : 271위 / 260위 (2026-10-08 감전·부식·갑옷 파괴 역할 반영 후, 3.6만 개 중 기하평균)
+ * 시너지 정렬 보정 — 범용 멤버 1명당 40% (보정값: 해외 메타 23개·커뮤니티 공개 팀 30개 순위·메인 딜러별 메타 구성 일치가 고르게 좋은 값)
+ *   2026-10-08 SP 정책 확대·티프로스 강력한 일격 중복 수정 후: 0.3 → 319위 / 279위, 0.4 → 278위 / 247위, 0.5 → 266위 / 237위 (구성 일치 48/84 동일)
  */
-export const SYNERGY = { offPenalty: 0.3 };
+export const SYNERGY = { offPenalty: 0.4 };
 export function synergyFactor(ids: string[], r: SimResult): number {
   const off = alignmentOf(ids, r).filter((a) => !a.aligned).length;
   return (1 - SYNERGY.offPenalty) ** off;
