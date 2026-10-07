@@ -1,17 +1,19 @@
 import type { Metadata } from "next";
-import { allTeams, bestTeams, bestTeamsFor, operators, OVERALL_N, teamView } from "@/lib/data";
+import { allTeams, bestTeams, bestTeamsFor, operators, OVERALL_N, TEAM_MODES, teamView } from "@/lib/data";
 import { TeamFinder } from "@/components/teams/team-finder";
 import type { TeamMate } from "@/components/teams/team-card";
 
 export const metadata: Metadata = {
   title: "베스트 조합",
-  description: "엔드필드 4인 조합을 전투 시뮬레이션(아츠·물리 이상, SP 공유, 연계 조건, 버프 가동률)으로 계산한 베스트 조합",
+  description: "엔드필드 4인 조합을 전투 시뮬레이션(무기·장비·재능·스킬, 아츠·물리 이상, SP 공유, 연계 조건, 버프 가동률)으로 계산한 베스트 조합",
 };
 
 export default function TeamsPage() {
   const all = allTeams();
-  const overall = bestTeams(OVERALL_N).map(teamView);
-  const byOperator = Object.fromEntries(operators.map((o) => [o.id, bestTeamsFor(o.id, 6).map(teamView)]));
+  const overall = Object.fromEntries(TEAM_MODES.map((m) => [m, bestTeams(OVERALL_N, m).map(teamView)])) as Record<(typeof TEAM_MODES)[number], ReturnType<typeof teamView>[]>;
+  const byOperator = Object.fromEntries(
+    TEAM_MODES.map((m) => [m, Object.fromEntries(operators.map((o) => [o.id, bestTeamsFor(o.id, 6, m).map(teamView)]))]),
+  ) as Record<(typeof TEAM_MODES)[number], Record<string, ReturnType<typeof teamView>[]>>;
   const mates: Record<string, TeamMate> = Object.fromEntries(
     operators.map((o) => [o.id, { id: o.id, name: o.name, face: o.face, element: o.element, cls: o.profile?.class }]),
   );
@@ -22,7 +24,8 @@ export default function TeamsPage() {
         <h1 className="mt-2 text-3xl font-bold tracking-tight">베스트 조합</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
           오퍼레이터 {operators.length}명으로 만들 수 있는 4인 조합 {all.length.toLocaleString()}개를 <b className="text-foreground">팀 피해</b>로 평가했어요. 팀
-          4명이 실제로 90초 싸우는 전투를 시뮬레이션해 부착·이상 반응, SP를 누가 쓰는지, 연계가 열리는 조건, 버프 유지까지 게임 규칙대로 계산해요.
+          4명이 각자의 <b className="text-foreground">무기·장비·재능·스킬</b>을 갖추고 90초 싸우는 전투를 시뮬레이션해 부착·이상 반응, SP를 누가 쓰는지, 연계가 열리는
+          조건, 버프 유지까지 게임 규칙대로 계산해요. 일반 콘텐츠는 치유 담당이 필요 없어서 팀 피해만으로 순위를 매기고, 고난이도는 생존 담당이 들어간 조합만 보여 줘요.
           오퍼레이터를 고르면 그 오퍼레이터가 핵심 역할을 하는 조합을 보여 줘요.
         </p>
       </header>
@@ -50,21 +53,29 @@ export default function TeamsPage() {
             그 동안 조작 캐릭터가 바뀌어요.
           </p>
           <p>
-            ④ <b className="text-foreground">버프·디버프</b>(증폭·취약·받는 피해·공격력·저항 감소)는 걸린 시간 동안만, 맞는 속성에만 적용돼요. 순위 점수에는 치유 담당이 없는 조합에 ×0.9
-            생존 보정을 곱해요.
+            ④ <b className="text-foreground">버프·디버프</b>(증폭·취약·받는 피해·공격력·저항 감소)는 걸린 시간 동안만, 맞는 속성에만 적용돼요. 치유량은 점수에 넣지 않아요 —
+            일반 콘텐츠는 치유 서포터 없이도 깰 수 있어서, 치유 오퍼레이터도 버프·딜로만 평가해요. <b className="text-foreground">고난이도</b>를 고르면 치유 스킬이 있거나
+            디펜더인 생존 담당이 1명 이상 들어간 조합만 같은 점수로 줄 세워요.
           </p>
           <p>
-            검증: 해외 공략 사이트(Prydwen·endfieldhub·Game8·GameWith·genshin-builds) 상위 조합 23개가 전체 3만6천 개 조합 중 기하평균 약 2,000위(그 딜러 조합 4,500개 중 약 270위)예요.
-            이전 모델은 4,800위 / 870위였어요. 1위 조합(장방이·펠리카·아크라이트·리노)은 해외 SS 조합과 같아요. 회피·처형·다수 적·조작 실력은 넣지 않았어요.
+            ⑤ <b className="text-foreground">무기·장비·재능</b>: 재능(능력치 재능 + 오퍼레이터 재능 효과)과 스킬은 오퍼레이터마다 전투 동작으로 옮겼고, 무기·장비는{" "}
+            <b className="text-foreground">직업군 역할</b>(스트라이커 = 본인 딜, 캐스터·가드 = 딜 + 팀 강화, 뱅가드·서포터·디펜더 = 팀 강화 위주 — 치유·생존 비중은 빼고)로 후보를
+            고른 뒤, 파티마다 무기 3종 × 장비 세트를 한 명씩 바꿔 보며 팀 피해가 가장 큰 조합을 골라요. 무기 고유 특성과 장비 세트의 팀 효과(팀 공격력·받는 피해 등)는 실제
+            팀원에게 중첩 규칙대로 전달되고, 추가 타격 효과도 전투에 들어가요.
           </p>
-          <p className="font-semibold text-foreground">파티 장비 — 같은 오퍼레이터도 파티마다 장비가 달라요</p>
+          <p>
+            검증: 해외 공략 사이트(Prydwen·endfieldhub·Game8·GameWith·genshin-builds) 상위 조합 23개가 전체 3만6천 개 조합 중 기하평균 약 1,600위(그 딜러 조합 4,500개
+            중 약 210위)예요. 치유 보정·팀 무기를 넣기 전 시뮬레이터는 2,000위 / 270위, 처음 모델은 4,800위 / 870위였어요. 해외 SS 1위 조합(장방이·펠리카·아크라이트·리노)은
+            전체 3위예요. 회피·처형·다수 적·조작 실력은 넣지 않았어요.
+          </p>
+          <p className="font-semibold text-foreground">파티 무기·장비 — 같은 오퍼레이터도 파티마다 무기·장비가 달라요</p>
           <p>
             개인 추천 장비는 &quot;아무 팀원 3명&quot;을 가정한 기대값이에요. 파티가 정해지면 ① 세트 조건(부착·반응·동료가 만드는 상태)을 실제 팀원으로 판정하고 ② 팀 버프 중첩
             규칙을 적용하고(&quot;팀 전체&quot; 버프 개척은 둘이 들면 낭비, &quot;다른 팀원&quot; 버프 식양의 숨결은 본인이 못 받아서 둘이 들면 서로를 채워 줌) ③ 팀 버프 가치를 실제
             팀원의 피해(딜러일수록 크게)로 계산해, 4명의 장비를 한 명씩 번갈아 바꿔 보며 더 나아지지 않을 때까지 맞춰요.
           </p>
           <p>
-            검증: endfieldtools.dev 공개 팀 빌드에서 많이 쓰인 4인 조합 30개의 멤버별 세트와 비교하면, 개인 추천 그대로는 113명 중 70명, 파티 맞춤은 74명이 같아요.
+            검증: endfieldtools.dev 공개 팀 빌드에서 많이 쓰인 4인 조합 30개의 멤버별 세트와 비교하면, 개인 추천 그대로는 113명 중 67명, 파티 맞춤(무기 포함 · 팀 피해 기준)은 77명이 같아요.
           </p>
         </div>
       </details>

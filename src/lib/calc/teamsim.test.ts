@@ -7,12 +7,12 @@ const stats = (): MemberStats => ({
   atkPct: 0,
   flatAtk: 0,
   attrBonus: 1,
-  dmg: { basic: 0, battle: 0, combo: 0, ult: 0, ultMode: 0 },
+  dmg: { basic: 0, battle: 0, combo: 0, ult: 0, ultMode: 0, extra: 0 },
   elemDmg: 0,
   critRate: 0,
   critDmg: 0.5,
-  critBy: { basic: 0, battle: 0, combo: 0, ult: 0, ultMode: 0 },
-  critDmgBy: { basic: 0, battle: 0, combo: 0, ult: 0, ultMode: 0 },
+  critBy: { basic: 0, battle: 0, combo: 0, ult: 0, ultMode: 0, extra: 0 },
+  critDmgBy: { basic: 0, battle: 0, combo: 0, ult: 0, ultMode: 0, extra: 0 },
   artsIntensity: 0,
   amp: 0,
   taken: 0,
@@ -146,5 +146,17 @@ describe("연계 스킬", () => {
     simulate([member(k)], { sink: 0, duration: 30 });
     expect(dmg[1]).toBeCloseTo(dmg[0] * 1.3, 5);
     expect(dmg[2]).toBeCloseTo(dmg[0], 5);
+  });
+});
+
+describe("무기·장비 추가 타격", () => {
+  it("초당 기대값(횟수 × 배율)만큼 피해 — 스킬 종류 보너스 없이 속성 피해·치명만", () => {
+    const k = kit("k", "물리", () => {}, { battle: { cost: 9999, poise: 0, pri: () => 0, cast: () => {} } });
+    const base = simulate([member(k)], { sink: 0, duration: 60 });
+    const st = { ...stats(), extra: [{ rate: 0.5, scale: 2 }], dmg: { basic: 0, battle: 5, combo: 0, ult: 0, ultMode: 0, extra: 0 } };
+    const r = simulate([{ id: "k", kit: k, stats: st }], { sink: 0, duration: 60 });
+    // 60초 × 0.5회/초 × 200% × 공격력 1000 (배틀 스킬 피해 +500%는 안 붙음)
+    expect(r.total - base.total).toBeCloseTo(60 * 0.5 * 2 * 1000, -2);
+    expect(r.members[0].by.extra).toBeGreaterThan(0);
   });
 });

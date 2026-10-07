@@ -16,7 +16,7 @@ import type { CombatWeapon, GearPiece, GearSuit } from "@/types/build";
 import { addBag, rates, score, synergy, talentBag, gearBag, suitBag, SP_REGEN_INTERVAL, BASIC_CHAIN_SECONDS, type GearRank, type OperatorBase, type StatBag, type Rotation, type Synergy } from "@/lib/calc/build";
 import { splitTerms } from "@/lib/glossary";
 import type { Blackboard, CombatCharacter, SkillForm, SkillGroup } from "@/types/combat";
-import { optimizeParty, type PartyMember } from "@/lib/calc/party";
+import { optimizeParty, receiveTeamLines, lineKey, weaponLineKey, type KeyedLine, type PartyCandidate, type PartyMember, type PartyWeapon } from "@/lib/calc/party";
 import { extractSkillBuffs, type SkillBuff } from "@/lib/calc/team-buffs";
 import type { RotBuffView, RotMember, RotationResult } from "@/lib/calc/rotation";
 import { memberStats, simulateBest, SIM, type Elem, type Kit, type SimMember, type SimResult } from "@/lib/calc/teamsim";
@@ -420,11 +420,7 @@ function computeBuildRecommendation(id: string): BuildRecommendation | undefined
   const role = roleOf(id);
   const pool = teamPool(id);
   // 메인 딜러 가중치: 같은 속성(물리/아츠 계열 포함) +2, 이 오퍼레이터가 그 딜러의 연계를 열어 주면 +2
-  const syn = synergy(id, synergyIndex(), findTerms);
-  const dealers = (role.dealer > 0 || role.heal > 0 ? mainDealers() : []).map((d) => ({
-    ...d,
-    weight: 1 + (d.kit.element === kit.element ? 2 : 0) + (syn.enables.includes(d.id) ? 2 : 0),
-  }));
+  const dealers = role.dealer > 0 || role.heal > 0 ? dealersFor(id, kit) : [];
   // 1차: 무기만 → 그 1위 무기로 장비 → 2차: 추천 장비(치명률 등)를 낀 상태로 무기를 다시 비교
   const first = rankWeaponsByValue(base, kit, talents, candidates, 0, pool, role, dealers);
   const gearOf = (weaponId: string, bag: StatBag) =>
@@ -448,6 +444,15 @@ function computeBuildRecommendation(id: string): BuildRecommendation | undefined
   const withWeapon = ranked[0] ? addBag(talents, ranked[0].bag) : talents;
   const gear = topWeapon ? gearOf(ranked[0].id, withWeapon) : [];
   return { weapons: ranked, role, selfBuffs: describeBag(selfKitBag(id)), heals: Object.keys(kit.heals ?? {}).length > 0, gear, synergy: synergy(id, synergyIndex(), findTerms) };
+}
+
+/** 메인 딜러 가중치: 같은 속성(물리/아츠 계열 포함) +2, 이 오퍼레이터가 그 딜러의 연계를 열어 주면 +2 */
+function dealersFor(id: string, kit: OperatorKit): DealerRef[] {
+  const syn = synergy(id, synergyIndex(), findTerms);
+  return mainDealers().map((d) => ({
+    ...d,
+    weight: 1 + (d.kit.element === kit.element ? 2 : 0) + (syn.enables.includes(d.id) ? 2 : 0),
+  }));
 }
 
 const candidatesFor = (id: string) => {
@@ -615,13 +620,13 @@ export function allTeams(): BestTeam[] {
   const classOf = (id: string) => operators.find((o) => o.id === id)?.profile?.class;
   const classes = (ids: string[]) => new Set(ids.map(classOf)).size;
   const healer = (ids: string[]) => ids.some((id) => idx[id]?.tags.includes("치유"));
-  // 동점이면 치유 담당 있음 > 직업이 다양함 순
-  const ranked = rankTeams(pool, (id) => reqs.get(id)!, (ids) => (healer(ids) ? 10 : 0) + classes(ids));
+  // 동점이면 직업이 다양한 순 (치유 담당 유무는 순위에 쓰지 않음 — 일반 콘텐츠에서 치유는 필요 없음)
+  const ranked = rankTeams(pool, (id) => reqs.get(id)!, (ids) => classes(ids));
   return (teamCache = ranked.map((t) => ({ ...t, classes: classes(t.ids), healer: healer(t.ids) })));
 }
 
-/** 2차 점수 = 파티 장비 시뮬레이션 초당 피해 × 생존 보정 */
-const scoreOf = (t?: { ids: string[]; rotation?: RotationResult }) => (t?.rotation ? t.rotation.total * (hasSustain(t.ids) ? 1 : SUSTAIN_PENALTY) : 0);
+/** 2차 점수 = 파티 무기·장비로 돌린 팀 전투 시뮬레이션 초당 피해 (치유·생존 보정 없음) */
+const scoreOf = (t?: { ids: string[]; rotation?: RotationResult }) => (t?.rotation ? t.rotation.total : 0);
 
 /** 2차(정밀) 평가 인원: 1차 근사 순위 상위 몇 개를 파티 장비 + 로테이션 그리디로 다시 계산할지 */
 const STAGE2_WINDOW = 12;
@@ -632,7 +637,19 @@ export type BestTeamWithGear = BestTeam & { party?: PartyBuild; rotation?: Rotat
 export interface TeamGearView {
   /** 파티 피해 기대치 ÷ 개인 추천 장비 그대로 */
   gain: number;
-  members: { id: string; suitId: string; suitName: string | null; icon?: string; same: boolean; reason?: string }[];
+  members: {
+    id: string;
+    suitId: string;
+    suitName: string | null;
+    icon?: string;
+    same: boolean;
+    reason?: string;
+    /** 이 파티에서 고른 무기 (개인 추천 1위와 다르면 weaponSame = false) */
+    weaponId?: string;
+    weaponName?: string;
+    weaponIcon?: string;
+    weaponSame?: boolean;
+  }[];
 }
 
 /** 베스트 조합 카드의 팀 화력 · 스킬 사이클 */
@@ -720,14 +737,14 @@ const PER_MAIN = 2;
  * 전체 베스트 조합: 딜러(본인 피해 비중 ≥ 0.5)마다 그 딜러가 메인인 상위 조합을 모아 팀 피해 순으로, 메인 딜러별 최대 PER_MAIN개.
  * (팀 피해만으로 줄 세우면 가장 센 딜러 한 명의 조합만 나열됨) — 관리자 남/여는 같은 캐릭터 → 한쪽만
  */
-let overallCache: BestTeamWithGear[] | undefined;
-export function bestTeams(n: number): BestTeamWithGear[] {
-  if (!overallCache) {
+const overallCache = new Map<TeamMode, BestTeamWithGear[]>();
+export function bestTeams(n: number, mode: TeamMode = "normal"): BestTeamWithGear[] {
+  if (!overallCache.has(mode)) {
     const seen = new Set<string>();
     const pool: BestTeamWithGear[] = [];
     for (const o of operators) {
       if (o.id === "3" || (simKit(o.id)?.carry ?? 0) < 0.5) continue;
-      for (const t of bestTeamsFor(o.id, PER_MAIN * 2)) {
+      for (const t of bestTeamsFor(o.id, PER_MAIN * 2, mode)) {
         if (t.ids.includes("3") || t.rotation?.mainId !== o.id || seen.has(t.ids.join("+"))) continue;
         seen.add(t.ids.join("+"));
         const { contribution, ...rest } = t;
@@ -737,27 +754,31 @@ export function bestTeams(n: number): BestTeamWithGear[] {
     }
     pool.sort((x, y) => scoreOf(y) - scoreOf(x));
     const count = new Map<string, number>();
-    overallCache = pool.filter((t) => {
-      const main = t.rotation!.mainId;
-      count.set(main, (count.get(main) ?? 0) + 1);
-      return count.get(main)! <= PER_MAIN;
-    });
+    overallCache.set(
+      mode,
+      pool.filter((t) => {
+        const main = t.rotation!.mainId;
+        count.set(main, (count.get(main) ?? 0) + 1);
+        return count.get(main)! <= PER_MAIN;
+      }),
+    );
   }
-  return overallCache.slice(0, n);
+  return overallCache.get(mode)!.slice(0, n);
 }
 
 let topTotal: number | undefined;
 export const OVERALL_N = 12;
-/** 팀 화력 기준 = 전체 1위 */
+/** 팀 화력 기준 = 일반 콘텐츠 전체 1위 (고난이도 조합도 같은 기준으로 비교) */
 const bestTotal = () => (topTotal ??= scoreOf(bestTeams(1)[0]) || 1);
 
 /** 화면용 (직렬화 가능한 최소 정보) */
-export function teamView(t: BestTeamWithGear & { contribution?: number }): BestTeam & { gear?: TeamGearView; power?: TeamPowerView; contribution?: number } {
+export function teamView(t: BestTeamWithGear & { contribution?: number }): BestTeam & { sustain: boolean; gear?: TeamGearView; power?: TeamPowerView; contribution?: number } {
   const { party, rotation, ...rest } = t;
   const every = (r: number) => (r > 0 ? 1 / r : Infinity);
   const nameOf = (id: string) => operators.find((o) => o.id === id)?.name ?? id;
   return {
     ...rest,
+    sustain: hasSustain(rest.ids),
     gear: party
       ? {
           gain: party.gain,
@@ -768,6 +789,10 @@ export function teamView(t: BestTeamWithGear & { contribution?: number }): BestT
             icon: gearImages.suits[m.gear.suitId],
             same: m.same,
             reason: m.reason,
+            weaponId: m.weapon?.id,
+            weaponName: m.weapon?.name ?? undefined,
+            weaponIcon: m.weapon ? weapons.find((w) => w.id === m.weapon!.id)?.image : undefined,
+            weaponSame: m.weapon ? m.weapon.id === getBuildRecommendation(m.id)?.weapons[0]?.id : true,
           })),
         }
       : undefined,
@@ -802,6 +827,14 @@ export function teamView(t: BestTeamWithGear & { contribution?: number }): BestT
  * 점수 = 팀 피해 × √기여도 — 가장 센 딜러 조합에 끼워 넣기만 한 조합(기여 5%)보다 이 오퍼레이터가 핵심인 조합을 위로
  */
 const perOpCache = new Map<string, BestTeam[]>();
+
+/**
+ * 콘텐츠 난이도 — 일반: 치유·생존 담당 없이 팀 피해만 / 고난이도: 생존 담당(치유 스킬 또는 디펜더) 1명 이상 필수.
+ * 현재 엔드필드는 특정 고난이도 콘텐츠가 아니면 치유 서포터가 필요 없음 → 기본은 일반
+ */
+export type TeamMode = "normal" | "hard";
+export const TEAM_MODES: TeamMode[] = ["normal", "hard"];
+const modeOk = (ids: string[], mode: TeamMode) => mode === "normal" || hasSustain(ids);
 /** 1차 시뮬레이션에서 피해 1위 멤버 */
 function simMainOf(ids: string[]): string | undefined {
   const r = teamSim(ids);
@@ -812,16 +845,16 @@ function simMainOf(ids: string[]): string | undefined {
  * - 딜러(carry ≥ 0.8): 이 오퍼레이터가 피해 1위인 조합만, 팀 점수 순 (다른 딜러에게 얹혀 가는 조합 제외)
  * - 그 외(서포터·서브 딜러): 팀 점수 × 기여도(이 오퍼레이터가 빠지면 줄어드는 팀 피해 비율) — 이 오퍼레이터가 핵심인 조합을 위로
  */
-export function bestTeamsFor(id: string, n = 3): (BestTeamWithGear & { contribution: number })[] {
+export function bestTeamsFor(id: string, n = 3, mode: TeamMode = "normal"): (BestTeamWithGear & { contribution: number })[] {
   const carry = (simKit(id)?.carry ?? 0) >= 0.8;
-  let pool = perOpCache.get(id);
+  let pool = perOpCache.get(`${mode}|${id}`);
   if (!pool) {
-    const mine = allTeams().filter((t) => t.ids.includes(id));
+    const mine = allTeams().filter((t) => t.ids.includes(id) && modeOk(t.ids, mode));
     const lead = carry ? mine.filter((t) => simMainOf(t.ids) === id) : [];
     const base = lead.length >= n ? lead : mine;
     const w = new Map(base.map((t) => [t, quickOf(t.ids) * (carry ? 1 : contributionOf(t.ids, id))]));
     pool = [...w.keys()].sort((a, b) => w.get(b)! - w.get(a)!);
-    perOpCache.set(id, pool);
+    perOpCache.set(`${mode}|${id}`, pool);
   }
   return rerankWithGear(pool, n, (t) => (carry ? (t.rotation?.mainId === id ? 1 : 0.5) : contributionOf(t.ids, id))).map((t) => ({ ...t, contribution: contributionOf(t.ids, id) }));
 }
@@ -864,10 +897,12 @@ export function resetBuildCache() {
   dealerCache = undefined;
   recCache.clear();
   partyCache.clear();
-  indivCache.clear();
   stage2Cache.clear();
   perOpCache.clear();
-  overallCache = undefined;
+  overallCache.clear();
+  teamWeaponCache.clear();
+  teamGearCache.clear();
+  teamInputCache.clear();
   byDamage = undefined;
   quickCache = undefined;
   simCache.clear();
@@ -885,7 +920,9 @@ export interface PartyBuild {
     id: string;
     /** 이 파티에서 고른 장비 */
     gear: GearRank;
-    /** 개인 추천 1위와 같은지 */
+    /** 이 파티에서 고른 무기 */
+    weapon?: { id: string; name: string | null };
+    /** 장비 세트가 개인 추천 1위와 같은지 */
     same: boolean;
     reason?: string;
     received: { suitName: string | null; from: string; text: string }[];
@@ -895,57 +932,81 @@ export interface PartyBuild {
   teamDamage: number;
   /** 파티 화력 (딜러 피해 합 — 파티끼리 비교) */
   power: number;
-  /** 멤버별 최종 능력치·추가 타격 (팀 로테이션 입력, 화면에는 안 씀) */
-  finals: { bag: StatBag; extra: { rate: number; scale: number }[] }[];
+  /** 멤버별 최종 능력치·추가 타격·무기 공격력 (팀 전투 시뮬레이션 입력, 화면에는 안 씀) */
+  finals: { bag: StatBag; extra: { rate: number; scale: number }[]; weaponAtk: number; weaponId?: string }[];
 }
 
 const partyCache = new Map<string, PartyBuild | undefined>();
 const pieceMap = new Map(Object.entries(gearPieces));
 const suitMap = new Map(Object.entries(gearSuits));
 
-/** 4인 파티가 정해졌을 때 각자의 장비 (팀 버프 중첩·상태 공급·실제 팀원 기준) */
+/** 파티 후보: 팀 무기 1위 × 장비 상위 PARTY_CANDIDATES개 + 나머지 무기 × 장비 상위 PARTY_CANDIDATES_ALT개 */
+export const PARTY_CANDIDATES_ALT = 6;
+
+/**
+ * 4인 파티가 정해졌을 때 각자의 무기·장비 (팀 버프 중첩·상태 공급·실제 팀원 기준)
+ * 목표 = 팀 피해 기대치 — 멤버별 비중은 1차 팀 전투 시뮬레이션의 실제 피해 비중 (치유·생존 비중 없음)
+ */
 export function partyBuild(ids: string[]): PartyBuild | undefined {
   const key = [...ids].sort().join("+");
   if (partyCache.has(key)) return partyCache.get(key);
-  const inputs: { m: PartyMember; rec: BuildRecommendation }[] = [];
+  const inputs: { m: PartyMember; rec: BuildRecommendation; gear: GearRank[] }[] = [];
   for (const id of ids) {
     const rec = getBuildRecommendation(id);
     const op = operatorBase(id);
     const kit = operatorKit(id);
-    if (!rec || !op || !kit || !rec.weapons[0] || !rec.gear.length) {
+    const ws = teamWeaponsOf(id);
+    const gear = teamGearOf(id);
+    if (!rec || !op || !kit || !ws.length || !gear.length) {
       partyCache.set(key, undefined);
       return undefined;
     }
     const talents = addBag(talentBag(combatChars[id].talents.attributes), selfKitBag(id));
+    const cand = (w: PartyWeapon, g: GearRank): PartyCandidate => ({ suitId: g.suitId, suitName: g.suitName, pieces: g.pieces, weapon: w });
+    const candidates = ws.flatMap((w, wi) => gear.slice(0, wi === 0 ? PARTY_CANDIDATES : PARTY_CANDIDATES_ALT).map((g) => cand(w, g)));
     inputs.push({
       rec,
-      m: {
-        id,
-        op,
-        kit,
-        role: roleOf(id),
-        weaponAtk: combatWeapons[rec.weapons[0].id].baseAtk.at(-1) ?? 0,
-        base: addBag(talents, rec.weapons[0].bag),
-        candidates: rec.gear.slice(0, PARTY_CANDIDATES).map((g) => ({ suitId: g.suitId, suitName: g.suitName, pieces: g.pieces })),
-      },
+      gear,
+      m: { id, op, kit, role: teamRoleOf(id), weaponAtk: ws[0].atk, base: talents, candidates },
     });
   }
-  const res = optimizeParty(inputs.map((x) => x.m), pieceMap, suitMap);
+  // 멤버별 실제 피해 비중 (1차 시뮬레이션 — 개인 추천 무기·장비 + 팀 효과)
+  const sim = teamSim(ids);
+  const shares = sim && sim.total > 0 ? sim.members.map((m) => m.dmg / sim.total) : undefined;
   const nameOf = (oid: string) => operators.find((o) => o.id === oid)?.name ?? oid;
-  const out: PartyBuild = {
+  const toBuild = (res: ReturnType<typeof optimizeParty>): PartyBuild => ({
     ids,
-    members: res.picks.map((p, i) => ({
-      id: p.id,
-      gear: inputs[i].rec.gear[p.pick],
-      same: p.pick === 0,
-      reason: p.reason?.replace(/@([^@]+)@/g, (_, oid: string) => nameOf(oid)),
-      received: p.received,
-    })),
+    members: res.picks.map((p, i) => {
+      const c = inputs[i].m.candidates[p.pick];
+      const g = inputs[i].gear.find((x) => x.suitId === c.suitId) ?? inputs[i].gear[0];
+      return {
+        id: p.id,
+        gear: g,
+        weapon: c.weapon ? { id: c.weapon.id, name: c.weapon.name } : undefined,
+        same: g.suitId === inputs[i].rec.gear[0]?.suitId,
+        reason:
+          p.reason?.replace(/@([^@]+)@/g, (_, oid: string) => nameOf(oid)) ??
+          // 개인 추천(치유·생존 비중 포함)과 다른데 파티 탐색 이유가 없으면 = 팀 조합용 기준(직업군 역할, 치유 비중 제외) 차이
+          (c.weapon?.id !== inputs[i].rec.weapons[0]?.id || g.suitId !== inputs[i].rec.gear[0]?.suitId
+            ? roleOf(p.id).heal > 0 || roleOf(p.id).survival > 0
+              ? "치유·생존 대신 팀 강화 기준으로 고른 무기·장비"
+              : "팀 조합 기준(직업군 역할)으로 고른 무기·장비"
+            : undefined),
+        received: p.received,
+      };
+    }),
     gain: res.gain,
     teamDamage: res.teamDamage,
     power: res.power,
     finals: res.finals,
-  };
+  });
+  // 최선 응답 반복(근사 식) 결과와 1차 빌드(팀 무기·장비 1위 그대로)를 팀 전투 시뮬레이션으로 검증해 큰 쪽
+  const opt = toBuild(optimizeParty(inputs.map((x) => x.m), pieceMap, suitMap, 6, { shares }));
+  const plain = toBuild(optimizeParty(inputs.map((x) => x.m), pieceMap, suitMap, 0, { shares }));
+  const dOpt = teamSim(ids, opt)?.dps ?? 0;
+  const dPlain = teamSim(ids, plain)?.dps ?? 0;
+  const out = dOpt >= dPlain ? opt : plain;
+  out.gain = dPlain > 0 ? Math.max(dOpt, dPlain) / dPlain : 1;
   partyCache.set(key, out);
   return out;
 }
@@ -991,21 +1052,104 @@ function spOfRaw(id: string): RotMember["sp"] {
   };
 }
 
-/** 개인 추천 그대로의 능력치 (1차 선별용) */
-const indivCache = new Map<string, { bag: StatBag; extra: { rate: number; scale: number }[]; weaponAtk: number } | undefined>();
-function indivInput(id: string) {
-  if (indivCache.has(id)) return indivCache.get(id);
+// ───────── 팀 조합용 무기·장비 (직업군 역할 · 치유 비중 없음) ─────────
+
+/**
+ * 팀 조합용 역할 비중 — 직업군(ROLE_WEIGHT) 그대로, 단 일반 콘텐츠는 치유·생존이 필요 없으므로 그 비중을 팀원 강화(딜)로.
+ * 예) 서포터 본인 0 · 팀원 강화 0.7 · 치유 0.3 → 본인 0 · 팀원 강화 1 / 디펜더 → 본인 0 · 팀원 강화 1
+ */
+export function teamRoleOf(id: string): RoleWeight {
+  const r = roleOf(id);
+  return { ...r, dealer: r.dealer + r.heal + r.survival, heal: 0, survival: 0 };
+}
+
+/** 파티 무기 후보 수 (팀 역할 점수 상위) */
+export const TEAM_WEAPONS = 3;
+const teamWeaponCache = new Map<string, PartyWeapon[]>();
+/**
+ * 팀 조합용 무기 후보 — 개인 추천 무기 평가(본인 피해 · 팀원 강화 · 치유 · 생존 지표)를 팀 역할 비중으로 다시 점수화해 상위 TEAM_WEAPONS개.
+ * 무기 고유 특성의 팀 효과(team)는 팀원에게 실제로 전달된다 (receiveTeamLines)
+ */
+export function teamWeaponsOf(id: string): PartyWeapon[] {
+  const hit = teamWeaponCache.get(id);
+  if (hit) return hit;
   const rec = getBuildRecommendation(id);
-  const w = rec?.weapons[0];
-  const out =
-    rec && w
-      ? {
-          bag: addBag(addBag(addBag(talentBag(combatChars[id].talents.attributes), selfKitBag(id)), w.bag), gearSetBag(rec.gear[0])),
-          extra: w.extraHits.map((x) => ({ rate: x.rate, scale: x.scale })),
-          weaponAtk: combatWeapons[w.id].baseAtk.at(-1) ?? 0,
-        }
-      : undefined;
-  indivCache.set(id, out);
+  const w = teamRoleOf(id);
+  const out = (rec?.weapons ?? [])
+    .map((r) => ({ r, v: w.self * r.parts.self + w.dealer * r.parts.dealer }))
+    .sort((a, b) => b.v - a.v || b.r.parts.self - a.r.parts.self)
+    .slice(0, TEAM_WEAPONS)
+    .map(({ r }) => ({
+      id: r.id,
+      name: r.name,
+      atk: combatWeapons[r.id].baseAtk.at(-1) ?? 0,
+      bag: r.bag,
+      extra: r.extraHits.map((x) => ({ rate: x.rate, scale: x.scale })),
+      team: r.team,
+    }));
+  teamWeaponCache.set(id, out);
+  return out;
+}
+
+const teamGearCache = new Map<string, GearRank[]>();
+/** 팀 조합용 장비 순위 — 치유·생존 비중이 있는 직업(서포터·디펜더)만 팀 역할 비중·팀 무기 1위로 다시 계산, 나머지는 개인 추천 그대로 */
+export function teamGearOf(id: string): GearRank[] {
+  const hit = teamGearCache.get(id);
+  if (hit) return hit;
+  const rec = getBuildRecommendation(id);
+  const role = roleOf(id);
+  let out = rec?.gear ?? [];
+  const w0 = teamWeaponsOf(id)[0];
+  const op = operatorBase(id);
+  const kit = operatorKit(id);
+  if (rec && w0 && op && kit && (role.heal > 0 || role.survival > 0 || w0.id !== rec.weapons[0]?.id)) {
+    const talents = addBag(talentBag(combatChars[id].talents.attributes), selfKitBag(id));
+    out = rankGearByValue(op, kit, w0.atk, addBag(talents, w0.bag), Object.entries(gearPieces), Object.entries(gearSuits), teamRoleOf(id), dealersFor(id, kit), teamPool(id));
+  }
+  teamGearCache.set(id, out);
+  return out;
+}
+
+/** 장비 세트 효과 해석 → 팀원에게 가는 효과 · 추가 타격 */
+function suitTeamOf(id: string, g: GearRank | undefined, base: StatBag): { team: KeyedLine[]; extra: { rate: number; scale: number }[] } {
+  const suit = g ? gearSuits[g.suitId] : undefined;
+  const e = suit?.effects.find((x) => x.pieces === 3) ?? suit?.effects[0];
+  const kit = operatorKit(id);
+  const op = operatorBase(id);
+  if (!g || !e || !kit || !op) return { team: [], extra: [] };
+  const attrs = { 힘: op.attrs.힘 + base.str, 민첩: op.attrs.민첩 + base.agi, 지능: op.attrs.지능 + base.int, 의지: op.attrs.의지 + base.wil };
+  const ev = evaluateSuitEffect(e.desc, e.bb as Blackboard, { ...kit, critRate: Math.min(1, (kit.critRate ?? op.critRate) + base.critRate) }, attrs, teamPool(id));
+  return { team: ev.team.map((l) => ({ key: lineKey(g.suitId, l), source: g.suitName, l })), extra: ev.extraHits.map((x) => ({ rate: x.rate, scale: x.scale })) };
+}
+
+/** 1차(모든 조합) 입력 — 팀 무기 1위 + 팀 장비 1위, 본인 능력치와 팀원에게 가는 효과 */
+interface TeamInput {
+  bag: StatBag;
+  extra: { rate: number; scale: number }[];
+  weaponAtk: number;
+  kit: OperatorKit;
+  team: KeyedLine[];
+}
+const teamInputCache = new Map<string, TeamInput | undefined>();
+function teamInput(id: string): TeamInput | undefined {
+  if (teamInputCache.has(id)) return teamInputCache.get(id);
+  const w = teamWeaponsOf(id)[0];
+  const g = teamGearOf(id)[0];
+  const kit = operatorKit(id);
+  let out: TeamInput | undefined;
+  if (w && kit) {
+    const withWeapon = addBag(addBag(talentBag(combatChars[id].talents.attributes), selfKitBag(id)), w.bag);
+    const bag = addBag(withWeapon, gearSetBag(g));
+    const suit = suitTeamOf(id, g, bag);
+    out = {
+      bag,
+      extra: [...w.extra, ...suit.extra],
+      weaponAtk: w.atk,
+      kit,
+      team: [...w.team.map((l) => ({ key: weaponLineKey(w.id, l), source: w.name, l })), ...suit.team],
+    };
+  }
+  teamInputCache.set(id, out);
   return out;
 }
 
@@ -1089,17 +1233,26 @@ function simKit(id: string): Kit | undefined {
   return simKitCache.get(id);
 }
 
-/** 시뮬레이터 멤버 (party 가 있으면 파티 장비 능력치) — 자체 버프 근사치(selfKitBag)는 빼고 재능은 kits.ts 가 직접 */
+/**
+ * 시뮬레이터 멤버 — 자체 버프 근사치(selfKitBag)는 빼고 재능·스킬은 kits.ts 가 직접
+ *   party 있음: 파티 무기·장비 최종 능력치(받은 팀 효과 포함)
+ *   party 없음(1차): 팀 무기·장비 1위 + 팀원들의 무기·장비 팀 효과(중첩 규칙) — 빠진 멤버의 버프도 같이 빠짐(기여도)
+ */
 function simMembers(ids: string[], party?: PartyBuild): SimMember[] | undefined {
   const out: SimMember[] = [];
-  for (const id of ids) {
+  const ins = ids.map(teamInput);
+  if (ins.some((x) => !x)) return undefined;
+  const lines = ins.map((x) => ({ kit: x!.kit, team: x!.team }));
+  for (let i = 0; i < ids.length; i++) {
+    const id = ids[i];
     const op = operatorBase(id);
     const kit = simKit(id);
-    const ind = indivInput(id);
-    if (!op || !kit || !ind) return undefined;
+    const ind = ins[i]!;
+    if (!op || !kit) return undefined;
     const f = party?.finals[party.ids.indexOf(id)];
-    const bag = addBag(f ? f.bag : ind.bag, negBag(selfKitBag(id)));
-    out.push({ id, kit, stats: memberStats(op, ind.weaponAtk, bag) });
+    const own = f ? f.bag : addBag(ind.bag, receiveTeamLines(i, lines).bag);
+    const bag = addBag(own, negBag(selfKitBag(id)));
+    out.push({ id, kit, stats: memberStats(op, f ? f.weaponAtk : ind.weaponAtk, bag, f ? f.extra : ind.extra) });
   }
   return out;
 }
@@ -1107,7 +1260,8 @@ function simMembers(ids: string[], party?: PartyBuild): SimMember[] | undefined 
 const simCache = new Map<string, { r: SimResult; order: string[] } | undefined>();
 /** 팀 시뮬레이션 (메인 딜러 후보·SP 정책별로 돌려 가장 큰 운영). 결과의 멤버 순서는 ids 순서 */
 export function teamSim(ids: string[], party?: PartyBuild): SimResult | undefined {
-  const key = (party ? "P|" : "") + keyOf(ids);
+  // 파티 빌드는 무기·장비 선택까지 키에 (같은 4명도 빌드가 다르면 다른 결과)
+  const key = party ? `P|${party.members.map((m) => `${m.id}:${m.weapon?.id ?? ""}:${m.gear.suitId}`).sort().join(",")}` : keyOf(ids);
   let hit = simCache.get(key);
   if (!simCache.has(key)) {
     // 편성 순서(연계 우선순위 1→4)를 딜 구조 순으로 고정 — 같은 4명이면 넣은 순서와 무관하게 같은 결과
@@ -1172,15 +1326,18 @@ export function debugSimMembers(ids: string[]) {
 }
 
 /**
- * 생존 보정 — 치유 담당(전투 태그 "치유")이 없는 조합은 실전에서 회피·후퇴로 딜 시간이 줄어든다.
- * 해외 메타 조합 23개 중 21개가 치유 담당 포함("Sustainless"는 별도 표기) → 없는 조합에 SUSTAIN_PENALTY 를 곱함 (TODO(보정))
+ * 생존 담당 = 치유 스킬(전투 태그 "치유") 또는 디펜더(보호·비호). 고난이도 모드에서만 조합 조건으로 씀.
+ * 일반 콘텐츠는 치유 서포터가 필요 없으므로 순위 점수에 생존 보정을 곱하지 않는다 (2026-10-07 이전: 치유 담당 없으면 ×0.9)
  */
-export const SUSTAIN_PENALTY = 0.9;
-export function hasSustain(ids: string[]): boolean {
-  return ids.some((id) => (combatChars[id]?.battleTags ?? []).some((t) => t.name === "치유"));
+export function sustainOf(id: string): boolean {
+  const cls = operators.find((o) => o.id === id)?.profile?.class;
+  return cls === "디펜더" || (combatChars[id]?.battleTags ?? []).some((t) => t.name === "치유");
 }
-/** 베스트 조합 순위 점수 = 팀 시뮬레이션 초당 피해 × 생존 보정 */
+export function hasSustain(ids: string[]): boolean {
+  return ids.some(sustainOf);
+}
+/** 베스트 조합 순위 점수 = 팀 전투 시뮬레이션 초당 피해 (무기·장비·재능·스킬 반영, 치유·생존 보정 없음) */
 export function teamScore(ids: string[], party?: PartyBuild): number {
   const r = teamSim(ids, party);
-  return r ? r.dps * (hasSustain(ids) ? 1 : SUSTAIN_PENALTY) : 0;
+  return r ? r.dps : 0;
 }

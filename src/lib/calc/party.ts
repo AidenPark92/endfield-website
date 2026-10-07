@@ -10,6 +10,7 @@
 //      공급자의 연계 쿨타임 감소 세트(청파)가 그 팀원 피해를 올림 (커뮤니티: 장방이와 함께면 펠리카 청파 27%→75%).
 //      ⚠️ 공급 효과 크기(ASSUME.consumeDependency)는 실측 전이라 작게 둠 — 지금 모델로는 펠리카 청파를 재현하지 못함
 // 멤버 점수 = 개인 추천과 같은 역할 비중 식에서 "메인 딜러 강화" 몫만 실제 팀원(본인 피해 비중으로 가중)으로 바꾼 것
+//   5) 무기도 함께 — 후보 = (무기 × 장비 세트). 무기 고유 특성의 팀 효과(팀 공격력·받는 피해 …)도 장비 세트 효과와 같은 중첩 규칙으로 팀원에게
 // 탐색: 멤버마다 개인 추천 상위 K개 조합을 후보로, 다른 멤버를 고정하고 한 명씩 가장 좋은 후보로 바꾸는 반복(최선 응답) — 바뀌지 않을 때까지
 import { ASSUME, addBag, emptyBag, gearBag, rates, score, type OperatorBase, type StatBag } from "./build";
 import {
@@ -32,10 +33,22 @@ type Rates = Record<"battle" | "combo" | "ult", number>;
 const DEBUG = typeof process !== "undefined" ? process.env.DEBUG_PARTY : undefined;
 let debugParts = "";
 
+/** 무기 후보 — 본인 능력치(능력치 스킬 + 고유 특성 본인 몫) · 추가 타격 · 팀원에게 가는 효과 */
+export interface PartyWeapon {
+  id: string;
+  name: string | null;
+  atk: number;
+  bag: StatBag;
+  extra: { rate: number; scale: number }[];
+  team: TeamEffectLine[];
+}
+
 export interface PartyCandidate {
   suitId: string;
   suitName: string | null;
   pieces: { id: string; name: string | null; partType: number; inSuit: boolean }[];
+  /** 무기 (없으면 PartyMember.base · weaponAtk 에 이미 들어 있는 무기 그대로) */
+  weapon?: PartyWeapon;
 }
 
 export interface PartyMember {
@@ -44,7 +57,7 @@ export interface PartyMember {
   kit: OperatorKit;
   role: RoleWeight;
   weaponAtk: number;
-  /** 재능·자체 버프 + 1위 무기 */
+  /** 재능·자체 버프 (+ 후보에 무기가 없으면 1위 무기) */
   base: StatBag;
   /** 개인 추천 순서대로 (0 = 개인 1위) */
   candidates: PartyCandidate[];
@@ -69,8 +82,8 @@ export interface PartyResult {
   /** 파티 화력 = Σ 멤버 피해 × 본인 피해 비중(역할) — 서포터 본인 피해는 빼고 딜러 피해만 (파티끼리 비교용) */
   power: number;
   iterations: number;
-  /** 멤버별 최종 능력치(장비 + 세트 효과 + 받은 세트 팀 효과)와 추가 타격 — 팀 로테이션 모델 입력 */
-  finals: { bag: StatBag; extra: { rate: number; scale: number }[] }[];
+  /** 멤버별 최종 능력치(무기 + 장비 + 세트 효과 + 받은 무기·세트 팀 효과)와 추가 타격 · 무기 공격력 — 팀 전투 시뮬레이션 입력 */
+  finals: { bag: StatBag; extra: { rate: number; scale: number }[]; weaponAtk: number; weaponId?: string }[];
 }
 
 /** 상태를 소모·부여하는 문장 판정 — 발동 조건 문장("…일 때 사용할 수 있습니다")은 제외 */
@@ -132,28 +145,100 @@ export function supplyFactor(kit: OperatorKit, myRates: Rates, party: { kit: Ope
 }
 
 interface CandEval {
-  /** 본인 능력치 (장비 + 세트 효과 본인 몫) */
+  /** 본인 능력치 (무기 + 장비 + 세트 효과 본인 몫) */
   own: StatBag;
   extra: { rate: number; scale: number }[];
-  team: TeamEffectLine[];
+  /** 팀원에게 가는 효과 (key = 중첩 판정 키: 같은 세트·같은 무기의 같은 문장은 중첩 안 됨) */
+  team: KeyedLine[];
   rates: Rates;
+  atk: number;
 }
 
-/** 팀 버프 하나의 중첩 판정 키 */
-const lineKey = (suitId: string, l: TeamEffectLine) => `${suitId}|${l.text}`;
+/** 팀 효과 한 줄 + 중첩 판정 키 + 출처 이름 */
+export interface KeyedLine {
+  key: string;
+  source: string | null;
+  l: TeamEffectLine;
+}
 
-export function optimizeParty(members: PartyMember[], pieces: Map<string, GearPiece>, suits: Map<string, GearSuit>, maxIter = 6): PartyResult {
+/** 팀 버프 하나의 중첩 판정 키 — 장비 세트 / 무기 */
+export const lineKey = (suitId: string, l: TeamEffectLine) => `${suitId}|${l.text}`;
+export const weaponLineKey = (weaponId: string, l: TeamEffectLine) => `w:${weaponId}|${l.text}`;
+
+/** 받는 팀 버프 묶음 */
+export interface Received {
+  bag: StatBag;
+  list: { bag: StatBag; v: number; from: number; line: TeamEffectLine; key: string; source: string | null }[];
+}
+
+/**
+ * 팀원들이 거는 팀 효과(무기 고유 특성 · 장비 세트) → 멤버 j가 받는 능력치 (순수 함수)
+ *   - "해당 효과는 중첩되지 않습니다": 같은 키는 수치 하나, 여러 명이 걸면 가동률만 합쳐짐 1 − Π(1 − 가동률)
+ *   - 본인이 가진 "팀 전체" 효과는 이미 본인 능력치에 있으므로 그만큼 뺌
+ *   - "자신과 속성이 다른 오퍼레이터" 효과는 같은 속성 팀원에게 안 감
+ *   skip = 기여를 뺄 멤버
+ */
+export function receiveTeamLines(j: number, ms: { kit: OperatorKit; team: KeyedLine[] }[], skip = -1): Received {
+  const groups = new Map<string, { i: number; k: KeyedLine }[]>();
+  const own = new Map<string, TeamEffectLine>();
+  for (const k of ms[j].team) if (k.l.effect?.self) own.set(k.key, k.l);
+  ms.forEach((m, i) => {
+    if (i === j || i === skip) return;
+    for (const k of m.team) {
+      if (!k.l.effect) continue;
+      if (k.l.effect.othersDiffElem && m.kit.element === ms[j].kit.element) continue;
+      const g = groups.get(k.key) ?? [];
+      g.push({ i, k });
+      groups.set(k.key, g);
+    }
+  });
+  const list: Received["list"] = [];
+  for (const [key, g] of groups) {
+    const top = g.reduce((x, y) => (y.k.l.applied > x.k.l.applied ? y : x));
+    const mine = own.get(key);
+    let applied: number;
+    if (top.k.l.maxStack <= 1) {
+      const ups = [...g.map((x) => x.k.l.uptime), ...(mine ? [mine.uptime] : [])];
+      const union = 1 - ups.reduce((p, u) => p * (1 - Math.min(1, u)), 1);
+      applied = top.k.l.value * Math.max(0, union - (mine ? Math.min(1, mine.uptime) : 0));
+    } else applied = mine ? Math.max(0, top.k.l.applied - mine.applied) : top.k.l.applied;
+    if (applied <= 0) continue;
+    const add = effectBag({ ...top.k.l.effect! }, ms[j].kit, applied);
+    if (!add) continue;
+    list.push({ bag: add, v: applied, from: top.i, line: top.k.l, key, source: top.k.source });
+  }
+  let bag = emptyBag();
+  for (const b of list) bag = addBag(bag, b.bag);
+  return { bag, list };
+}
+
+/**
+ * opts.shares — 팀 전투 시뮬레이션에서 나온 멤버별 피해 비중(합 1). 있으면 목표 = 팀 피해 기대치 Σ_j 비중_j × (피해_j / 기준_j)
+ *   (치유·생존 비중 없음 — 일반 콘텐츠). 없으면 역할(직업) 비중 식
+ */
+export function optimizeParty(
+  members: PartyMember[],
+  pieces: Map<string, GearPiece>,
+  suits: Map<string, GearSuit>,
+  maxIter = 6,
+  opts: { shares?: number[] } = {},
+): PartyResult {
   const n = members.length;
-  const attrsOf = (m: PartyMember): Record<AttrName, number> => ({
-    힘: m.op.attrs.힘 + m.base.str,
-    민첩: m.op.attrs.민첩 + m.base.agi,
-    지능: m.op.attrs.지능 + m.base.int,
-    의지: m.op.attrs.의지 + m.base.wil,
+  /** 후보의 무기까지 낀 기본 능력치 */
+  const candBase = (m: PartyMember, c: PartyCandidate) => (c.weapon ? addBag(m.base, c.weapon.bag) : m.base);
+  const attrsOf = (m: PartyMember, b: StatBag): Record<AttrName, number> => ({
+    힘: m.op.attrs.힘 + b.str,
+    민첩: m.op.attrs.민첩 + b.agi,
+    지능: m.op.attrs.지능 + b.int,
+    의지: m.op.attrs.의지 + b.wil,
   });
   const gearSum = members.map((m) =>
-    m.candidates.map((c) => c.pieces.reduce((b, p) => (pieces.get(p.id) ? addBag(b, gearBag(pieces.get(p.id)!)) : b), m.base)),
+    m.candidates.map((c) => c.pieces.reduce((b, p) => (pieces.get(p.id) ? addBag(b, gearBag(pieces.get(p.id)!)) : b), candBase(m, c))),
   );
-  const baseRates = members.map((m) => rates(m.kit.rotation, m.base.ultGain, m.base.comboCdr));
+  const baseRates = members.map((m) => {
+    const b = m.candidates[0] ? candBase(m, m.candidates[0]) : m.base;
+    return rates(m.kit.rotation, b.ultGain, b.comboCdr);
+  });
   // 후보 평가 (세트 효과는 실제 팀원 3명의 현재 빈도로) — 캐시
   const cache = new Map<string, CandEval>();
   const evalCand = (i: number, c: number, mateRates: Rates[]): CandEval => {
@@ -169,52 +254,31 @@ export function optimizeParty(members: PartyMember[], pieces: Map<string, GearPi
     const suit = suits.get(cand.suitId);
     const e = suit?.effects.find((x) => x.pieces === 3) ?? suit?.effects[0];
     const critRate = Math.min(1, (m.kit.critRate ?? m.op.critRate) + gs.critRate);
-    const ev = e ? evaluateSuitEffect(e.desc, e.bb as Blackboard, { ...m.kit, critRate }, attrsOf(m), pool) : undefined;
+    const ev = e ? evaluateSuitEffect(e.desc, e.bb as Blackboard, { ...m.kit, critRate }, attrsOf(m, candBase(m, cand)), pool) : undefined;
     const own = ev ? addBag(gs, ev.bag) : gs;
-    const out: CandEval = { own, extra: ev?.extraHits ?? [], team: ev?.team ?? [], rates: rates(m.kit.rotation, own.ultGain, own.comboCdr) };
+    const w = cand.weapon;
+    const team: KeyedLine[] = [
+      ...(ev?.team ?? []).map((l) => ({ key: lineKey(cand.suitId, l), source: cand.suitName, l })),
+      ...(w?.team ?? []).map((l) => ({ key: weaponLineKey(w!.id, l), source: w!.name, l })),
+    ];
+    const out: CandEval = {
+      own,
+      extra: [...(ev?.extraHits ?? []), ...(w?.extra ?? [])],
+      team,
+      rates: rates(m.kit.rotation, own.ultGain, own.comboCdr),
+      atk: w ? w.atk : m.weaponAtk,
+    };
     cache.set(key, out);
     return out;
   };
 
   /** 받는 팀 버프 (중첩 안 함: 같은 효과는 가장 큰 것 하나) — skip = 이 멤버의 기여를 뺄 때 */
-  const receivedBag = (j: number, evals: (CandEval | null)[], skip = -1) => {
-    // 같은 세트 효과(키)끼리 모음 — 중첩되지 않으므로 수치는 하나, 대신 여러 명이 걸면 가동률이 합쳐짐: 1 − Π(1 − 가동률)
-    const groups = new Map<string, { lines: { i: number; l: TeamEffectLine }[]; suitId: string }>();
-    // 본인이 가진 "팀 전체" 효과(이미 본인 능력치에 들어감)는 가동률 합산에만 씀
-    const own = new Map<string, TeamEffectLine>();
-    for (const l of evals[j]?.team ?? []) if (l.effect?.self) own.set(lineKey(members[j].candidates[picks[j]].suitId, l), l);
-    evals.forEach((ev, i) => {
-      if (!ev || i === j || i === skip) return;
-      const sid = members[i].candidates[picks[i]].suitId;
-      for (const l of ev.team) {
-        if (!l.effect) continue;
-        if (l.effect.othersDiffElem && members[i].kit.element === members[j].kit.element) continue;
-        const k = lineKey(sid, l);
-        const g = groups.get(k) ?? { lines: [], suitId: sid };
-        g.lines.push({ i, l });
-        groups.set(k, g);
-      }
-    });
-    const best = new Map<string, { bag: StatBag; v: number; from: number; line: TeamEffectLine; suitId: string }>();
-    for (const [k, g] of groups) {
-      const top = g.lines.reduce((x, y) => (y.l.applied > x.l.applied ? y : x));
-      const mine = own.get(k);
-      let applied: number;
-      if (top.l.maxStack <= 1) {
-        // 가동률 합산 (본인 몫 포함), 본인이 이미 받는 만큼은 뺌
-        const ups = [...g.lines.map((x) => x.l.uptime), ...(mine ? [mine.uptime] : [])];
-        const union = 1 - ups.reduce((p, u) => p * (1 - Math.min(1, u)), 1);
-        applied = top.l.value * Math.max(0, union - (mine ? Math.min(1, mine.uptime) : 0));
-      } else applied = mine ? Math.max(0, top.l.applied - mine.applied) : top.l.applied;
-      if (applied <= 0) continue;
-      const add = effectBag({ ...top.l.effect! }, members[j].kit, applied);
-      if (!add) continue;
-      best.set(k, { bag: add, v: applied, from: top.i, line: top.l, suitId: g.suitId });
-    }
-    let bag = emptyBag();
-    for (const b of best.values()) bag = addBag(bag, b.bag);
-    return { bag, list: [...best.values()] };
-  };
+  const receivedBag = (j: number, evals: (CandEval | null)[], skip = -1): Received =>
+    receiveTeamLines(
+      j,
+      members.map((m, i) => ({ kit: m.kit, team: evals[i]?.team ?? [] })),
+      skip,
+    );
 
   const damageOf = (j: number, evals: (CandEval | null)[], skip = -1) => {
     const ev = evals[j]!;
@@ -224,7 +288,7 @@ export function optimizeParty(members: PartyMember[], pieces: Map<string, GearPi
     // 상태 공급: 기여를 뺀 멤버는 장비 없는 기본 빈도
     const party = members.map((o, i) => ({ kit: o.kit, rates: i === skip ? baseRates[i] : evals[i]!.rates }));
     const kit = { ...m.kit, critRate: Math.min(1, (m.kit.critRate ?? m.op.critRate) + bag.critRate) };
-    const sc = score(m.op, m.weaponAtk, bag);
+    const sc = score(m.op, ev.atk, bag);
     return { d: selfDamageOf(kit, sc, bag, ev.extra) * supplyFactor(m.kit, ev.rates, party), sc, bag, rec };
   };
 
@@ -254,7 +318,14 @@ export function optimizeParty(members: PartyMember[], pieces: Map<string, GearPi
    *   팀원 피해에는 팀 버프(중첩 규칙)·상태 공급(소모형 팀원)·부착 소모가 모두 들어감
    */
   const selfShare = members.map((m) => m.role.self);
+  const shares = opts.shares && opts.shares.length === n && opts.shares.some((x) => x > 0) ? opts.shares : undefined;
   const utility = (i: number, evals: CandEval[]) => {
+    if (shares) {
+      // 팀 피해 기대치 (1차 근사): 멤버 피해 변화율을 실제 피해 비중으로 합산 — 본인 + 팀원 (팀 버프·상태 공급 포함)
+      let u = 0;
+      for (let j = 0; j < n; j++) if (shares[j] > 0) u += shares[j] * (damageOf(j, evals).d / ref[j].d);
+      return u;
+    }
     const m = members[i];
     const w = { ...m.role };
     if (!Object.keys(m.kit.heals ?? {}).length) {
@@ -318,18 +389,24 @@ export function optimizeParty(members: PartyMember[], pieces: Map<string, GearPi
       id: m.id,
       pick: picks[i],
       reason: picks[i] !== 0 ? reasonOf(i, final, receivedBag) : undefined,
-      received: rec.list.map((r) => ({ suitName: members[r.from].candidates[picks[r.from]].suitName, from: members[r.from].id, text: r.line.text })),
+      received: rec.list.map((r) => ({ suitName: r.source, from: members[r.from].id, text: r.line.text })),
     };
   });
-  const finals = members.map((_, i) => ({ bag: damageOf(i, final).bag, extra: final[i].extra }));
+  const finals = members.map((m, i) => ({ bag: damageOf(i, final).bag, extra: final[i].extra, weaponAtk: final[i].atk, weaponId: m.candidates[picks[i]].weapon?.id }));
   return { picks: picksOut, gain: indivTeam > 0 ? teamDamage / indivTeam : 1, teamDamage, power, iterations, finals };
 
   /** 개인 1위 대신 다른 세트를 고른 이유 (한 줄) */
   function reasonOf(i: number, evals: CandEval[], recv: typeof receivedBag): string {
     const m = members[i];
     const first = m.candidates[0];
+    const cand0 = m.candidates[picks[i]];
+    // 0) 무기가 바뀜 — 팀 효과(다른 팀원 강화)가 이 파티에서 더 큼
+    if (cand0.weapon && first.weapon && cand0.weapon.id !== first.weapon.id) {
+      const gives = cand0.weapon.team.length > 0 && members.some((_, j) => j !== i && receivedBag(j, evals).list.some((r) => r.from === i && r.key.startsWith("w:")));
+      return gives ? `무기 ${cand0.weapon.name}: 이 파티 팀원에게 주는 효과가 더 큼` : `무기 ${cand0.weapon.name}: 이 파티의 속성·조건에서 더 효율적`;
+    }
     // 1) 개인 1위 세트의 팀 버프를 다른 멤버가 이미 줌
-    const firstLines = evalCand(i, 0, evals.map((e) => e.rates)).team;
+    const firstLines = evalCand(i, 0, evals.map((e) => e.rates)).team.filter((k) => !k.key.startsWith("w:"));
     const providedBy = members.findIndex((o, j) => j !== i && o.candidates[picks[j]].suitId === first.suitId);
     if (firstLines.length && providedBy >= 0) return `${first.suitName} 팀 효과는 @${members[providedBy].id}@이(가) 이미 줘서(중첩 안 됨) 다른 세트`;
     // 2) 소모형 팀원의 상태 공급을 늘림
@@ -338,7 +415,7 @@ export function optimizeParty(members: PartyMember[], pieces: Map<string, GearPi
     if (consumer >= 0 && evals[i].rates.combo > baseRates[i].combo + 1e-9)
       return `@${members[consumer].id}@의 ${consumedStates(members[consumer].kit)[0].state} 소모를 돕도록 연계 빈도를 올리는 ${cand.suitName}`;
     // 3) 이 파티에서 팀 버프 담당
-    if (evals[i].team.length && recv(i, evals).list.every((r) => r.suitId !== cand.suitId)) return `이 파티의 팀 버프 담당 (${cand.suitName})`;
+    if (evals[i].team.length && recv(i, evals).list.every((r) => !r.key.startsWith(`${cand.suitId}|`))) return `이 파티의 팀 버프 담당 (${cand.suitName})`;
     return `이 파티의 속성·조건에서 더 효율적인 ${cand.suitName}`;
   }
 }

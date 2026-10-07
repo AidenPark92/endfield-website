@@ -5,33 +5,71 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { TeamCard, type TeamMate, type TeamView } from "./team-card";
 
+/** 콘텐츠 난이도 — lib/data.ts TeamMode 와 같음 */
+export type TeamModeKey = "normal" | "hard";
+const MODES: { key: TeamModeKey; label: string; hint: string }[] = [
+  { key: "normal", label: "일반 콘텐츠", hint: "치유 담당 없이 팀 피해만으로 순위" },
+  { key: "hard", label: "고난이도", hint: "생존 담당(치유 스킬 또는 디펜더) 1명 이상 포함한 조합만" },
+];
+
 export function TeamFinder({
   overall,
   byOperator,
   mates,
   order,
 }: {
-  overall: TeamView[];
-  byOperator: Record<string, TeamView[]>;
+  overall: Record<TeamModeKey, TeamView[]>;
+  byOperator: Record<TeamModeKey, Record<string, TeamView[]>>;
   mates: Record<string, TeamMate>;
   order: string[];
 }) {
   const [pick, setPick] = useState<string | null>(null);
+  const [mode, setMode] = useState<TeamModeKey>("normal");
   useEffect(() => {
-    const op = new URLSearchParams(window.location.search).get("op");
-    if (op && byOperator[op]) setPick(op);
+    const q = new URLSearchParams(window.location.search);
+    const op = q.get("op");
+    if (op && byOperator.normal[op]) setPick(op);
+    if (q.get("mode") === "hard") setMode("hard");
   }, [byOperator]);
-  const choose = (id: string | null) => {
-    setPick(id);
+  const sync = (id: string | null, m: TeamModeKey) => {
     const url = new URL(window.location.href);
     if (id) url.searchParams.set("op", id);
     else url.searchParams.delete("op");
+    if (m === "hard") url.searchParams.set("mode", "hard");
+    else url.searchParams.delete("mode");
     window.history.replaceState(null, "", url);
   };
-  const list = pick ? byOperator[pick] : overall;
+  const choose = (id: string | null) => {
+    setPick(id);
+    sync(id, mode);
+  };
+  const chooseMode = (m: TeamModeKey) => {
+    setMode(m);
+    sync(pick, m);
+  };
+  const list = pick ? byOperator[mode][pick] : overall[mode];
 
   return (
     <div className="space-y-6">
+      <div>
+        <p className="mb-2 text-sm font-semibold">콘텐츠 난이도</p>
+        <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="콘텐츠 난이도">
+          {MODES.map((m) => (
+            <button
+              key={m.key}
+              type="button"
+              role="radio"
+              aria-checked={mode === m.key}
+              onClick={() => chooseMode(m.key)}
+              title={m.hint}
+              className={cn("border px-3 py-2 text-left text-sm", mode === m.key ? "border-foreground bg-foreground text-background" : "bg-card hover:border-foreground")}
+            >
+              <b className="block font-semibold">{m.label}</b>
+              <span className={cn("block text-[11px]", mode === m.key ? "text-background/80" : "text-muted-foreground")}>{m.hint}</span>
+            </button>
+          ))}
+        </div>
+      </div>
       <div>
         <p className="mb-2 text-sm font-semibold">이 오퍼레이터를 넣고 싶어요</p>
         <ul className="flex flex-wrap gap-1.5">
@@ -62,7 +100,11 @@ export function TeamFinder({
           })}
         </ul>
       </div>
-      <h2 className="text-lg font-bold">{pick ? `${mates[pick].name} 베스트 조합` : "전체 베스트 조합"}</h2>
+      <h2 className="text-lg font-bold">
+        {pick ? `${mates[pick].name} 베스트 조합` : "전체 베스트 조합"}
+        <span className="ml-2 text-sm font-normal text-muted-foreground">{MODES.find((m) => m.key === mode)!.label}</span>
+      </h2>
+      {list.length === 0 && <p className="text-sm text-muted-foreground">이 조건에 맞는 조합이 없어요.</p>}
       <div className="grid gap-3 md:grid-cols-2">
         {list.map((t, i) => (
           <TeamCard key={t.ids.join("-")} team={t} mates={mates} rank={i + 1} focus={pick ?? undefined} />

@@ -20,8 +20,9 @@ test("메타 조합 순위", { timeout: 900000 }, () => {
   const geoCore = Math.exp(lgCore / meta.teams.length);
   console.log(`[메타 조합 ${meta.teams.length}개] 전체 ${scored.length}개 중 기하평균 ${geo.toFixed(0)}위 · 그 딜러 조합 중 ${geoCore.toFixed(1)}위`);
   // 기준(2026-10-06): 이전 모델 4823위 / 868위 → 팀 시뮬레이터 1989위 / 268위
-  expect(geo).toBeLessThan(2600);
-  expect(geoCore).toBeLessThan(360);
-  // 해외 1위 조합(장방이·펠리카·아크라이트·리노)은 상위 50 안
-  expect(rank.get(key(["838", "1", "7", "1041"]))!).toBeLessThanOrEqual(50);
+  // 2026-10-07: 치유 보정(×0.9) 제거 + 팀 무기·장비(직업군 역할, 무기·세트 팀 효과 전달, 추가 타격) → 1641위 / 213위
+  expect(geo).toBeLessThan(1900);
+  expect(geoCore).toBeLessThan(250);
+  // 해외 1위 조합(장방이·펠리카·아크라이트·리노)은 상위 10 안 (2026-10-07: 3위)
+  expect(rank.get(key(["838", "1", "7", "1041"]))!).toBeLessThanOrEqual(10);
 });

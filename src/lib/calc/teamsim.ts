@@ -20,7 +20,8 @@ export type Reaction = "연소" | "감전" | "동결" | "부식";
 export const REACTION_OF: Record<string, Reaction> = { 열기: "연소", 전기: "감전", 냉기: "동결", 자연: "부식" };
 export type PhysAnomaly = "띄우기" | "넘어뜨리기" | "강타" | "갑옷 파괴";
 export type SkillKind = "battle" | "combo" | "ult";
-export type HitKind = "basic" | SkillKind | "ultMode";
+/** extra = 무기·장비의 추가 타격 (일반 공격과 같은 피해 구간: 속성·모든 피해, 치명, 받는 피해 — 스킬 종류 보너스 없음) */
+export type HitKind = "basic" | SkillKind | "ultMode" | "extra";
 
 /** 게임 데이터에 없는 가정값 — TODO(실측) */
 export const SIM = {
@@ -72,6 +73,8 @@ export interface MemberStats {
   ultGain: number;
   comboCdr: number;
   attrs: Record<"힘" | "민첩" | "지능" | "의지", number>;
+  /** 무기 고유 특성·장비 세트의 추가 타격 (초당 횟수 × 공격력 배율) — weapon-value selfDamageOf 와 같은 기대값 */
+  extra?: { rate: number; scale: number }[];
 }
 
 export type EventType =
@@ -505,8 +508,11 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
     }
     // 아츠 이상: 기존 부착 전부 소모, 레벨 = 소모 스택 ✅
     const L = Math.min(4, I.stacks);
+    const was = I.elem;
     I.elem = null;
     I.stacks = 0;
+    // 반응으로 소모된 열기 부착도 "열기 부착이 소모" (카뮤 연계 조건)
+    if (was === "열기") emit({ type: "heatConsumed", stacks: L });
     const r = REACTION_OF[elem];
     hit(0.8 + 0.8 * L, { anomaly: true, elem });
     setReaction(r, L);
@@ -785,6 +791,13 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
         c.me = m.by;
         hit(m.v * SIM.dt, { kind: "battle", dot: true, elem: (k.split(":")[1] as Elem) || "물리" });
       }
+    // 무기·장비 추가 타격 (초당 기대값을 시간에 고르게)
+    for (let i = 0; i < n; i++) {
+      const ex = members[i].stats.extra;
+      if (!ex?.length) continue;
+      c.me = i;
+      hit(ex.reduce((a, x) => a + x.rate * x.scale, 0) * SIM.dt, { kind: "extra" });
+    }
     if (c.t < lockUntil) continue;
 
     // 1) 궁극기
@@ -951,15 +964,17 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
 
 // ───────── 능력치 묶음 → 시뮬레이터 능력치 (build.ts score 와 같은 식) ─────────
 
-export function memberStats(op: OperatorBase, weaponAtk: number, bag: StatBag): MemberStats {
+export function memberStats(op: OperatorBase, weaponAtk: number, bag: StatBag, extra: { rate: number; scale: number }[] = []): MemberStats {
   const attrs = { 힘: op.attrs.힘 + bag.str, 민첩: op.attrs.민첩 + bag.agi, 지능: op.attrs.지능 + bag.int, 의지: op.attrs.의지 + bag.wil };
   attrs[op.mainAttr] = (attrs[op.mainAttr] + bag.main) * (1 + bag.mainPct);
   attrs[op.subAttr] = (attrs[op.subAttr] + bag.sub) * (1 + bag.subPct);
   const el = ELEM_OF[op.element] ?? "phys";
   const elemDmg = bag.dmg[el] + (el !== "phys" ? bag.dmg.arts : 0) + bag.dmg.all;
-  const kinds: HitKind[] = ["basic", "battle", "combo", "ult", "ultMode"];
-  const dmg = Object.fromEntries(kinds.map((k) => [k, elemDmg + (k === "ultMode" ? bag.dmg.basic + bag.dmg.ultMode : bag.dmg[k])])) as Record<HitKind, number>;
-  const scope = (k: HitKind) => (k === "basic" ? 0 : k);
+  const kinds: HitKind[] = ["basic", "battle", "combo", "ult", "ultMode", "extra"];
+  const dmg = Object.fromEntries(
+    kinds.map((k) => [k, elemDmg + (k === "extra" ? 0 : k === "ultMode" ? bag.dmg.basic + bag.dmg.ultMode : bag.dmg[k])]),
+  ) as Record<HitKind, number>;
+  const scope = (k: HitKind) => (k === "basic" || k === "extra" ? 0 : k);
   return {
     atkBase: op.atk + weaponAtk,
     atkPct: bag.atkPct,
@@ -977,6 +992,7 @@ export function memberStats(op: OperatorBase, weaponAtk: number, bag: StatBag): 
     ultGain: bag.ultGain,
     comboCdr: bag.comboCdr,
     attrs,
+    extra: extra.filter((x) => x.rate > 0 && x.scale > 0),
   };
 }
 

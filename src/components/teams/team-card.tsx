@@ -1,4 +1,4 @@
-// 베스트 조합 카드 (서버·클라이언트 공용, 상태 없음) — 평가는 lib/calc/rotation.ts(팀 피해) · team.ts(연계 조건)
+// 베스트 조합 카드 (서버·클라이언트 공용, 상태 없음) — 평가는 lib/calc/teamsim.ts(팀 전투 시뮬레이션) · party.ts(파티 무기·장비) · team.ts(연계 조건)
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -14,7 +14,7 @@ export interface TeamMate {
   cls?: string;
 }
 
-export type TeamView = TeamEval & { classes: number; healer: boolean; gear?: TeamGearView; power?: TeamPowerView; contribution?: number };
+export type TeamView = TeamEval & { classes: number; healer: boolean; sustain?: boolean; gear?: TeamGearView; power?: TeamPowerView; contribution?: number };
 
 const STATUS: Record<ComboStatus, { label: string; tone: string }> = {
   team: { label: "동료가 조건을 만들어 줌", tone: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" },
@@ -54,7 +54,11 @@ export function TeamCard({
           연계 발동 <b className="font-mono text-base">{team.active}/4</b>
         </span>
         <span className="ml-auto flex flex-wrap gap-1 text-[11px]">
-          <span className={cn("border px-1.5", team.healer ? "" : "text-muted-foreground")}>{team.healer ? "치유 담당 있음" : "치유 담당 없음"}</span>
+          {team.sustain && (
+            <span className="border px-1.5 text-muted-foreground" title="치유 스킬 또는 디펜더 — 고난이도 콘텐츠용. 순위 점수에는 쓰지 않음">
+              생존 담당 있음
+            </span>
+          )}
           <span className="border px-1.5" title="연계 시너지 점수 (연계 발동 인원 × 10 + 동료 연결)">시너지 {team.score}점</span>
         </span>
       </header>
@@ -95,8 +99,8 @@ export function TeamCard({
       {team.gear && (
         <div className="border-b px-3 py-2">
           <p className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-2 text-[11px] text-muted-foreground">
-            <span className="font-semibold text-foreground">이 파티 장비</span>
-            {team.gear.gain > 1.0005 && <span>개인 추천 장비 그대로보다 파티 피해 +{((team.gear.gain - 1) * 100).toFixed(1)}%</span>}
+            <span className="font-semibold text-foreground">이 파티 무기 · 장비</span>
+            {team.gear.gain > 1.0005 && <span>팀 기본 빌드(무기·장비 1위)보다 팀 피해 +{((team.gear.gain - 1) * 100).toFixed(1)}%</span>}
           </p>
           <ul className="grid grid-cols-4 gap-1.5">
             {team.ids.map((id) => {
@@ -104,19 +108,29 @@ export function TeamCard({
               if (!g) return <li key={id} />;
               return (
                 <li key={id} className="min-w-0" title={g.reason}>
+                  {g.weaponName && (
+                    <span className="mb-0.5 flex items-center gap-1" title={g.weaponSame ? "개인 추천 1위 무기" : "이 파티에 맞춘 무기"}>
+                      {g.weaponIcon && (
+                        <span className="relative block size-6 shrink-0 overflow-hidden bg-muted">
+                          <Image src={g.weaponIcon} alt="" fill sizes="24px" unoptimized className="object-contain" />
+                        </span>
+                      )}
+                      <span className={cn("truncate text-[11px] leading-4 font-semibold", !g.weaponSame && "text-accent-strong")}>{g.weaponName}</span>
+                    </span>
+                  )}
                   <span className="flex items-center gap-1">
                     <GearCard src={g.icon} tier={4} compact className="size-6 shrink-0" />
                     <span className={cn("truncate text-[11px] leading-4 font-semibold", !g.same && "text-accent-strong")}>{g.suitName}</span>
                   </span>
-                  {!g.same && <span className="mt-0.5 block text-[10px] leading-3 text-muted-foreground">파티 맞춤</span>}
+                  {(!g.same || g.weaponSame === false) && <span className="mt-0.5 block text-[10px] leading-3 text-muted-foreground">파티 맞춤</span>}
                 </li>
               );
             })}
           </ul>
-          {team.gear.members.some((g) => !g.same && g.reason) && (
+          {team.gear.members.some((g) => (!g.same || g.weaponSame === false) && g.reason) && (
             <ul className="mt-1.5 space-y-0.5 text-[11px] leading-4 text-muted-foreground">
               {team.gear.members
-                .filter((g) => !g.same && g.reason)
+                .filter((g) => (!g.same || g.weaponSame === false) && g.reason)
                 .map((g) => (
                   <li key={g.id}>
                     <b className="text-foreground">{name(g.id)}</b> {g.reason}

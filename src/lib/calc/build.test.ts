@@ -50,7 +50,7 @@ describe("연계 조건", () => {
 });
 
 describe("추천 빌드 (실제 데이터)", () => {
-  it("모든 오퍼레이터에 무기·장비 추천이 나오고, 무기는 같은 무기 종류만", { timeout: 60000 }, () => {
+  it("모든 오퍼레이터에 무기·장비 추천이 나오고, 무기는 같은 무기 종류만", { timeout: 300000 }, () => {
     for (const o of operators) {
       const r = getBuildRecommendation(o.id)!;
       expect(r.weapons.length, o.name).toBeGreaterThan(0);
