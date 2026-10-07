@@ -215,13 +215,14 @@ export function receiveTeamLines(j: number, ms: { kit: OperatorKit; team: KeyedL
 /**
  * opts.shares — 팀 전투 시뮬레이션에서 나온 멤버별 피해 비중(합 1). 있으면 목표 = 팀 피해 기대치 Σ_j 비중_j × (피해_j / 기준_j)
  *   (치유·생존 비중 없음 — 일반 콘텐츠). 없으면 역할(직업) 비중 식
+ * opts.fixed — 멤버 번호 → 고정할 후보 번호 (결 진결·의지 장비처럼 근사 식이 못 고르는 후보를 시뮬레이션으로 검증할 때)
  */
 export function optimizeParty(
   members: PartyMember[],
   pieces: Map<string, GearPiece>,
   suits: Map<string, GearSuit>,
   maxIter = 6,
-  opts: { shares?: number[] } = {},
+  opts: { shares?: number[]; fixed?: Record<number, number> } = {},
 ): PartyResult {
   const n = members.length;
   /** 후보의 무기까지 낀 기본 능력치 */
@@ -355,10 +356,13 @@ export function optimizeParty(
     );
   };
 
+  const fixed = opts.fixed ?? {};
+  for (const [i, c] of Object.entries(fixed)) picks[Number(i)] = c;
   let iterations = 0;
   for (; iterations < maxIter; iterations++) {
     let changed = false;
     for (let i = 0; i < n; i++) {
+      if (fixed[i] !== undefined) continue;
       const evals0 = currentEvals();
       const mateRates = evals0.map((e) => e.rates);
       let best = { c: picks[i], u: -Infinity };

@@ -292,7 +292,8 @@ export interface HitOpt {
 export interface SimResult {
   total: number;
   dps: number;
-  members: { id: string; dmg: number; by: Record<string, number>; casts: Record<SkillKind, number>; spSpent: number }[];
+  /** applied = 이 멤버가 건 상태 횟수 (감전·부식·동결·연소·갑옷 파괴 …) — 시너지 판정용 */
+  members: { id: string; dmg: number; by: Record<string, number>; casts: Record<SkillKind, number>; spSpent: number; applied: Record<string, number> }[];
   control: number;
   sink: number;
   spGain: number;
@@ -336,6 +337,8 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
   /** 가동률: 구간(시작~끝)을 이어 붙여 합산 */
   const uptime = new Map<string, { time: number; start: number; until: number; m: Mod }>();
   const reactionCount: Record<string, number> = {};
+  /** 멤버별로 건 상태 횟수 */
+  const applied: Record<string, number>[] = members.map(() => ({}));
   let link = 0; // 연타 스택 (팀 공유)
   let linkUsed = false;
   let poise = 0;
@@ -531,6 +534,7 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
     c.reactions[r] = { until: Math.max(c.t + d, keep && prev ? prev.until : 0), level: lvl, by: c.me, start };
     if (r === "부식" && c.marks.has(`부식배율원:${c.me}`)) c.marks.set("부식배율", { until: c.t + d, by: c.me, v: 1.1 });
     count(r);
+    applied[c.me][r] = (applied[c.me][r] ?? 0) + 1;
     emit({ type: "reactionApplied", reaction: r, level: lvl });
   }
 
@@ -597,6 +601,7 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
       c.breach = { until: c.t + BREACH_DUR(Math.max(1, v)), level: Math.max(1, v), by: c.me, start: c.t };
       c.vuln.stacks = 0;
       count("갑옷 파괴");
+      applied[c.me]["갑옷 파괴"] = (applied[c.me]["갑옷 파괴"] ?? 0) + 1;
       emit({ type: "vulnConsumed", stacks: v, via: a });
     }
     count(a);
@@ -885,7 +890,7 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
       infl: { ...c.infl }, vuln: { ...c.vuln }, reactions: { ...c.reactions }, breach: c.breach,
       marks: new Map(c.marks), teamMods: new Map(teamMods), enemyMods: new Map(enemyMods),
       rt: rt.map((r) => ({ ...r, by: { ...r.by }, casts: { ...r.casts }, s: cloneS(r.s) })),
-      uptime: new Map([...uptime].map(([k, u]) => [k, { ...u }])), reactionCount: { ...reactionCount }, lastBattle: [...lastBattle], dotKeys: new Set(dotKeys),
+      uptime: new Map([...uptime].map(([k, u]) => [k, { ...u }])), reactionCount: { ...reactionCount }, applied: applied.map((x) => ({ ...x })), lastBattle: [...lastBattle], dotKeys: new Set(dotKeys),
     };
     const before = rt.reduce((a, r) => a + r.dmg, 0);
     const log0 = o.log;
@@ -902,6 +907,7 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
     uptime.clear(); for (const [k, u] of snapState.uptime) uptime.set(k, u);
     for (const k of Object.keys(reactionCount)) delete reactionCount[k];
     Object.assign(reactionCount, snapState.reactionCount);
+    snapState.applied.forEach((x, j) => (applied[j] = x));
     snapState.lastBattle.forEach((x, j) => (lastBattle[j] = x));
     dotKeys.clear(); for (const k of snapState.dotKeys) dotKeys.add(k);
     return v;
@@ -976,7 +982,7 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
   return {
     total,
     dps: total / D,
-    members: members.map((m, i) => ({ id: m.id, dmg: rt[i].dmg, by: rt[i].by, casts: rt[i].casts, spSpent: rt[i].spSpent })),
+    members: members.map((m, i) => ({ id: m.id, dmg: rt[i].dmg, by: rt[i].by, casts: rt[i].casts, spSpent: rt[i].spSpent, applied: applied[i] })),
     control: baseControl,
     sink: o.sink,
     spGain: (spGain + 0) / D,
@@ -1028,9 +1034,9 @@ export function simulateBest(members: SimMember[], o: { duration?: number; sinks
   const order = members.map((m, i) => ({ i, c: m.kit.carry })).sort((a, b) => b.c - a.c);
   const cands = order.filter((x) => x.c >= 0.5).slice(0, o.sinks ?? 2);
   const list = cands.length ? cands : order.slice(0, 1);
-  // 스킬 형태 조합 (결: 지혜/의지)
-  const formIdx = members.findIndex((m) => m.kit.forms?.length);
-  const variants: SimMember[][] = formIdx < 0 ? [members] : members[formIdx].kit.forms!.map((f) => members.map((m, i) => (i === formIdx ? { ...m, form: f } : m)));
+  // 스킬 형태(결: 지능 ≥ 의지 → 진결·지혜, 아니면 진결·의지)는 게임처럼 실제 능력치로 정해짐 — 형태를 바꾸려면 장비(능력치)를 바꿔야 함
+  //   (2026-10-08 이전: 능력치와 상관없이 두 형태를 다 돌려 큰 쪽 → 지능 장비로 의지 형태를 쓰는 불가능한 운영이 나올 수 있었음)
+  const variants: SimMember[][] = [members];
   let best: SimResult | undefined;
   let bestMs = members;
   // fast(1차 선별): 메인 딜러 후보 × 정책 3·4 (전체 탐색과 상위 5% 겹침 ~90%) / 정밀(2차): 메인 딜러 후보 × 정책 0~6 전부

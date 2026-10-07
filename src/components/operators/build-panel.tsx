@@ -209,6 +209,39 @@ export function BuildPanel({
           <p className="text-xs text-muted-foreground">1위 무기 착용 · 무기와 같은 역할별 점수 · 세트 효과도 조건·가동률 반영 · 세트 3개 + 1칸 자유(같은 부품 2개 가능) · 최고 등급</p>
         </header>
         <GearLoadout sets={loadoutSets} pieces={loadoutPieces} attrTypes={attrTypesJson.attrTypes} attrs={loadoutAttrs} />
+        {rec.formBuilds && rec.formBuilds.length > 0 && (
+          <div className="border-t px-4 py-3">
+            <p className="mb-2 text-sm font-semibold">
+              스킬 형태별 장비 <span className="text-xs font-normal text-muted-foreground">능력치(지능·의지)에 따라 스킬 형태가 바뀌어요 — 그 형태가 되는 장비 조합만 비교</span>
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {rec.formBuilds.map((f) => (
+                <div key={f.form} className="border bg-background p-2">
+                  <p className="text-[13px] font-semibold">
+                    {f.form} <span className="font-mono text-[11px] font-normal text-muted-foreground">{f.condition}</span>
+                  </p>
+                  <p className="mb-1.5 text-[11px] text-muted-foreground">무기 {f.weaponName}</p>
+                  <ol className="space-y-1">
+                    {f.gear.slice(0, 3).map((g, i) => (
+                      <li key={g.suitId} className="flex items-center gap-1.5 text-[12px]">
+                        <span className="w-3 font-mono text-muted-foreground">{i + 1}</span>
+                        {gearImages.suits[g.suitId] && (
+                          <span className="relative block size-6 shrink-0 overflow-hidden bg-muted">
+                            <Image src={gearImages.suits[g.suitId]} alt="" fill sizes="24px" unoptimized className="object-contain" />
+                          </span>
+                        )}
+                        <span className="truncate font-semibold">{g.suitName}</span>
+                        <span className="ml-auto font-mono text-[11px] text-muted-foreground">
+                          지능 {Math.round(g.score.attrs.지능)} · 의지 {Math.round(g.score.attrs.의지)}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         <p className="border-t px-4 py-2 text-xs text-muted-foreground">
           <Link href="/gear" className="font-semibold underline underline-offset-2">
             전체 장비 보기 →

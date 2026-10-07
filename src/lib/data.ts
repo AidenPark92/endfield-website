@@ -19,7 +19,7 @@ import type { Blackboard, CombatCharacter, SkillForm, SkillGroup } from "@/types
 import { optimizeParty, receiveTeamLines, lineKey, weaponLineKey, type KeyedLine, type PartyCandidate, type PartyMember, type PartyWeapon } from "@/lib/calc/party";
 import { memberStats, simulateBest, SIM, type Elem, type Kit, type SimMember, type SimResult } from "@/lib/calc/teamsim";
 import { buildKit as buildKitSim, type KitTable } from "@/lib/calc/kits";
-import { damageWeight, evaluateSuitEffect, rankGearByValue, rankWeaponsByValue, ROLE_WEIGHT, STAGGER_UPTIME, type DealerRef, type OperatorKit, type RoleWeight, type TeamPool, type WeaponValueRank } from "@/lib/calc/weapon-value";
+import { damageWeight, evaluateSuitEffect, GEAR_SEARCH, rankGearByValue, rankWeaponsByValue, ROLE_WEIGHT, STAGGER_UPTIME, type DealerRef, type OperatorKit, type RoleWeight, type TeamPool, type WeaponValueRank } from "@/lib/calc/weapon-value";
 import { comboRequirement, rankTeams, type ComboRequirement, type TeamCandidate, type TeamEval } from "@/lib/calc/team";
 import type { AttrName, EssenceRegion, EssenceStats, Operator, OperatorDetails, OperatorProfile, OperatorStats, Weapon } from "@/types/game";
 import { buildWeaponUsers } from "@/lib/weapon-users";
@@ -112,6 +112,19 @@ function defaultForm(id: string): string | undefined {
   const s = opStats[id];
   if (!s) return undefined;
   return s.int[89] >= s.wil[89] ? "진결 · 지혜" : "진결 · 의지";
+}
+
+/** 스킬 형태 → 그 형태가 되는 능력치 조건 (결 재능 "전략 수립": 지능 ≥ 의지 → 진결 · 지혜, 의지 > 지능 → 진결 · 의지) */
+const FORM_GATES: { form: string; condition: string; gate: (a: Record<AttrName, number>) => boolean }[] = [
+  { form: "진결 · 지혜", condition: "지능 ≥ 의지", gate: (a) => a.지능 >= a.의지 },
+  { form: "진결 · 의지", condition: "의지 > 지능", gate: (a) => a.의지 > a.지능 },
+];
+export interface FormBuild {
+  form: string;
+  condition: string;
+  weaponId: string;
+  weaponName: string;
+  gear: GearRank[];
 }
 
 // ───────── 무기 · 장비 · 추천 빌드 ─────────
@@ -376,6 +389,8 @@ export interface BuildRecommendation {
     statSkills: { desc: string | null; bb: Blackboard }[];
   })[];
   gear: GearRank[];
+  /** 능력치로 스킬 형태가 바뀌는 오퍼레이터(결)의 형태별 무기·장비 — 그 형태가 되는 능력치 조건을 만족하는 장비만 */
+  formBuilds?: FormBuild[];
   synergy: Synergy;
 }
 
@@ -434,7 +449,17 @@ function computeBuildRecommendation(id: string): BuildRecommendation | undefined
   const topWeapon = ranked[0] ? combatWeapons[ranked[0].id] : undefined;
   const withWeapon = ranked[0] ? addBag(talents, ranked[0].bag) : talents;
   const gear = topWeapon ? gearOf(ranked[0].id, withWeapon) : [];
-  return { weapons: ranked, role, selfBuffs: describeBag(selfKitBag(id)), heals: Object.keys(kit.heals ?? {}).length > 0, gear, synergy: synergy(id, synergyIndex(), findTerms) };
+  // 형태별 빌드: 무기 순위대로 그 형태 조건을 만족하는 장비 조합이 나오는 첫 무기
+  const formBuilds = defaultForm(id)
+    ? FORM_GATES.flatMap((f) => {
+        for (const w of ranked.slice(0, 6)) {
+          const g = rankGearByValue(base, kit, combatWeapons[w.id].baseAtk.at(-1) ?? 0, addBag(talents, w.bag), Object.entries(gearPieces), Object.entries(gearSuits), role, dealers, pool, 0, GEAR_SEARCH.offCandidates, f.gate);
+          if (g.length) return [{ form: f.form, condition: f.condition, weaponId: w.id, weaponName: w.name, gear: g }];
+        }
+        return [];
+      })
+    : undefined;
+  return { weapons: ranked, role, selfBuffs: describeBag(selfKitBag(id)), heals: Object.keys(kit.heals ?? {}).length > 0, gear, formBuilds, synergy: synergy(id, synergyIndex(), findTerms) };
 }
 
 /** 메인 딜러 가중치: 같은 속성(물리/아츠 계열 포함) +2, 이 오퍼레이터가 그 딜러의 연계를 열어 주면 +2 */
@@ -781,8 +806,22 @@ export const OVERALL_N = 12;
 const bestTotal = () => (topTotal ??= scoreOf(bestTeams(1)[0]) || 1);
 
 /** 화면용 (직렬화 가능한 최소 정보) */
+/** 파티 표시 순서: 직업군 역할 (메인 딜러 = 0) — 서브 딜러 → 뱅가드 → 서포터·디펜더 */
+const DISPLAY_RANK: Record<string, number> = { 스트라이커: 1, 캐스터: 1, 가드: 1, 뱅가드: 2, 서포터: 3, 디펜더: 3 };
+/** 1번 메인 딜러(피해 1위) · 2번 서브 딜러 · 3번 뱅가드 · 4번 서포터 순 (같은 역할은 피해 비중 순) */
+export function displayOrder(ids: string[], mainId: string | undefined, share: (id: string) => number): string[] {
+  const rank = (id: string) => (id === mainId ? 0 : (DISPLAY_RANK[operators.find((o) => o.id === id)?.profile?.class ?? ""] ?? 3));
+  return [...ids].sort((a, b) => rank(a) - rank(b) || share(b) - share(a));
+}
+
 export function teamView(t: BestTeamWithGear & { contribution?: number }): BestTeam & { alignment?: MemberAlignment[]; gear?: TeamGearView; power?: TeamPowerView; contribution?: number } {
-  const { party, rotation, ...rest } = t;
+  const { party, rotation: rotation0, ...rest0 } = t;
+  // 화면 순서: 딜러 → 서브 딜러 → 뱅가드 → 서포터
+  const shareOf = (id: string) => rotation0?.members.find((m) => m.id === id)?.share ?? 0;
+  const order = displayOrder(rest0.ids, rotation0?.mainId, shareOf);
+  const pos = (id: string) => order.indexOf(id);
+  const rest = { ...rest0, ids: order, members: [...rest0.members].sort((a, b) => pos(a.id) - pos(b.id)) };
+  const rotation = rotation0 ? { ...rotation0, members: [...rotation0.members].sort((a, b) => pos(a.id) - pos(b.id)) } : undefined;
   const every = (r: number) => (r > 0 ? 1 / r : Infinity);
   const nameOf = (id: string) => operators.find((o) => o.id === id)?.name ?? id;
   const sim = teamSim(rest.ids, party);
@@ -926,7 +965,7 @@ export const PARTY_CANDIDATES_ALT = 6;
 export function partyBuild(ids: string[]): PartyBuild | undefined {
   const key = [...ids].sort().join("+");
   if (partyCache.has(key)) return partyCache.get(key);
-  const inputs: { m: PartyMember; rec: BuildRecommendation; gear: GearRank[] }[] = [];
+  const inputs: { m: PartyMember; rec: BuildRecommendation; gear: GearRank[]; formAlts: number[]; formNote: Map<number, string> }[] = [];
   for (const id of ids) {
     const rec = getBuildRecommendation(id);
     const op = operatorBase(id);
@@ -940,9 +979,25 @@ export function partyBuild(ids: string[]): PartyBuild | undefined {
     const talents = addBag(talentBag(combatChars[id].talents.attributes), selfKitBag(id));
     const cand = (w: PartyWeapon, g: GearRank): PartyCandidate => ({ suitId: g.suitId, suitName: g.suitName, pieces: g.pieces, weapon: w });
     const candidates = ws.flatMap((w, wi) => gear.slice(0, wi === 0 ? PARTY_CANDIDATES : PARTY_CANDIDATES_ALT).map((g) => cand(w, g)));
+    // 형태별 빌드(결): 기본 장비와 다른 형태가 되는 무기·장비 — 근사 식은 형태 차이를 모르므로 시뮬레이션으로 따로 검증 (formAlts)
+    const formAlts: number[] = [];
+    const formGear: GearRank[] = [];
+    const formNote = new Map<number, string>();
+    for (const fb of rec.formBuilds ?? []) {
+      const w = rec.weapons.find((x) => x.id === fb.weaponId);
+      if (!w) continue;
+      for (const g of fb.gear.slice(0, FORM_CANDIDATES)) {
+        formAlts.push(candidates.length);
+        formNote.set(candidates.length, `${fb.form} 형태 빌드 (${fb.condition} — 무기 ${fb.weaponName})`);
+        formGear.push(g);
+        candidates.push(cand(toPartyWeapon(w), g));
+      }
+    }
     inputs.push({
       rec,
-      gear,
+      gear: [...gear, ...formGear],
+      formAlts,
+      formNote,
       m: { id, op, kit, role: teamRoleOf(id), weaponAtk: ws[0].atk, base: talents, candidates },
     });
   }
@@ -954,13 +1009,16 @@ export function partyBuild(ids: string[]): PartyBuild | undefined {
     ids,
     members: res.picks.map((p, i) => {
       const c = inputs[i].m.candidates[p.pick];
-      const g = inputs[i].gear.find((x) => x.suitId === c.suitId) ?? inputs[i].gear[0];
+      // 같은 세트라도 형태별 빌드는 부위 구성이 다를 수 있음 → 후보의 부위로 찾기
+      const sameParts = (x: GearRank) => x.suitId === c.suitId && x.pieces.every((pc, k) => pc.id === c.pieces[k]?.id);
+      const g = inputs[i].gear.find(sameParts) ?? inputs[i].gear.find((x) => x.suitId === c.suitId) ?? inputs[i].gear[0];
       return {
         id: p.id,
         gear: g,
         weapon: c.weapon ? { id: c.weapon.id, name: c.weapon.name } : undefined,
         same: g.suitId === inputs[i].rec.gear[0]?.suitId,
         reason:
+          inputs[i].formNote.get(p.pick) ??
           p.reason?.replace(/@([^@]+)@/g, (_, oid: string) => nameOf(oid)) ??
           // 개인 추천(치유·생존 비중 포함)과 다른데 파티 탐색 이유가 없으면 = 팀 조합용 기준(직업군 역할, 치유 비중 제외) 차이
           (c.weapon?.id !== inputs[i].rec.weapons[0]?.id || g.suitId !== inputs[i].rec.gear[0]?.suitId
@@ -979,10 +1037,19 @@ export function partyBuild(ids: string[]): PartyBuild | undefined {
   // 최선 응답 반복(근사 식) 결과와 1차 빌드(팀 무기·장비 1위 그대로)를 팀 전투 시뮬레이션으로 검증해 큰 쪽
   const opt = toBuild(optimizeParty(inputs.map((x) => x.m), pieceMap, suitMap, 6, { shares }));
   const plain = toBuild(optimizeParty(inputs.map((x) => x.m), pieceMap, suitMap, 0, { shares }));
-  const dOpt = teamSim(ids, opt)?.dps ?? 0;
+  // 형태별 빌드 후보(결 진결·의지 등)를 고정하고 나머지를 다시 맞춘 파티
+  const alts = inputs.flatMap((x, i) => x.formAlts.map((c) => toBuild(optimizeParty(inputs.map((y) => y.m), pieceMap, suitMap, 6, { shares, fixed: { [i]: c } }))));
   const dPlain = teamSim(ids, plain)?.dps ?? 0;
-  const out = dOpt >= dPlain ? opt : plain;
-  out.gain = dPlain > 0 ? Math.max(dOpt, dPlain) / dPlain : 1;
+  let out = plain;
+  let dBest = dPlain;
+  for (const b of [opt, ...alts]) {
+    const d = teamSim(ids, b)?.dps ?? 0;
+    if (d > dBest) {
+      dBest = d;
+      out = b;
+    }
+  }
+  out.gain = dPlain > 0 ? dBest / dPlain : 1;
   partyCache.set(key, out);
   return out;
 }
@@ -1057,17 +1124,24 @@ export function teamWeaponsOf(id: string): PartyWeapon[] {
     .map((r) => ({ r, v: w.self * r.parts.self + w.dealer * r.parts.dealer }))
     .sort((a, b) => b.v - a.v || b.r.parts.self - a.r.parts.self)
     .slice(0, TEAM_WEAPONS)
-    .map(({ r }) => ({
-      id: r.id,
-      name: r.name,
-      atk: combatWeapons[r.id].baseAtk.at(-1) ?? 0,
-      bag: r.bag,
-      extra: r.extraHits.map((x) => ({ rate: x.rate, scale: x.scale })),
-      team: r.team,
-    }));
+    .map(({ r }) => toPartyWeapon(r));
   teamWeaponCache.set(id, out);
   return out;
 }
+
+function toPartyWeapon(r: WeaponValueRank): PartyWeapon {
+  return {
+    id: r.id,
+    name: r.name,
+    atk: combatWeapons[r.id].baseAtk.at(-1) ?? 0,
+    bag: r.bag,
+    extra: r.extraHits.map((x) => ({ rate: x.rate, scale: x.scale })),
+    team: r.team,
+  };
+}
+
+/** 형태별 빌드 후보 수 (파티에서 시뮬레이션으로 검증) */
+const FORM_CANDIDATES = 3;
 
 const teamGearCache = new Map<string, GearRank[]>();
 /** 팀 조합용 장비 순위 — 치유·생존 비중이 있는 직업(서포터·디펜더)만 팀 역할 비중·팀 무기 1위로 다시 계산, 나머지는 개인 추천 그대로 */
@@ -1108,11 +1182,31 @@ interface TeamInput {
   kit: OperatorKit;
   team: KeyedLine[];
 }
-const teamInputCache = new Map<string, TeamInput | undefined>();
-function teamInput(id: string): TeamInput | undefined {
-  if (teamInputCache.has(id)) return teamInputCache.get(id);
-  const w = teamWeaponsOf(id)[0];
-  const g = teamGearOf(id)[0];
+const teamInputCache = new Map<string, TeamInput[]>();
+/** 1차 입력 — [0] = 팀 무기·장비 1위, [1…] = 형태별 빌드 1위(결 진결·의지 등, 기본과 다를 때만). 1차 시뮬레이션은 이 중 가장 센 것 */
+function teamInputs(id: string): TeamInput[] {
+  const hit = teamInputCache.get(id);
+  if (hit) return hit;
+  const rec = getBuildRecommendation(id);
+  const w0 = teamWeaponsOf(id)[0];
+  const g0 = teamGearOf(id)[0];
+  const list: TeamInput[] = [];
+  const base = buildInput(id, w0, g0);
+  if (base) list.push(base);
+  for (const fb of rec?.formBuilds ?? []) {
+    const w = rec!.weapons.find((x) => x.id === fb.weaponId);
+    const g = fb.gear[0];
+    if (!w || !g || (w.id === w0?.id && g.pieces.every((p, k) => p.id === g0?.pieces[k]?.id))) continue;
+    const v = buildInput(id, toPartyWeapon(w), g);
+    if (v) list.push(v);
+  }
+  teamInputCache.set(id, list);
+  return list;
+}
+function teamInput(id: string, k = 0): TeamInput | undefined {
+  return teamInputs(id)[k];
+}
+function buildInput(id: string, w: PartyWeapon | undefined, g: GearRank | undefined): TeamInput | undefined {
   const kit = operatorKit(id);
   let out: TeamInput | undefined;
   if (w && kit) {
@@ -1127,7 +1221,6 @@ function teamInput(id: string): TeamInput | undefined {
       team: [...w.team.map((l) => ({ key: weaponLineKey(w.id, l), source: w.name, l })), ...suit.team],
     };
   }
-  teamInputCache.set(id, out);
   return out;
 }
 
@@ -1215,9 +1308,9 @@ function simKit(id: string): Kit | undefined {
  *   party 있음: 파티 무기·장비 최종 능력치(받은 팀 효과 포함)
  *   party 없음(1차): 팀 무기·장비 1위 + 팀원들의 무기·장비 팀 효과(중첩 규칙) — 빠진 멤버의 버프도 같이 빠짐(기여도)
  */
-function simMembers(ids: string[], party?: PartyBuild): SimMember[] | undefined {
+function simMembers(ids: string[], party?: PartyBuild, choice?: number[]): SimMember[] | undefined {
   const out: SimMember[] = [];
-  const ins = ids.map(teamInput);
+  const ins = ids.map((id, i) => teamInput(id, choice?.[i] ?? 0));
   if (ins.some((x) => !x)) return undefined;
   const lines = ins.map((x) => ({ kit: x!.kit, team: x!.team }));
   for (let i = 0; i < ids.length; i++) {
@@ -1238,13 +1331,19 @@ const simCache = new Map<string, { r: SimResult; order: string[] } | undefined>(
 /** 팀 시뮬레이션 (메인 딜러 후보·SP 정책별로 돌려 가장 큰 운영). 결과의 멤버 순서는 ids 순서 */
 export function teamSim(ids: string[], party?: PartyBuild): SimResult | undefined {
   // 파티 빌드는 무기·장비 선택까지 키에 (같은 4명도 빌드가 다르면 다른 결과)
-  const key = party ? `P|${party.members.map((m) => `${m.id}:${m.weapon?.id ?? ""}:${m.gear.suitId}`).sort().join(",")}` : keyOf(ids);
+  const key = party ? `P|${party.members.map((m) => `${m.id}:${m.weapon?.id ?? ""}:${m.gear.pieces.map((p) => p.id).join("/")}`).sort().join(",")}` : keyOf(ids);
   let hit = simCache.get(key);
   if (!simCache.has(key)) {
-    // 편성 순서(연계 우선순위 1→4)를 딜 구조 순으로 고정 — 같은 4명이면 넣은 순서와 무관하게 같은 결과
-    const ms = simMembers(ids, party)?.sort((a, b) => b.kit.carry - a.kit.carry || Number(a.id) - Number(b.id));
-    // 1차(개인 추천 장비)는 빠른 탐색, 파티 장비(2차)는 정밀 탐색
-    hit = ms ? { r: simulateBest(ms, { fast: !party }), order: ms.map((m) => m.id) } : undefined;
+    // 1차: 형태별 빌드가 있는 멤버(결)는 빌드마다 돌려 큰 쪽 / 2차(파티 빌드)는 그대로
+    const choices: number[][] = party ? [ids.map(() => 0)] : ids.reduce<number[][]>((acc, id) => acc.flatMap((c) => teamInputs(id).map((_, k) => [...c, k])), [[]]);
+    hit = undefined;
+    for (const choice of choices.length ? choices : [ids.map(() => 0)]) {
+      // 편성 순서(연계 우선순위 1→4)를 딜 구조 순으로 고정 — 같은 4명이면 넣은 순서와 무관하게 같은 결과
+      const ms = simMembers(ids, party, choice)?.sort((a, b) => b.kit.carry - a.kit.carry || Number(a.id) - Number(b.id));
+      // 1차(팀 무기·장비)는 빠른 탐색, 파티 빌드(2차)는 정밀 탐색
+      const r = ms ? simulateBest(ms, { fast: !party }) : undefined;
+      if (r && (!hit || r.total > hit.r.total)) hit = { r, order: ms!.map((m) => m.id) };
+    }
     simCache.set(key, hit);
   }
   if (!hit) return undefined;
@@ -1318,8 +1417,8 @@ export function teamScore(ids: string[], party?: PartyBuild): number {
 }
 
 /**
- * 시너지 정렬 보정 — 범용 멤버 1명당 30% (보정값: 해외 메타 23개·커뮤니티 공개 팀 30개 순위가 가장 좋아지는 값, 0.3~0.5 구간이 비슷)
- *   보정 없음 1501위 / 1448위 → 0.3 : 305위 / 261위 (2026-10-08, 3.6만 개 중 기하평균)
+ * 시너지 정렬 보정 — 범용 멤버 1명당 30% (보정값: 해외 메타 23개·커뮤니티 공개 팀 30개 순위가 좋아지는 구간 0.3~0.5 중 가장 약한 값)
+ *   보정 없음 1490위 / 1434위 → 0.3 : 271위 / 260위 (2026-10-08 감전·부식·갑옷 파괴 역할 반영 후, 3.6만 개 중 기하평균)
  */
 export const SYNERGY = { offPenalty: 0.3 };
 export function synergyFactor(ids: string[], r: SimResult): number {
@@ -1342,7 +1441,8 @@ export interface MemberAlignment {
 /**
  * 시너지 정렬 — 메인 딜러(시뮬레이션 피해 1위)와 각 멤버가 게임 데이터상 맞물리는지:
  *   ① 같은 속성(부착 스택·속성 버프 공유) ② 메인 딜러가 원하는 상태(likes·wants·연계 조건)를 스킬·전투 태그로 공급
- *   ③ 메인 딜러 속성에 걸리는 버프·디버프(증폭·취약·받는 피해 — 시뮬레이션 가동률 또는 무기·세트 팀 효과)
+ *   ③ 메인 딜러 속성에 걸리는 버프·디버프(증폭·취약·받는 피해 — 시뮬레이션 가동률 또는 무기·세트 팀 효과,
+ *      전투 중 직접 건 감전·부식·갑옷 파괴 — 2026-10-08 펠리카 감전 누락 수정)
  * 셋 다 아니면 "범용"(공격력·SP 등 아무 팀에나 들어가는 효과만) — 다른 속성 부착이 메인 딜러 스택을 반응으로 소모시키는 등
  * 실전 마찰이 있어 시너지 조합으로 보지 않음 (SYNERGY.offPenalty)
  */
@@ -1367,6 +1467,15 @@ export function alignmentOf(ids: string[], r: SimResult): MemberAlignment[] {
     );
     if (supplies) return { id, aligned: true, why: `${supplies} 공급` };
     if (D.elem === "물리" && tags.some((t) => VULN_TAGS.includes(t))) return { id, aligned: true, why: "방어 불능 공급" };
+    // 이 멤버의 역할인 상태 디버프(공식 전투 태그) — 감전(받는 아츠 피해↑) · 부식(저항↓) · 갑옷 파괴(받는 물리 피해↑)을 실제로 건 경우
+    //   (리노 궁극기의 부가 강제 감전처럼 태그에 없는 부수 효과는 제외 — 태그 = 게임이 정한 그 오퍼레이터의 역할)
+    const ap = r.members[i]?.applied ?? {};
+    const role = (st: string, n: number) => tags.includes(st) && (ap[st] ?? 0) >= n;
+    const debuff =
+      (D.elem !== "물리" && role("감전", 2) && "감전 (받는 아츠 피해 증가)") ||
+      (role("부식", 1) && "부식 (저항 감소)") ||
+      (D.elem === "물리" && role("갑옷 파괴", 1) && "갑옷 파괴 (받는 물리 피해 증가)");
+    if (debuff) return { id, aligned: true, why: debuff };
     const buff = Object.values(r.uptime).find((u) => u.src === i && elemHit(u.elems as string[] | undefined) && u.uptime * (u.kind === "res" ? u.value / 100 : u.value) >= 0.01);
     if (buff) return { id, aligned: true, why: `${D.elem} 피해 강화 (${buff.text})` };
     const line = teamInput(id)?.team.find((x) => elemHit(x.l.effect?.elems) && (x.l.effect?.zone === "dmg" || x.l.effect?.zone === "taken"));

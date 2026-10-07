@@ -1113,6 +1113,8 @@ export function rankGearByValue(
   pool?: TeamPool,
   forge = 0,
   offCandidates = GEAR_SEARCH.offCandidates,
+  /** 능력치 조건 (결 진결·의지 = 의지 > 지능) — 만족하는 장비 조합만 */
+  gate?: (attrs: Record<AttrName, number>) => boolean,
 ): GearRank[] {
   const w = effectiveRole(role, kit, dealers);
   const heals = Object.keys(kit.heals ?? {}).length > 0;
@@ -1164,6 +1166,7 @@ export function rankGearByValue(
     for (const id of ids) gearSum = addBag(gearSum, pb.get(id)!);
     const si = setEval(sid, Math.min(1, (kit.critRate ?? op.critRate) + gearSum.critRate));
     const bag = addBag(gearSum, si.bag);
+    if (gate && !gate(score(op, weaponAtk, bag).attrs)) return { v: -Infinity, bag, setBag: si.bag };
     return { v: objective(bag, si), bag, setBag: si.bag };
   };
   const results: (GearRank & { value: number })[] = [];
@@ -1175,6 +1178,7 @@ export function rankGearByValue(
     let best: { ids: string[]; v: number; bag: StatBag; setBag: StatBag } | undefined;
     const tryIds = (ids: string[]) => {
       const r = evalLoadout(sid, ids);
+      if (r.v === -Infinity) return;
       if (!best || r.v > best.v) best = { ids, ...r };
     };
     // 부품 2칸 (같은 부품 허용, 순서 무시)

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { comboRequirement, evaluateTeam, rankTeams, teamStates, type TeamCandidate } from "./team";
-import { alignmentOf, allTeams, bestTeamsFor, comboRequirementOf, hasSustain, partyBuild, synergyFactor, teamRoleOf, teamScore, teamSim, teamWeaponsOf } from "@/lib/data";
+import { alignmentOf, allTeams, bestTeamsFor, comboRequirementOf, displayOrder, getBuildRecommendation, hasSustain, partyBuild, synergyFactor, teamRoleOf, teamScore, teamSim, teamWeaponsOf } from "@/lib/data";
 
 // 용어 찾기 대역 (테스트용 — 실제는 glossary 의 splitTerms)
 const TERMS = ["전기 부착", "냉기 부착", "열기 부착", "자연 부착", "아츠 부착", "아츠 이상", "감전", "방어 불능", "강력한 일격", "불균형"];
@@ -76,6 +76,24 @@ describe("치유 무보정 · 시너지 정렬 · 팀 무기", () => {
     const al = alignmentOf(ids, teamSim(ids)!);
     expect(al.find((a) => a.id === "1040")!.aligned).toBe(true);
     expect(al.find((a) => a.id === "5")!.aligned).toBe(false);
+  });
+  it("티프로스 팀: 펠리카는 감전(받는 아츠 피해↑)으로 맞물림 / 라스트 라이트 팀의 리노는 범용(감전은 리노 역할 태그가 아님)", () => {
+    const ty = ["1173", "1041", "1", "19"];
+    expect(alignmentOf(ty, teamSim(ty)!).find((a) => a.id === "1")!.why).toContain("감전");
+    const lr = ["17", "25", "13", "1041"];
+    expect(alignmentOf(lr, teamSim(lr)!).find((a) => a.id === "1041")!.aligned).toBe(false);
+  });
+  it("결: 형태별 장비 — 진결·의지 빌드는 의지 > 지능이고 식양의 숨결이 상위", () => {
+    const fb = getBuildRecommendation("1040")!.formBuilds!;
+    const will = fb.find((f) => f.form === "진결 · 의지")!;
+    for (const g of will.gear) expect(g.score.attrs.의지).toBeGreaterThan(g.score.attrs.지능);
+    expect(will.gear.slice(0, 3).map((g) => g.suitName)).toContain("식양의 숨결");
+    const wis = fb.find((f) => f.form === "진결 · 지혜")!;
+    for (const g of wis.gear) expect(g.score.attrs.지능).toBeGreaterThanOrEqual(g.score.attrs.의지);
+  });
+  it("파티 표시 순서: 메인 딜러 → 서브 딜러 → 뱅가드 → 서포터", () => {
+    // 리노(서포터) · 장방이(스트라이커, 메인) · 아크라이트(뱅가드) · 펠리카(캐스터)
+    expect(displayOrder(["1041", "838", "7", "1"], "838", () => 0)).toEqual(["838", "1", "7", "1041"]);
   });
   it("장방이 팀: 펠리카·아크라이트(전기) 맞물림", () => {
     const ids = ["838", "1", "7", "1041"];
