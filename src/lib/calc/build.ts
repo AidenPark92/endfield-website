@@ -248,11 +248,6 @@ export interface Rotation {
    * from 스킬의 빈도로 쓰고, to 종류의 피해 보너스를 받음. to = "anomaly" 면 이상 피해(아츠 강도)로
    */
   moved?: { from: "battle" | "combo" | "ult"; to: DmgType | "anomaly"; weight: number; name: string; synced?: boolean }[];
-  /**
-   * 초당 사용 횟수를 직접 지정 (팀 로테이션 모델 lib/calc/rotation.ts 가 SP 공유·연계 기회·궁극기 에너지로 계산한 값).
-   * 있으면 rates() 는 이 값을 그대로 돌려준다 (쿨타임 감소·궁극기 효율은 이미 반영된 값)
-   */
-  fixedRates?: Record<"battle" | "combo" | "ult", number>;
   /** 배틀 스킬 1회에 본인만 추가로 얻는 궁극기 에너지 (레바테인 추가 공격 100, 라스트 라이트 16 …) */
   battleEnergy?: number;
   /** 팀 배틀 스킬 에너지를 받지 못함 (라스트 라이트: "자신의 배틀 스킬, 연계 스킬을 통해서만 궁극기 에너지를 획득") */
@@ -288,7 +283,6 @@ export const ASSUME = { comboCdrRealized: 1, stackRefresh: false, critHitScale: 
 export const basicCounted = () => INCLUDE_BASIC_ATTACK || ASSUME.basicScale > 0;
 
 export function rates(r: Rotation, ultGain: number, comboCdr = 0): Record<"battle" | "combo" | "ult", number> {
-  if (r.fixedRates) return r.fixedRates;
   // 연계 스킬 쿨타임 감소 → 쿨타임마다 쓴다고 보고 빈도 증가 (최대 70% 감소까지)
   const comboRate = r.comboRate / (1 - Math.min(0.7, Math.max(0, comboCdr * ASSUME.comboCdrRealized)));
   const energyPerSec = (r.selfEnergyOnly ? 0 : BATTLE_ULT_ENERGY * r.battleRate) + (r.battleEnergy ?? 0) * r.battleRate + r.comboEnergy * comboRate;
@@ -362,27 +356,6 @@ export function talentBag(nodes: { attrs: { attrType: number; value: number }[] 
   return bag;
 }
 
-export interface WeaponRank {
-  id: string;
-  name: string;
-  rarity: number;
-  score: ScoreResult;
-  /** 1위 대비 % */
-  relative: number;
-  levels: number[];
-  ignoredTrait: boolean;
-}
-
-export function rankWeapons(op: OperatorBase, base: StatBag, weapons: [string, CombatWeapon][], refine = 0): WeaponRank[] {
-  const rows = weapons.map(([id, w]) => {
-    const wb = weaponBag(w, refine);
-    return { id, name: w.name, rarity: w.rarity, score: score(op, wb.atk, addBag(base, wb.bag)), levels: wb.levels, ignoredTrait: wb.ignoredTrait };
-  });
-  rows.sort((a, b) => b.score.overall - a.score.overall);
-  const top = rows[0]?.score.overall || 1;
-  return rows.map((r) => ({ ...r, relative: r.score.overall / top }));
-}
-
 export interface GearRank {
   suitId: string;
   suitName: string | null;
@@ -392,73 +365,6 @@ export interface GearRank {
   setBag?: StatBag;
   score: ScoreResult;
   relative: number;
-}
-
-/**
- * 세트별 최적 장비 4칸(방어구 1 · 장갑 1 · 부품 2) — 세트 3개 이상 착용 조건.
- * 후보는 착용 레벨 70 이상(최고 등급) 장비, 단조 0단계 기준.
- * 세트 밖 1칸 후보는 칸마다 단독 점수 상위 8개만 본다(탐색량 축소).
- */
-export function rankGear(
-  op: OperatorBase,
-  weaponAtk: number,
-  base: StatBag,
-  pieces: [string, GearPiece][],
-  suits: [string, GearSuit][],
-  forge = 0,
-): GearRank[] {
-  const pool = pieces.filter(([, p]) => p.minWearLv >= 70);
-  const byId = new Map(pool);
-  const pb = new Map(pool.map(([id, p]) => [id, gearBag(p, forge)]));
-  const solo = (id: string) => score(op, weaponAtk, addBag(base, pb.get(id)!)).overall;
-  const bySlot = (pred: (p: GearPiece) => boolean, slot: number) =>
-    pool.filter(([, p]) => p.partType === slot && pred(p)).map(([id]) => id);
-  const topOff = (slot: number) => bySlot(() => true, slot).sort((a, b) => solo(b) - solo(a)).slice(0, 8);
-  const off = [topOff(0), topOff(1), topOff(2)];
-
-  const results: GearRank[] = [];
-  for (const [sid, suit] of suits) {
-    const inSuit = (p: GearPiece) => p.suitId === sid;
-    const sb = [bySlot(inSuit, 0), bySlot(inSuit, 1), bySlot(inSuit, 2)];
-    if (!sb[0].length && !sb[1].length && sb[2].length < 2) continue;
-    const setBonus = suitBag(suit);
-    let best: { ids: string[]; s: ScoreResult } | undefined;
-    // 칸: [방어구, 장갑, 부품, 부품]
-    const cand = (slot: number, offSuit: boolean) => (offSuit ? off[slot] : sb[slot]);
-    for (let offIdx = -1; offIdx < 4; offIdx++) {
-      const body = cand(0, offIdx === 0);
-      const hand = cand(1, offIdx === 1);
-      const edcA = cand(2, offIdx === 2);
-      const edcB = cand(2, offIdx === 3);
-      for (const b of body)
-        for (const h of hand)
-          for (const e1 of edcA)
-            for (const e2 of edcB) {
-              if (e1 === e2 || (offIdx === -1 && e2 < e1)) continue;
-              const ids = [b, h, e1, e2];
-              const suitCount = ids.filter((id) => byId.get(id)!.suitId === sid).length;
-              if (suitCount < 3) continue;
-              let bag = addBag(base, setBonus);
-              for (const id of ids) bag = addBag(bag, pb.get(id)!);
-              const s = score(op, weaponAtk, bag);
-              if (!best || s.overall > best.s.overall) best = { ids, s };
-            }
-    }
-    if (best)
-      results.push({
-        suitId: sid,
-        suitName: suit.name,
-        pieces: best.ids.map((id) => {
-          const p = byId.get(id)!;
-          return { id, name: p.name, partType: p.partType, inSuit: p.suitId === sid };
-        }),
-        score: best.s,
-        relative: 0,
-      });
-  }
-  results.sort((a, b) => b.score.overall - a.score.overall);
-  const top = results[0]?.score.overall || 1;
-  return results.map((r) => ({ ...r, relative: r.score.overall / top }));
 }
 
 // ───────── 연계 시너지 ─────────

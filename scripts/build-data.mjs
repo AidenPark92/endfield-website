@@ -25,7 +25,7 @@ const lookup = (label) => {
 const weapons = weaponsRaw.map((w) => {
   const essence = { base: null, extra: null, skill: null };
   for (const r of w.rec) { const { id, cat } = lookup(r); essence[cat] = id; }
-  const out = { id: w.id, name: w.name.trim(), rarity: w.rarity, type: w.type, essence, trait: w.trait, cover: w.cover };
+  const out = { id: w.id, name: w.name.trim(), rarity: w.rarity, type: w.type, essence, trait: w.trait };
   // 데이터 검증 메모: 3성 '지미니 12'는 추천 기질(공격력)과 무기 스킬(강공)이 위키상 불일치
   if (w.id === '40') out.note = 'TODO: 위키 추천 기질(공격력)과 무기 스킬(강공 · 무장 정비) 불일치 — 확인 필요';
   return out;
@@ -34,7 +34,7 @@ const weapons = weaponsRaw.map((w) => {
 const weaponIds = new Set(weapons.map((w) => w.id));
 const operators = operatorsRaw.map((o) => {
   for (const id of [...o.rec.skill, ...o.rec.attr]) if (!weaponIds.has(id)) throw new Error(`${o.name}: 무기 ${id} 없음`);
-  return { id: o.id, name: o.name, rarity: o.rarity, weaponType: o.weaponType, element: o.element, faction: o.faction, mainStat: o.mainStat, subStat: o.subStat, recommendedWeapons: { skill: o.rec.skill, attribute: o.rec.attr }, cover: o.cover };
+  return { id: o.id, name: o.name, rarity: o.rarity, weaponType: o.weaponType, element: o.element, faction: o.faction, mainStat: o.mainStat, subStat: o.subStat, recommendedWeapons: { skill: o.rec.skill, attribute: o.rec.attr } };
 }).sort((a, b) => b.rarity - a.rarity || Number(b.id) - Number(a.id));
 
 // 지역별 기질 풀(data/essence-regions.json)은 인게임 캡처 기준 수기 관리 — 이 스크립트가 덮어쓰지 않음

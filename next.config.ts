@@ -1,12 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // 빌드 시 추천 빌드(무기·장비 탐색)와 4인 조합 전체 팀 피해 계산(1차 4만여 개 + 2차 파티 장비)을 미리 함 → 페이지당 60초 기본 제한을 넘을 수 있음
+  // 빌드 시 오퍼레이터별 추천 빌드(무기·장비 탐색)를 계산함. 베스트 조합은 data/generated/teams.json 캐시를 읽지만, 캐시가 오래되면 다시 계산(몇 분) → 넉넉하게
   staticPageGenerationTimeout: 300,
-  images: {
-    // 공식 위키 이미지 CDN
-    remotePatterns: [{ protocol: "https", hostname: "static.skport.com" }],
-  },
 };
 
 export default nextConfig;

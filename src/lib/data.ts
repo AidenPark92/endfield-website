@@ -17,8 +17,6 @@ import { addBag, rates, score, synergy, talentBag, gearBag, suitBag, SP_REGEN_IN
 import { splitTerms } from "@/lib/glossary";
 import type { Blackboard, CombatCharacter, SkillForm, SkillGroup } from "@/types/combat";
 import { optimizeParty, receiveTeamLines, lineKey, weaponLineKey, type KeyedLine, type PartyCandidate, type PartyMember, type PartyWeapon } from "@/lib/calc/party";
-import { extractSkillBuffs, type SkillBuff } from "@/lib/calc/team-buffs";
-import type { RotBuffView, RotMember, RotationResult } from "@/lib/calc/rotation";
 import { memberStats, simulateBest, SIM, type Elem, type Kit, type SimMember, type SimResult } from "@/lib/calc/teamsim";
 import { buildKit as buildKitSim, type KitTable } from "@/lib/calc/kits";
 import { damageWeight, evaluateSuitEffect, rankGearByValue, rankWeaponsByValue, ROLE_WEIGHT, STAGGER_UPTIME, type DealerRef, type OperatorKit, type RoleWeight, type TeamPool, type WeaponValueRank } from "@/lib/calc/weapon-value";
@@ -43,18 +41,12 @@ export const weapons: Weapon[] = (weaponsJson.weapons as Weapon[]).map((w) => ({
 const opImages = operatorImagesJson as { full: Record<string, string>; face: Record<string, string> };
 const opProfiles = operatorProfilesJson.profiles as Record<string, OperatorProfile>;
 const opStats = operatorStatsJson.stats as Record<string, OperatorStats>;
-export const operatorStatsMeta = operatorStatsJson._meta;
 /** 능력치 막대 기준: 전체 오퍼레이터 레벨 90 힘·민첩·지능·의지 최댓값 */
 export const attrScaleMax = Math.max(
   ...Object.values(operatorStatsJson.stats as Record<string, OperatorStats>).flatMap((s) => [s.str, s.agi, s.int, s.wil].map((a) => a[a.length - 1])),
 );
 const opDetails = operatorDetailsJson.operators as unknown as Record<string, OperatorDetails>;
-export const operatorDetailsMeta = operatorDetailsJson._meta;
 
-/** 공식 위키 상세(스킬 배율·재능·잠재·육성 재료). 용량이 커서 Operator 에 붙이지 않고 필요할 때만 꺼냄 */
-export function getOperatorDetails(id: string): OperatorDetails | undefined {
-  return opDetails[id];
-}
 export const operators: Operator[] = (operatorsJson.operators as Operator[]).map((o) => ({
   ...o,
   image: opImages.full[o.id],
@@ -68,7 +60,6 @@ export const operators: Operator[] = (operatorsJson.operators as Operator[]).map
 export const weaponUsers = buildWeaponUsers(operators);
 
 const combatChars = (combatCharactersJson as unknown as { characters: Record<string, CombatCharacter & Record<string, unknown>> }).characters;
-export const combatCharactersMeta = combatCharactersJson._meta;
 
 /** 게임 데이터 기반 전투 정보(스킬 레벨별 수치·잠재·재능). 화면에 필요한 부분만 잘라서 돌려준다 */
 export function getCombatCharacter(id: string): CombatCharacter | undefined {
@@ -600,6 +591,39 @@ function mainDealers(): DealerRef[] {
   return dealerCache;
 }
 
+// ───────── 베스트 조합 화면 요약 (팀 전투 시뮬레이션 결과) ─────────
+
+/** 버프·디버프 가동 (amp 증폭 · vuln 취약 · taken 받는 피해 · atk 공격력 · dmg 피해 보너스 · res 저항 감소 — 값 = 포인트/100) */
+export interface RotBuffView {
+  from: string;
+  text: string;
+  effect: "amp" | "vuln" | "atk" | "taken" | "dmg" | "res";
+  value: number;
+  uptime: number;
+  /** 받는 팀원 */
+  to: string[];
+}
+
+/** 팀 전투 시뮬레이션 → 화면 요약 */
+export interface RotationResult {
+  members: { id: string; rates: Record<"battle" | "combo" | "ult", number>; damage: number; share: number; spShare: number }[];
+  /** 초당 피해 */
+  total: number;
+  /** 피해 비중 1위 */
+  mainId: string;
+  /** 조작 캐릭터 */
+  controlId: string;
+  /** 팀 SP 수입 (SP/s) */
+  spIncome: number;
+  /** 궁극기 평균 간격(초) */
+  ultInterval: number;
+  /** 연계를 쓴 멤버 비율 */
+  comboUptime: number;
+  buffs: RotBuffView[];
+  /** 아츠 폭발·이상·물리 이상 횟수 */
+  reactions?: Record<string, number>;
+}
+
 // ───────── 베스트 조합 (연계 시너지) ─────────
 
 export interface BestTeam extends TeamEval {
@@ -671,9 +695,7 @@ export interface TeamPowerView {
   reactions: Record<string, number>;
 }
 
-
 let quickCache: Map<string, number> | undefined;
-let byDamage: BestTeam[] | undefined;
 const keyOf = (ids: string[]) => [...ids].sort().join("+");
 
 /** 1차 팀 피해 = 팀 전투 시뮬레이션(개인 추천 장비) 초당 피해 — 3인 묶음도 같은 캐시 */
@@ -685,16 +707,6 @@ function quickOf(ids: string[]): number {
   const v = teamScore(ids);
   quickCache.set(key, v);
   return v;
-}
-
-/**
- * 1차: 모든 4인 조합을 팀 전투 시뮬레이션(개인 추천 장비, lib/calc/teamsim.ts)으로 평가해 팀 점수(초당 피해 × 생존 보정) 순으로.
- * 연계 시너지(allTeams)는 연계 발동 여부(빈도)로 그 안에 들어간다
- */
-export function teamsByDamage(): BestTeam[] {
-  if (byDamage) return byDamage;
-  const q = new Map(allTeams().map((t) => [t, quickOf(t.ids)]));
-  return (byDamage = [...allTeams()].sort((a, b) => q.get(b)! - q.get(a)! || b.score - a.score));
 }
 
 /**
@@ -857,32 +869,6 @@ export function comboRequirementOf(id: string): ComboRequirement {
   return comboReqCache.get(id)!;
 }
 
-/** 스킬이 주는 팀 버프·적 디버프 (lib/calc/team-buffs.ts) */
-const skillBuffCache = new Map<string, SkillBuff[]>();
-export function skillBuffsOf(id: string): SkillBuff[] {
-  if (skillBuffCache.has(id)) return skillBuffCache.get(id)!;
-  const cc = getCombatCharacter(id);
-  const base = operatorBase(id);
-  const out =
-    cc && base
-      ? extractSkillBuffs(
-          cc.skillGroups.map((g) => ({
-            type: g.type,
-            text: [g.desc ?? "", ...(g.forms ?? []).map((f) => f.desc)].join("\n"),
-            // 스킬 표: 세부 스킬별 마지막 레벨 값을 합침 (같은 키는 큰 값)
-            bb: g.skills.reduce<Record<string, number>>((acc, sk) => {
-              for (const [k, v] of Object.entries((sk.levels.at(-1) as unknown as { bb?: Record<string, number | string> })?.bb ?? {}))
-                if (typeof v === "number") acc[k] = Math.max(acc[k] ?? 0, v);
-              return acc;
-            }, {}),
-          })),
-          base.attrs,
-        )
-      : [];
-  skillBuffCache.set(id, out);
-  return out;
-}
-
 /** (보정 테스트용) 가정값을 바꾼 뒤 캐시 비우기 */
 export function resetBuildCache() {
   dealerCache = undefined;
@@ -894,7 +880,6 @@ export function resetBuildCache() {
   teamWeaponCache.clear();
   teamGearCache.clear();
   teamInputCache.clear();
-  byDamage = undefined;
   quickCache = undefined;
   simCache.clear();
   topTotal = undefined;
@@ -1002,20 +987,22 @@ export function partyBuild(ids: string[]): PartyBuild | undefined {
   return out;
 }
 
-/** (테스트·디버그용) 오퍼레이터 무기 평가 정보 */
-export function debugKit(id: string) {
-  return { kit: operatorKit(id), base: operatorBase(id), pool: teamPool(id) };
-}
-
-// ───────── 팀 로테이션 (lib/calc/rotation.ts) ─────────
+// ───────── 스킬 SP · 팀 로테이션 ─────────
 
 /** 스킬 표의 SP 항목: 소모(costValue) · 반환(atb_return*) · 회복(atb, atb_N …) · 강력한 일격 SP */
-const spCache = new Map<string, RotMember["sp"]>();
-function spOf(id: string): RotMember["sp"] {
+/** 배틀 스킬 소모 · 반환 · 스킬별 회복 SP · 강력한 일격 SP */
+interface SpInfo {
+  cost: number;
+  ret: number;
+  recover: Record<"battle" | "combo" | "ult", number>;
+  finalStrike: number;
+}
+const spCache = new Map<string, SpInfo>();
+function spOf(id: string): SpInfo {
   if (!spCache.has(id)) spCache.set(id, spOfRaw(id));
   return spCache.get(id)!;
 }
-function spOfRaw(id: string): RotMember["sp"] {
+function spOfRaw(id: string): SpInfo {
   const groups = combatChars[id]?.skillGroups ?? [];
   const levels = (type: string) =>
     (groups.find((g) => g.type === type)?.skills ?? []).map((sk) => ({ part: (sk as unknown as { part: string }).part, lv: sk.levels.at(-1) as unknown as RawLevel })).filter((x) => x.lv);
@@ -1150,7 +1137,6 @@ export function teamRotation(t: TeamEval, party?: PartyBuild, steps?: number): R
   const r = teamSim(t.ids, party);
   return r ? simToRotation(r) : undefined;
 }
-
 
 // ───────── 팀 전투 시뮬레이터 (lib/calc/teamsim.ts + kits.ts) ─────────
 
@@ -1309,11 +1295,6 @@ function simToRotation(r: SimResult): RotationResult {
       })),
     reactions: r.reactions,
   };
-}
-
-/** (디버그) 시뮬레이터 멤버 */
-export function debugSimMembers(ids: string[]) {
-  return simMembers(ids);
 }
 
 /**

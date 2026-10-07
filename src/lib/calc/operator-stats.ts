@@ -5,7 +5,6 @@ import type { AttrName, OperatorStats, StatMilestones } from "@/types/game";
 export const MAX_LEVEL = 90;
 /** 돌파 단계가 바뀌는 레벨 (돌파 전·후 기본치는 같음) */
 export const BREAK_LEVELS = [20, 40, 60, 80] as const;
-export const ATTR_KEYS: Record<AttrName, "str" | "agi" | "int" | "wil"> = { 힘: "str", 민첩: "agi", 지능: "int", 의지: "wil" };
 
 /** 주 능력치 1pt당 공격력 +0.5%, 보조 능력치 1pt당 +0.2% */
 export const MAIN_ATTR_ATK = 0.005;

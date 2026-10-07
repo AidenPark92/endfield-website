@@ -26,9 +26,6 @@ export function essenceImage(skill: string | null | undefined): string {
   return `/essence/${(skill && SKILL_IMAGE[skill]) || "5-base"}.webp`;
 }
 
-/** 스킬 속성에 전용 문양 이미지가 있는지 */
-export const hasSkillImage = (skill: string) => skill in SKILL_IMAGE;
-
 export interface LowTierEssence {
   id: "stable" | "refined" | "pure";
   name: string;

@@ -16,8 +16,6 @@ export const matchRarity = (r: number, f: RarityFilter) => (f === "전체" ? r >
 
 const WEAPON_TYPES: (WeaponType | "전체")[] = ["전체", "한손검", "양손검", "장병기", "권총", "아츠 유닛"];
 
-export const CATEGORY_NAME = { base: "기초", extra: "추가", skill: "스킬" } as const;
-
 interface Props {
   weapons: Weapon[];
   selectedId: string | null;

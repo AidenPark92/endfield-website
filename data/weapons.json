@@ -14,8 +14,7 @@
         "extra": "atk",
         "skill": "dark"
       },
-      "trait": "어둠 · 울부짖는 불길",
-      "cover": "https://static.skport.com/image/rm42wiki/20260118/7690187217834/696cc52a8a63ab649db93f77.png"
+      "trait": "어둠 · 울부짖는 불길"
     },
     {
       "id": "45",
@@ -27,8 +26,7 @@
         "extra": "hp",
         "skill": "efficiency"
       },
-      "trait": "효율 · 절개 의료법",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e0b71c15709c5bd08bfe7.png"
+      "trait": "효율 · 절개 의료법"
     },
     {
       "id": "46",
@@ -40,8 +38,7 @@
         "extra": "arts",
         "skill": "pain"
       },
-      "trait": "고통 · 가차 없는 숙청",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e12d34b089c6bf87606fd.png"
+      "trait": "고통 · 가차 없는 숙청"
     },
     {
       "id": "47",
@@ -53,8 +50,7 @@
         "extra": "originium",
         "skill": "burst"
       },
-      "trait": "방출 · 우승자의 위세",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e169d9b232958b8d4d1a4.png"
+      "trait": "방출 · 우승자의 위세"
     },
     {
       "id": "48",
@@ -66,8 +62,7 @@
         "extra": "originium",
         "skill": "pain"
       },
-      "trait": "고통 · 백야의 별",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/7690187217834/696db51e6c326a83dea2eacf.png"
+      "trait": "고통 · 백야의 별"
     },
     {
       "id": "49",
@@ -79,8 +74,7 @@
         "extra": "heal",
         "skill": "pain"
       },
-      "trait": "고통 · 밀물과 썰물의 속삭임",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e15db5f36488577aae7ad.png"
+      "trait": "고통 · 밀물과 썰물의 속삭임"
     },
     {
       "id": "61",
@@ -92,8 +86,7 @@
         "extra": "atk",
         "skill": "pain"
       },
-      "trait": "고통 · 간절한 소망",
-      "cover": "https://static.skport.com/image/rm42wiki/20260118/7690187217834/696cbc9ca3dc39acc04692f7.png"
+      "trait": "고통 · 간절한 소망"
     },
     {
       "id": "62",
@@ -105,8 +98,7 @@
         "extra": "atk",
         "skill": "flow"
       },
-      "trait": "흐름 · 윤회",
-      "cover": "https://static.skport.com/image/rm42wiki/20260118/7690187217834/696cb636a468ebd613856642.png"
+      "trait": "흐름 · 윤회"
     },
     {
       "id": "63",
@@ -118,8 +110,7 @@
         "extra": "arts",
         "skill": "dark"
       },
-      "trait": "어둠 · 치욕",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e16c7e9a3e4b7c53d5be3.png"
+      "trait": "어둠 · 치욕"
     },
     {
       "id": "64",
@@ -131,8 +122,7 @@
         "extra": "hp",
         "skill": "medic"
       },
-      "trait": "의료 · 침식성 광기의 불꽃",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e1702bc25979e2269262f.png"
+      "trait": "의료 · 침식성 광기의 불꽃"
     },
     {
       "id": "65",
@@ -144,8 +134,7 @@
         "extra": "nature",
         "skill": "suppress"
       },
-      "trait": "억제 · 빙퇴석의 침식 흔적",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e16506fc80a6e96441e78.png"
+      "trait": "억제 · 빙퇴석의 침식 흔적"
     },
     {
       "id": "66",
@@ -157,8 +146,7 @@
         "extra": "hp",
         "skill": "medic"
       },
-      "trait": "의료 · 탈로스의 눈",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e0979f787d1fc599d9a20.png"
+      "trait": "의료 · 탈로스의 눈"
     },
     {
       "id": "67",
@@ -170,8 +158,7 @@
         "extra": "cryo",
         "skill": "pain"
       },
-      "trait": "고통 · 외로운 항해",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e11c5bc25979e2269262d.png"
+      "trait": "고통 · 외로운 항해"
     },
     {
       "id": "68",
@@ -183,8 +170,7 @@
         "extra": "phys",
         "skill": "efficiency"
       },
-      "trait": "효율 · 하나되는 자연",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e0edd22b3d4859079ccbe.png"
+      "trait": "효율 · 하나되는 자연"
     },
     {
       "id": "69",
@@ -196,8 +182,7 @@
         "extra": "heat",
         "skill": "pain"
       },
-      "trait": "고통 · 쌓이는 탐욕",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696dfa5022b3d4859079ccb8.png"
+      "trait": "고통 · 쌓이는 탐욕"
     },
     {
       "id": "70",
@@ -209,8 +194,7 @@
         "extra": "atk",
         "skill": "burst"
       },
-      "trait": "방출 · 사무치는 추위",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e0a2d303281de3f074f92.png"
+      "trait": "방출 · 사무치는 추위"
     },
     {
       "id": "71",
@@ -222,8 +206,7 @@
         "extra": "crit",
         "skill": "dark"
       },
-      "trait": "어둠 · 청운",
-      "cover": "https://static.skport.com/image/rm42wiki/20260117/8037285980020/696b7466859d9d5c90cf7619.png"
+      "trait": "어둠 · 청운"
     },
     {
       "id": "72",
@@ -235,8 +218,7 @@
         "extra": "phys",
         "skill": "brutal"
       },
-      "trait": "잔혹 · 엄격한 규율",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/7690187217834/696dbdb9b24c2cc3c2097613.png"
+      "trait": "잔혹 · 엄격한 규율"
     },
     {
       "id": "73",
@@ -248,8 +230,7 @@
         "extra": "atk",
         "skill": "suppress"
       },
-      "trait": "억제 · 다층 절단",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e0adcf787d1fc599d9a21.png"
+      "trait": "억제 · 다층 절단"
     },
     {
       "id": "74",
@@ -261,8 +242,7 @@
         "extra": "crit",
         "skill": "crush"
       },
-      "trait": "분쇄 · 군왕의 위세",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e0c099b232958b8d4d1a0.png"
+      "trait": "분쇄 · 군왕의 위세"
     },
     {
       "id": "75",
@@ -274,8 +254,7 @@
         "extra": "atk",
         "skill": "suppress"
       },
-      "trait": "억제 · 천체 물리학",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e0f6f4d84f24c1e9557d3.png"
+      "trait": "억제 · 천체 물리학"
     },
     {
       "id": "76",
@@ -287,8 +266,7 @@
         "extra": "crit",
         "skill": "pain"
       },
-      "trait": "고통 · 문명의 쐐기",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e129b22b3d4859079ccc1.png"
+      "trait": "고통 · 문명의 쐐기"
     },
     {
       "id": "77",
@@ -300,8 +278,7 @@
         "extra": "phys",
         "skill": "technique"
       },
-      "trait": "기예 · 좋은 품성의 결실",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e0f27c15709c5bd08bfe8.png"
+      "trait": "기예 · 좋은 품성의 결실"
     },
     {
       "id": "78",
@@ -313,8 +290,7 @@
         "extra": "atk",
         "skill": "flow"
       },
-      "trait": "흐름 · 고열 방출",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696dd6a1303281de3f074f87.png"
+      "trait": "흐름 · 고열 방출"
     },
     {
       "id": "79",
@@ -326,8 +302,7 @@
         "extra": "ult",
         "skill": "pursuit"
       },
-      "trait": "추격 · 굴하지 않는 사명",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e15a2c9b3cd796e6b9027.png"
+      "trait": "추격 · 굴하지 않는 사명"
     },
     {
       "id": "80",
@@ -339,8 +314,7 @@
         "extra": "crit",
         "skill": "fracture"
       },
-      "trait": "골절 · 예술적 폭론",
-      "cover": "https://static.skport.com/image/rm42wiki/20260118/8037285980020/696c8cc54d84f24c1e9557aa.png"
+      "trait": "골절 · 예술적 폭론"
     },
     {
       "id": "346",
@@ -352,8 +326,7 @@
         "extra": "crit",
         "skill": "dark"
       },
-      "trait": "어둠 · 사라지지 않은 여광",
-      "cover": "https://static.skport.com/image/rm42wiki/20260320/4559012616678/69bc486c7c2305399ff6be1c_f1525633.png"
+      "trait": "어둠 · 사라지지 않은 여광"
     },
     {
       "id": "732",
@@ -365,8 +338,7 @@
         "extra": "atk",
         "skill": "burst"
       },
-      "trait": "방출 · 토벌의 원한",
-      "cover": "https://static.skport.com/image/rm42wiki/20260318/4559012616678/69b9f2bbc58d404e53cf4c01_2f76db19.png"
+      "trait": "방출 · 토벌의 원한"
     },
     {
       "id": "733",
@@ -378,8 +350,7 @@
         "extra": "crit",
         "skill": "fracture"
       },
-      "trait": "골절 · 군랑의 포식",
-      "cover": "https://static.skport.com/image/rm42wiki/20260403/5599668680266/69cf1c2d7c2305399ff6eb6b_56331367.png"
+      "trait": "골절 · 군랑의 포식"
     },
     {
       "id": "734",
@@ -391,8 +362,7 @@
         "extra": "cryo",
         "skill": "suppress"
       },
-      "trait": "억제 · 옛 시절의 달",
-      "cover": "https://static.skport.com/image/rm42wiki/20260320/4559012616678/69bc47b304c7f0cc1167416a_db193eac.png"
+      "trait": "억제 · 옛 시절의 달"
     },
     {
       "id": "839",
@@ -404,8 +374,7 @@
         "extra": "atk",
         "skill": "suppress"
       },
-      "trait": "억제 · 떠도는 번개",
-      "cover": "https://static.skport.com/image/rm42wiki/20260420/7690187217834/69e5a864fcc548f615ca64e2_6ad0f152.png"
+      "trait": "억제 · 떠도는 번개"
     },
     {
       "id": "840",
@@ -417,8 +386,7 @@
         "extra": "elec",
         "skill": "efficiency"
       },
-      "trait": "효율 · 중첩된 빛",
-      "cover": "https://static.skport.com/image/rm42wiki/20260420/7690187217834/69e5ab7bdb8406ebf82f6d04_f1525633.png"
+      "trait": "효율 · 중첩된 빛"
     },
     {
       "id": "999",
@@ -430,8 +398,7 @@
         "extra": "ult",
         "skill": "efficiency"
       },
-      "trait": "효율 · 불빛 연소",
-      "cover": "https://static.skport.com/image/rm42wiki/20260606/1118147466156/6a2411c49650be73424f6320_3eac6ad0.png"
+      "trait": "효율 · 불빛 연소"
     },
     {
       "id": "1000",
@@ -443,8 +410,7 @@
         "extra": "originium",
         "skill": "suppress"
       },
-      "trait": "억제 · 고통 누적",
-      "cover": "https://static.skport.com/image/rm42wiki/20260606/1118147466156/6a23eb7d9650be73424f6254_3eac6ad0.png"
+      "trait": "억제 · 고통 누적"
     },
     {
       "id": "1001",
@@ -456,8 +422,7 @@
         "extra": "atk",
         "skill": "technique"
       },
-      "trait": "기예 · 붉은색의 단절",
-      "cover": "https://static.skport.com/image/rm42wiki/20260606/1118147466156/6a239e66337a1106819614af_db193eac.png"
+      "trait": "기예 · 붉은색의 단절"
     },
     {
       "id": "1032",
@@ -469,8 +434,7 @@
         "extra": "heat",
         "skill": "flow"
       },
-      "trait": "흐름 · 심판",
-      "cover": "https://static.skport.com/image/rm42wiki/20260910/1118147466156/6aa298a6e6c4787f27a27380_56331367.png"
+      "trait": "흐름 · 심판"
     },
     {
       "id": "1042",
@@ -482,8 +446,7 @@
         "extra": "originium",
         "skill": "assault"
       },
-      "trait": "강공 · 내일의 희망",
-      "cover": "https://static.skport.com/image/rm42wiki/20260717/1118147466156/6a5992039650be734250155b_13673ac9.png"
+      "trait": "강공 · 내일의 희망"
     },
     {
       "id": "1043",
@@ -495,8 +458,7 @@
         "extra": "ult",
         "skill": "efficiency"
       },
-      "trait": "효율 · 순환",
-      "cover": "https://static.skport.com/image/rm42wiki/20260717/1118147466156/6a5984469650be73425014f9_6ad0f152.png"
+      "trait": "효율 · 순환"
     },
     {
       "id": "1044",
@@ -508,8 +470,7 @@
         "extra": "heal",
         "skill": "pursuit"
       },
-      "trait": "추격 · 위대한 영웅",
-      "cover": "https://static.skport.com/image/rm42wiki/20260717/1118147466156/6a598d14337a11068196c891_3eac6ad0.png"
+      "trait": "추격 · 위대한 영웅"
     },
     {
       "id": "1045",
@@ -521,8 +482,7 @@
         "extra": "ult",
         "skill": "burst"
       },
-      "trait": "방출 · 철벽 돌파",
-      "cover": "https://static.skport.com/image/rm42wiki/20260716/1118147466156/6a58d512337a11068196c2a9_56331367.png"
+      "trait": "방출 · 철벽 돌파"
     },
     {
       "id": "1046",
@@ -534,8 +494,7 @@
         "extra": "heal",
         "skill": "medic"
       },
-      "trait": "의료 · 찬란한 장막",
-      "cover": "https://static.skport.com/image/rm42wiki/20260809/1118147466156/6a7819ae079faa160cf2b7bd_13673ac9.png"
+      "trait": "의료 · 찬란한 장막"
     },
     {
       "id": "1175",
@@ -547,8 +506,7 @@
         "extra": "atk",
         "skill": "burst"
       },
-      "trait": "방출 · 사냥꾼의 본능",
-      "cover": "https://static.skport.com/image/rm42wiki/20260905/1118147466156/6a9bda655e88149e6fd829e8_db193eac.png"
+      "trait": "방출 · 사냥꾼의 본능"
     },
     {
       "id": "1177",
@@ -560,8 +518,7 @@
         "extra": "nature",
         "skill": "burst"
       },
-      "trait": "방출 · 긴 밤의 여명",
-      "cover": "https://static.skport.com/image/rm42wiki/20260904/1118147466156/6a9a77d75e88149e6fd82314_db193eac.png"
+      "trait": "방출 · 긴 밤의 여명"
     },
     {
       "id": "43",
@@ -573,8 +530,7 @@
         "extra": "cryo",
         "skill": "suppress"
       },
-      "trait": "억제 · 린수를 향한 의지",
-      "cover": "https://static.skport.com/image/rm42wiki/20260530/1118147466156/6a1ad111337a11068195f803_2f76db19.png"
+      "trait": "억제 · 린수를 향한 의지"
     },
     {
       "id": "59",
@@ -586,8 +542,7 @@
         "extra": "arts",
         "skill": "pain"
       },
-      "trait": "고통 · 중생의 귀로",
-      "cover": "https://static.skport.com/image/rm42wiki/20260531/1118147466156/6a1bf2d69650be73424f47e2_13673ac9.png"
+      "trait": "고통 · 중생의 귀로"
     },
     {
       "id": "60",
@@ -599,8 +554,7 @@
         "extra": "ult",
         "skill": "burst"
       },
-      "trait": "방출 · 꿰뚫는 이치",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e066b62faf24e47c5252d.png"
+      "trait": "방출 · 꿰뚫는 이치"
     },
     {
       "id": "81",
@@ -612,8 +566,7 @@
         "extra": "atk",
         "skill": "flow"
       },
-      "trait": "흐름 · 거침없는 예리함",
-      "cover": "https://static.skport.com/image/rm42wiki/20260530/1118147466156/6a1ae674337a11068195f84c_f1525633.png"
+      "trait": "흐름 · 거침없는 예리함"
     },
     {
       "id": "82",
@@ -625,8 +578,7 @@
         "extra": "hp",
         "skill": "medic"
       },
-      "trait": "의료 · 기사의 영광",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e07dd859d9d5c90cf7646.png"
+      "trait": "의료 · 기사의 영광"
     },
     {
       "id": "83",
@@ -638,8 +590,7 @@
         "extra": "phys",
         "skill": "dark"
       },
-      "trait": "어둠 · 우러러보는 경지",
-      "cover": "https://static.skport.com/image/rm42wiki/20260530/1118147466156/6a1adef8337a11068195f837_6ad0f152.png"
+      "trait": "어둠 · 우러러보는 경지"
     },
     {
       "id": "84",
@@ -651,8 +602,7 @@
         "extra": "originium",
         "skill": "brutal"
       },
-      "trait": "잔혹 · 천추의 대지",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e071162faf24e47c5252e.png"
+      "trait": "잔혹 · 천추의 대지"
     },
     {
       "id": "85",
@@ -664,8 +614,7 @@
         "extra": "phys",
         "skill": "technique"
       },
-      "trait": "기예 · 옛 불의 잔향",
-      "cover": "https://static.skport.com/image/rm42wiki/20260530/1118147466156/6a1ad8dd9650be73424f447d_3eac6ad0.png"
+      "trait": "기예 · 옛 불의 잔향"
     },
     {
       "id": "86",
@@ -677,8 +626,7 @@
         "extra": "hp",
         "skill": "efficiency"
       },
-      "trait": "효율 · 강인한 의지",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e08b8f33d371ad95355b3.png"
+      "trait": "효율 · 강인한 의지"
     },
     {
       "id": "87",
@@ -690,8 +638,7 @@
         "extra": "ult",
         "skill": "burst"
       },
-      "trait": "방출 · 신속한 일격",
-      "cover": "https://static.skport.com/image/rm42wiki/20260531/1118147466156/6a1becce337a11068195fb4c_3eac6ad0.png"
+      "trait": "방출 · 신속한 일격"
     },
     {
       "id": "88",
@@ -703,8 +650,7 @@
         "extra": "ult",
         "skill": "morale"
       },
-      "trait": "사기 · 잔성의 귀로",
-      "cover": "https://static.skport.com/image/rm42wiki/20260530/1118147466156/6a1a8aac9650be73424f439b_56331367.png"
+      "trait": "사기 · 잔성의 귀로"
     },
     {
       "id": "89",
@@ -716,8 +662,7 @@
         "extra": "heat",
         "skill": "pursuit"
       },
-      "trait": "추격 · 옛 시절의 원조",
-      "cover": "https://static.skport.com/image/rm42wiki/20260531/1118147466156/6a1bd7f39650be73424f473b_2f76db19.png"
+      "trait": "추격 · 옛 시절의 원조"
     },
     {
       "id": "90",
@@ -729,8 +674,7 @@
         "extra": "elec",
         "skill": "pain"
       },
-      "trait": "고통 · 황무지 군집",
-      "cover": "https://static.skport.com/image/rm42wiki/20260529/1118147466156/6a199ff39650be73424f4196_3eac6ad0.png"
+      "trait": "고통 · 황무지 군집"
     },
     {
       "id": "91",
@@ -742,8 +686,7 @@
         "extra": "phys",
         "skill": "pain"
       },
-      "trait": "고통 · 빙산을 넘어서",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e0e76ee53304b0008b54e.png"
+      "trait": "고통 · 빙산을 넘어서"
     },
     {
       "id": "92",
@@ -755,8 +698,7 @@
         "extra": "atk",
         "skill": "pain"
       },
-      "trait": "고통 · 파고드는 추궁",
-      "cover": "https://static.skport.com/image/rm42wiki/20260529/1118147466156/6a19a8759650be73424f41b7_3eac6ad0.png"
+      "trait": "고통 · 파고드는 추궁"
     },
     {
       "id": "93",
@@ -768,8 +710,7 @@
         "extra": "ult",
         "skill": "brutal"
       },
-      "trait": "잔혹 · 분노의 융합",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e0e2322b3d4859079ccbd.png"
+      "trait": "잔혹 · 분노의 융합"
     },
     {
       "id": "94",
@@ -781,8 +722,7 @@
         "extra": "atk",
         "skill": "dark"
       },
-      "trait": "어둠 · 무덤 위의 불씨",
-      "cover": "https://static.skport.com/image/rm42wiki/20260528/1118147466156/6a184c64337a11068195f1ad_db193eac.png"
+      "trait": "어둠 · 무덤 위의 불씨"
     },
     {
       "id": "95",
@@ -794,8 +734,7 @@
         "extra": "originium",
         "skill": "pursuit"
       },
-      "trait": "추격 · 아츠 승화",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e15699b232958b8d4d1a2.png"
+      "trait": "추격 · 아츠 승화"
     },
     {
       "id": "96",
@@ -807,8 +746,7 @@
         "extra": "ult",
         "skill": "morale"
       },
-      "trait": "사기 · 순묘 분석법",
-      "cover": "https://static.skport.com/image/rm42wiki/20260528/1118147466156/6a1844cc9650be73424f3dfc_db193eac.png"
+      "trait": "사기 · 순묘 분석법"
     },
     {
       "id": "97",
@@ -820,8 +758,7 @@
         "extra": "elec",
         "skill": "suppress"
       },
-      "trait": "억제 · 동심원",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e0eabe868cec3d8081187.png"
+      "trait": "억제 · 동심원"
     },
     {
       "id": "98",
@@ -833,8 +770,7 @@
         "extra": "heal",
         "skill": "medic"
       },
-      "trait": "의료 · 신앙의 구원",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e151d507303c4d44a26d9.png"
+      "trait": "의료 · 신앙의 구원"
     },
     {
       "id": "1176",
@@ -846,8 +782,7 @@
         "extra": "heal",
         "skill": "medic"
       },
-      "trait": "의료 · 달콤한 꿈",
-      "cover": "https://static.skport.com/image/rm42wiki/20260924/1118147466156/6ab4b8e5be8f5e266367bd64_6ad0f152.png"
+      "trait": "의료 · 달콤한 꿈"
     },
     {
       "id": "44",
@@ -859,8 +794,7 @@
         "extra": "atk",
         "skill": "suppress"
       },
-      "trait": "억제 · 비상 부스트",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e0410f47b48c6aa787a1e.png"
+      "trait": "억제 · 비상 부스트"
     },
     {
       "id": "50",
@@ -872,8 +806,7 @@
         "extra": "hp",
         "skill": "crush"
       },
-      "trait": "분쇄 · 훈련된 전사",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e0587e3acca11e53da62c.png"
+      "trait": "분쇄 · 훈련된 전사"
     },
     {
       "id": "51",
@@ -885,8 +818,7 @@
         "extra": "arts",
         "skill": "suppress"
       },
-      "trait": "억제 · 비상 부스트",
-      "cover": "https://static.skport.com/image/rm42wiki/20260602/1118147466156/6a1ee69a337a110681960377_db193eac.png"
+      "trait": "억제 · 비상 부스트"
     },
     {
       "id": "52",
@@ -898,8 +830,7 @@
         "extra": "atk",
         "skill": "suppress"
       },
-      "trait": "억제 · 비상 부스트",
-      "cover": "https://static.skport.com/image/rm42wiki/20260603/1118147466156/6a1fcaa6337a1106819605b8_56331367.png"
+      "trait": "억제 · 비상 부스트"
     },
     {
       "id": "53",
@@ -911,8 +842,7 @@
         "extra": "arts",
         "skill": "morale"
       },
-      "trait": "사기 · 원정의 시작",
-      "cover": "https://static.skport.com/image/rm42wiki/20260603/1118147466156/6a1fc1419650be73424f51c7_6ad0f152.png"
+      "trait": "사기 · 원정의 시작"
     },
     {
       "id": "54",
@@ -924,8 +854,7 @@
         "extra": "phys",
         "skill": "suppress"
       },
-      "trait": "억제 · 비상 부스트",
-      "cover": "https://static.skport.com/image/rm42wiki/20260601/1118147466156/6a1d7a6f337a11068195ff7d_2f76db19.png"
+      "trait": "억제 · 비상 부스트"
     },
     {
       "id": "55",
@@ -937,8 +866,7 @@
         "extra": "atk",
         "skill": "morale"
       },
-      "trait": "사기 · 원정의 시작",
-      "cover": "https://static.skport.com/image/rm42wiki/20260602/1118147466156/6a1ed9889650be73424f4f75_2f76db19.png"
+      "trait": "사기 · 원정의 시작"
     },
     {
       "id": "56",
@@ -950,8 +878,7 @@
         "extra": "atk",
         "skill": "suppress"
       },
-      "trait": "억제 · 비상 부스트",
-      "cover": "https://static.skport.com/image/rm42wiki/20260602/1118147466156/6a1ecf6e337a110681960307_db193eac.png"
+      "trait": "억제 · 비상 부스트"
     },
     {
       "id": "57",
@@ -963,8 +890,7 @@
         "extra": "arts",
         "skill": "pursuit"
       },
-      "trait": "추격 · 끝없는 순환",
-      "cover": "https://static.skport.com/image/rm42wiki/20260602/1118147466156/6a1ec95c9650be73424f4f04_f1525633.png"
+      "trait": "추격 · 끝없는 순환"
     },
     {
       "id": "58",
@@ -976,8 +902,7 @@
         "extra": "atk",
         "skill": "pursuit"
       },
-      "trait": "추격 · 끝없는 순환",
-      "cover": "https://static.skport.com/image/rm42wiki/20260601/1118147466156/6a1d7457337a11068195ff72_6ad0f152.png"
+      "trait": "추격 · 끝없는 순환"
     },
     {
       "id": "38",
@@ -989,8 +914,7 @@
         "extra": null,
         "skill": "assault"
       },
-      "trait": "강공 · 무장 정비",
-      "cover": "https://static.skport.com/image/rm42wiki/20260601/1118147466156/6a1d80f69650be73424f4bdc_13673ac9.png"
+      "trait": "강공 · 무장 정비"
     },
     {
       "id": "39",
@@ -1002,8 +926,7 @@
         "extra": null,
         "skill": "assault"
       },
-      "trait": "강공 · 무장 정비",
-      "cover": "https://static.skport.com/image/rm42wiki/20260602/1118147466156/6a1ed489337a11068196032b_2f76db19.png"
+      "trait": "강공 · 무장 정비"
     },
     {
       "id": "40",
@@ -1016,7 +939,6 @@
         "skill": null
       },
       "trait": "강공 · 무장 정비",
-      "cover": "https://static.skport.com/image/rm42wiki/20260603/1118147466156/6a1fce469650be73424f5206_56331367.png",
       "note": "TODO: 위키 추천 기질(공격력)과 무기 스킬(강공 · 무장 정비) 불일치 — 확인 필요"
     },
     {
@@ -1029,8 +951,7 @@
         "extra": null,
         "skill": "assault"
       },
-      "trait": "강공 · 무장 정비",
-      "cover": "https://static.skport.com/image/rm42wiki/20260603/1118147466156/6a1fb02c337a110681960553_6ad0f152.png"
+      "trait": "강공 · 무장 정비"
     },
     {
       "id": "42",
@@ -1042,8 +963,7 @@
         "extra": null,
         "skill": "assault"
       },
-      "trait": "강공 · 무장 정비",
-      "cover": "https://static.skport.com/image/rm42wiki/20260119/8037285980020/696e0346d09e72e95f958bab.png"
+      "trait": "강공 · 무장 정비"
     }
   ]
 }

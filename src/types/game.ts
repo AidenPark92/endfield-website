@@ -31,7 +31,6 @@ export interface Weapon {
   essence: EssenceTarget;
   /** 무기 고유 스킬 이름 (예: "어둠 · 울부짖는 불길") */
   trait: string;
-  cover: string;
   /** 사이트 내 무기 이미지 (public/weapons, 없으면 undefined) */
   image?: string;
   /** 회전 연출 영상 경로 (확장자 제외 — .webm / .mp4 둘 다 있음) */
@@ -52,7 +51,6 @@ export interface Operator {
   subStat: string;
   /** 공식 위키 '게임 내 추천' — skill: 스킬 조합, attribute: 속성 조합 */
   recommendedWeapons: { skill: string[]; attribute: string[] };
-  cover: string;
   /** 전신 일러스트 (public/operators) */
   image?: string;
   /** 작은 초상화 (public/operators/face) */

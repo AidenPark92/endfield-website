@@ -437,12 +437,6 @@ const withObj = (w: string) => {
 };
 const STATE_ORDER = Object.keys(STATE_WORDS).sort((a, b) => b.length - a.length);
 
-export interface Resolution {
-  /** 기대 배율 (가동률 또는 평균 스택) */
-  factor: number;
-  reason: string;
-}
-
 /** 조건 문장 → 이 오퍼레이터가 혼자 발동하는 빈도 (회/초). 불가면 이유 */
 export function triggerRate(cond: string, kit: OperatorKit, r: Record<"battle" | "combo" | "ult", number>): { rate: number; via: string } | { rate: 0; why: string } {
   if (!cond) return { rate: Infinity, via: "항상" };
@@ -867,7 +861,6 @@ export function damageWeight(displays: { label: string; value: string }[]): numb
 export { ELEM_OF };
 
 // ───────── 순위 ─────────
-
 
 /** 역할 — 무기 점수에서 각 지표의 비중 (합 1) */
 export interface RoleWeight {

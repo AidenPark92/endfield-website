@@ -115,7 +115,6 @@ export function EssenceFarm({
             type: "한손검",
             essence: { base: cb, extra: ce, skill: cs },
             trait: "",
-            cover: "",
           }
         : null,
     [selectedId, statIds, cb, ce, cs, cName],
