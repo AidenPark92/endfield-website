@@ -53,7 +53,53 @@ export interface OperatorKit {
   staggerUptime?: number;
   /** 스킬 1회 타수 (스킬 표 피해 배율 항목 수 — 근사) */
   skillHits?: Partial<Record<SkillKind, number>>;
+  /**
+   * 팀 전투 시뮬레이션에서 실제로 일어난 빈도 (회/초) — 있으면 무기·세트 조건 빈도를 추정 대신 이 값으로
+   *   rates = 배틀·연계·궁극기 사용, events = 이 멤버가 일으킨 사건(부착·아츠 폭발·이상 부여/소모·물리 이상·강력한 일격·SP 회복·연타·취약·증폭),
+   *   team = 팀 전체 사건 (적 상태 가동률용), stagger = 적 불균형 가동률
+   */
+  observed?: { rates: Record<"battle" | "combo" | "ult", number>; events: Record<string, number>; team: Record<string, number>; stagger: number };
 }
+
+/**
+ * 시뮬레이션 관측 빈도로 조건 판정 — "장착자가 …" 조건의 상태 부여·소모·발생 횟수.
+ * 관측에 없는 사건(치유·비호·허약 등)이 하나라도 있으면 undefined → 기존 추정
+ */
+export function observedRate(cond: string, obs: NonNullable<OperatorKit["observed"]>): { rate: number; via: string } | undefined {
+  if (/다른 오퍼레이터|팀 내|팀원/.test(cond) && !/장착자/.test(cond)) return undefined;
+  const ev = obs.events;
+  // "적에게 N스택 혹은 그 이상의 아츠 부착을 부여한 후"
+  const stackM = cond.match(/(\d+)스택 혹은 그 이상의 (?:아츠|열기|전기|냉기|자연) 부착/);
+  if (stackM) {
+    const n = Number(stackM[1]);
+    let rate = 0;
+    for (let k = n; k <= 4; k++) rate += ev[`부착스택:${k}`] ?? 0;
+    return { rate, via: `전투 시뮬레이션: 부착 ${n}스택 이상 ${(rate * 90).toFixed(0)}회/90초` };
+  }
+  const consume = /소모/.test(cond);
+  const states = STATE_ORDER.filter((x) => cond.includes(x)).filter((x, _, arr) => !arr.some((o) => o !== x && o.includes(x)));
+  if (!states.length) {
+    if (/강력한 일격/.test(cond)) return { rate: ev["강력한 일격"] ?? 0, via: `전투 시뮬레이션: 강력한 일격 ${((ev["강력한 일격"] ?? 0) * 90).toFixed(0)}회/90초` };
+    return undefined;
+  }
+  const KEY: Record<string, string> = { "스킬 게이지": "스킬 게이지", 취약: "취약", "아츠 취약": "취약", "물리 취약": "취약" };
+  let rate = 0;
+  for (const st of states) {
+    const key = KEY[st] ?? (consume && !/폭발|게이지|연타|증폭|취약/.test(st) ? `${st} 소모` : st);
+    if (!(key in ev) && !OBSERVABLE.has(key.replace(/ 소모$/, ""))) return undefined;
+    rate += ev[key] ?? 0;
+  }
+  return { rate, via: `전투 시뮬레이션: ${states.join("·")}${consume ? " 소모" : ""} ${(rate * 90).toFixed(0)}회/90초` };
+}
+
+/** 시뮬레이션이 세는 사건 (0회여도 관측값으로 인정) */
+const OBSERVABLE = new Set([
+  "아츠 부착", "열기 부착", "전기 부착", "냉기 부착", "자연 부착",
+  "아츠 폭발", "열기 폭발", "전기 폭발", "냉기 폭발", "자연 폭발",
+  "아츠 이상", "연소", "감전", "동결", "부식",
+  "물리 이상", "띄우기", "넘어뜨리기", "강타", "갑옷 파괴", "방어 불능",
+  "스킬 게이지", "연타", "취약", "증폭", "전기 증폭", "열기 증폭", "냉기 증폭", "자연 증폭",
+]);
 
 /** 팀원 후보 (이 오퍼레이터를 뺀 전체 오퍼레이터) — 특정 조합이 아닌 기대값 계산용 */
 export interface TeamPool {
@@ -689,11 +735,16 @@ export function evaluateWeapon(w: CombatWeapon, kit: OperatorKit, baseAttrs: Rec
     // 충전 효율이 궁극기 빈도에 영향 → 조건 없는 효과를 먼저 더한 뒤 빈도 계산
     const always = effects.filter((e) => !e.cond && !e.enemyState && !e.skip && !e.extraScale);
     for (const e of always) take(e, 1, 1, "항상");
-    const r = rates(kit.rotation, bag.ultGain, bag.comboCdr);
+    // 시뮬레이션 관측이 있으면 스킬 사용 빈도도 실제 값
+    const r = kit.observed?.rates ?? rates(kit.rotation, bag.ultGain, bag.comboCdr);
     kit = { ...kit, critRate: (kit.critRate ?? 0.05) + bag.critRate };
     let prev: { rate: number; stacks: number; maxStack: number; duration?: number; full?: number } | undefined;
     /** 조건 → 빈도 (혼자 → 안 되면 동료 기대값) */
     const resolve = (cond: string): { rate: number; p: number; via: string } | { why: string } => {
+      if (kit.observed) {
+        const o = observedRate(cond.replace(/⟦(\w+)⟧/g, (_, k: string) => String(bb[k] ?? 1)), kit.observed);
+        if (o) return o.rate > 0 ? { rate: o.rate, p: 1, via: o.via } : { why: `${o.via} (발동 없음)` };
+      }
       // "적에게 N스택 혹은 그 이상의 아츠 부착을 부여한 후" — 내 속성 부착이 N스택까지 쌓여야 함.
       //   다른 속성 팀원의 부착은 반응으로 내 스택을 소모 → 다음 내 부착이 끊기기 전에 올 확률 q = 내 빈도 / (내 빈도 + 다른 속성 빈도 + 1/지속)
       //   N스택에서 부착하는 비율 = q^(N−1) → 발동 빈도 = 내 부착 빈도 × q^(N−1)
@@ -742,9 +793,17 @@ export function evaluateWeapon(w: CombatWeapon, kit: OperatorKit, baseAttrs: Rec
       const vias: string[] = [];
       for (const st of states.split("·")) {
         if (st === "불균형") {
-          const su = kit.staggerUptime ?? STAGGER_UPTIME;
+          const su = kit.observed?.stagger ?? kit.staggerUptime ?? STAGGER_UPTIME;
           u = Math.min(u, su);
           vias.push(`불균형 가동 ${Math.round(su * 100)}% (불균형치 기준 가정)`);
+          continue;
+        }
+        // 시뮬레이션 관측: 팀 전체가 그 상태를 건 빈도 × 지속
+        if (kit.observed && OBSERVABLE.has(st)) {
+          const d = STATE_DURATION[st] ?? 10;
+          const ou = Math.min(1, (kit.observed.team[st] ?? 0) * d);
+          u = Math.min(u, ou);
+          vias.push(`${st} ${Math.round(ou * 100)}% (전투 시뮬레이션)`);
           continue;
         }
         const res = resolve(`적에게 ${st}을 부여할 때`);

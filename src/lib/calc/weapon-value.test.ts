@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { damageWeight, parseTrait, triggerRate, type OperatorKit } from "./weapon-value";
+import { damageWeight, observedRate, parseTrait, triggerRate, type OperatorKit } from "./weapon-value";
 import { rates, type Rotation } from "./build";
 import { getBuildRecommendation, operators } from "@/lib/data";
 
@@ -173,5 +173,22 @@ describe("오퍼레이터 자체 버프", () => {
     expect(buffs("로시")).toContain("치명타 확률 +25%");
     expect(buffs("이본")).toContain("궁극기 모드 치명타 확률");
     expect(buffs("진천우")).toContain("공격력 +");
+  });
+});
+
+describe("전투 시뮬레이션 관측 빈도로 조건 판정 (observedRate)", () => {
+  const obs = {
+    rates: { battle: 0.1, combo: 0.05, ult: 0.01 },
+    events: { "아츠 폭발": 0.3, "자연 폭발": 0.3, "부식 소모": 0.02, "부착스택:2": 0.05, "부착스택:3": 0.02, "스킬 게이지": 0.1, 연타: 0.05 },
+    team: {},
+    stagger: 0.1,
+  };
+  it("장착자 사건 횟수를 그대로 (없는 사건은 0, 치유처럼 세지 않는 사건은 추정으로)", () => {
+    expect(observedRate("장착자가 아츠 폭발 피해를 줄 때", obs)!.rate).toBeCloseTo(0.3);
+    expect(observedRate("장착자가 부식을 소모한 후", obs)!.rate).toBeCloseTo(0.02);
+    expect(observedRate("장착자가 감전을 부여한 후", obs)!.rate).toBe(0);
+    expect(observedRate("장착자가 자신의 스킬로 스킬 게이지를 회복하거나 연타 상태를 획득한 후", obs)!.rate).toBeCloseTo(0.15);
+    expect(observedRate("장착자가 적에게 2스택 혹은 그 이상의 아츠 부착을 부여한 후", obs)!.rate).toBeCloseTo(0.07);
+    expect(observedRate("장착자가 자신의 스킬로 치유한 후", obs)).toBeUndefined();
   });
 });

@@ -965,7 +965,16 @@ const typhoeus: Factory = (T) => {
       pri: (c) => (c.inflNow().elem === "자연" || (me(c).arrows ?? 0) > 0 ? 2.8 : 2),
       cast: (c) => {
         c.hit(T.v(B, "점프 사격 피해 배율"), { kind: "battle", linkable: true });
-        for (let k = 1; k <= 5; k++) aerial(c, k, k < 5 ? T.v(B, "공중 일반 공격 피해") : c.isControl() ? T.v(B, "공중 강력한 일격 피해") : T.v(B, "공중 일반 공격 피해"));
+        // 공중 일반 공격 5회. 도중에 계시가 최대가 되면 공중에서 연계 — "계시를 모두 사냥 화살로 전환하고, 공중 일반 공격 횟수를 초기화" ✅
+        //   → 받은 화살로 공중 공격 5회를 이어서 (배틀 스킬 1회로 강력한 사격까지, 연계는 쿨타임마다 1회)
+        let reset = false;
+        for (let k = 1; k <= 5; k++) {
+          aerial(c, k, k < 5 ? T.v(B, "공중 일반 공격 피해") : c.isControl() ? T.v(B, "공중 강력한 일격 피해") : T.v(B, "공중 일반 공격 피해"));
+          if (!reset && (me(c).rev ?? 0) >= 8 && c.useCombo()) {
+            reset = true;
+            k = 0;
+          }
+        }
         if (c.isControl()) {
           // 다섯 번째 공중 공격 = 강력한 일격 ✅ — 공중 일반 공격 5회가 일반 공격 1세트를 대신하므로 일반 공격 주기를 처음부터 (강력한 일격 SP 중복 방지)
           c.spRecover(T.basic.fsSp || 23);
@@ -990,10 +999,14 @@ const typhoeus: Factory = (T) => {
         const s = me(c);
         c.hit(T.v(U, "강력한 화살 폭발 피해"), { kind: "ult", linkable: true });
         s.arrows = Math.min(4, (s.arrows ?? 0) + 2);
+        // 공중 일반 공격 5회 = 화살비 (마지막 강화). 도중 계시 최대 → 공중 연계로 화살 전환 + 공중 공격 5회 추가
+        let extra = 0;
         for (let k = 1; k <= 5; k++) {
           c.hit(k < 5 ? T.v(U, "일반 화살비 피해") : T.v(U, "강화된 화살비 피해"), { kind: "ult" });
           aerial(c, 0, 0);
+          if (!extra && (me(c).rev ?? 0) >= 8 && c.useCombo()) extra = 5;
         }
+        for (let k = 1; k <= extra; k++) aerial(c, 0, T.v(B, "공중 일반 공격 피해"));
       },
     },
     onEvent: (c, e) => {

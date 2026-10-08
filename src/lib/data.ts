@@ -19,7 +19,7 @@ import type { Blackboard, CombatCharacter, SkillForm, SkillGroup } from "@/types
 import { optimizeParty, receiveTeamLines, lineKey, weaponLineKey, type KeyedLine, type PartyCandidate, type PartyMember, type PartyWeapon } from "@/lib/calc/party";
 import { memberStats, simulateBest, SIM, type Elem, type Kit, type SimMember, type SimResult } from "@/lib/calc/teamsim";
 import { buildKit as buildKitSim, type KitTable } from "@/lib/calc/kits";
-import { damageWeight, evaluateSuitEffect, GEAR_SEARCH, rankGearByValue, rankWeaponsByValue, ROLE_WEIGHT, STAGGER_UPTIME, type DealerRef, type OperatorKit, type RoleWeight, type TeamPool, type WeaponValueRank } from "@/lib/calc/weapon-value";
+import { damageWeight, evaluateSuitEffect, evaluateWeapon, GEAR_SEARCH, rankGearByValue, rankWeaponsByValue, ROLE_WEIGHT, STAGGER_UPTIME, type DealerRef, type OperatorKit, type RoleWeight, type TeamPool, type WeaponValueRank } from "@/lib/calc/weapon-value";
 import { comboRequirement, rankTeams, type ComboRequirement, type TeamCandidate, type TeamEval } from "@/lib/calc/team";
 import type { AttrName, EssenceRegion, EssenceStats, Operator, OperatorDetails, OperatorProfile, OperatorStats, Weapon } from "@/types/game";
 import { buildWeaponUsers } from "@/lib/weapon-users";
@@ -947,6 +947,10 @@ export interface PartyBuild {
   teamDamage: number;
   /** 파티 화력 (딜러 피해 합 — 파티끼리 비교) */
   power: number;
+  /** 멤버별 고른 후보 번호 (내부) */
+  picks?: number[];
+  /** 무기·세트 조건부 효과를 시뮬레이션 관측 빈도로 다시 계산했는지 */
+  calibrated?: boolean;
   /** 멤버별 최종 능력치·추가 타격·무기 공격력 (팀 전투 시뮬레이션 입력, 화면에는 안 씀) */
   finals: { bag: StatBag; extra: { rate: number; scale: number }[]; weaponAtk: number; weaponId?: string }[];
 }
@@ -1033,6 +1037,7 @@ export function partyBuild(ids: string[]): PartyBuild | undefined {
     teamDamage: res.teamDamage,
     power: res.power,
     finals: res.finals,
+    picks: res.picks.map((p) => p.pick),
   });
   // 최선 응답 반복(근사 식) 결과와 1차 빌드(팀 무기·장비 1위 그대로)를 팀 전투 시뮬레이션으로 검증해 큰 쪽
   const opt = toBuild(optimizeParty(inputs.map((x) => x.m), pieceMap, suitMap, 6, { shares }));
@@ -1051,8 +1056,44 @@ export function partyBuild(ids: string[]): PartyBuild | undefined {
     }
   }
   out.gain = dPlain > 0 ? dBest / dPlain : 1;
-  partyCache.set(key, out);
-  return out;
+  // 고른 빌드의 무기·세트 조건부 효과를 실제 전투 빈도로 다시 계산 (조건 가동률 = 시뮬레이션 관측)
+  const cal = calibrateParty(ids, out, inputs.map((x) => x.m), shares);
+  partyCache.set(key, cal);
+  return cal;
+}
+
+/**
+ * 관측 보정: 파티 빌드로 전투 시뮬레이션 → 멤버별 실제 빈도(스킬 사용 · 부착 · 아츠 폭발 · 이상 부여/소모 · 물리 이상 · 강력한 일격 · SP 회복 · 연타 · 취약/증폭)로
+ * 무기 고유 특성·장비 세트 조건부 효과를 다시 평가해 최종 능력치(받는 팀 효과 포함)를 다시 만듦.
+ * 예) 티프로스 추운 밤의 그림자 "아츠 폭발 피해를 줄 때" · 관문 "자연 폭발 피해를 줄 때" — 일반 추정보다 실제 강력한 사격 횟수로
+ */
+function calibrateParty(ids: string[], built: PartyBuild, ms: PartyMember[], shares?: number[]): PartyBuild {
+  const sim = teamSim(ids, built);
+  if (!sim || !built.picks) return built;
+  const D = SIM.duration;
+  const per = (o: Record<string, number>) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, v / D]));
+  const team: Record<string, number> = {};
+  for (const m of sim.members) for (const [k, v] of Object.entries(m.applied)) team[k] = (team[k] ?? 0) + v / D;
+  const stagger = Math.min(1, ((sim.reactions["불균형"] ?? 0) * SIM.staggerSeconds) / D);
+  const ms2: PartyMember[] = ms.map((m, i) => {
+    const sm = sim.members.find((x) => x.id === m.id);
+    if (!sm) return m;
+    const kit: OperatorKit = {
+      ...m.kit,
+      observed: { rates: { battle: sm.casts.battle / D, combo: sm.casts.combo / D, ult: sm.casts.ult / D }, events: per(sm.applied), team, stagger },
+    };
+    const cand = m.candidates[built.picks![i]];
+    let weapon = cand.weapon;
+    if (weapon) {
+      const op = operatorBase(m.id)!;
+      const attrs = { 힘: op.attrs.힘 + m.base.str, 민첩: op.attrs.민첩 + m.base.agi, 지능: op.attrs.지능 + m.base.int, 의지: op.attrs.의지 + m.base.wil };
+      const ev = evaluateWeapon(combatWeapons[weapon.id], kit, attrs, 0, teamPool(m.id));
+      weapon = { ...weapon, bag: ev.bag, extra: ev.extraHits.map((x) => ({ rate: x.rate, scale: x.scale })), team: ev.team };
+    }
+    return { ...m, kit, candidates: [{ ...cand, weapon }] };
+  });
+  const res = optimizeParty(ms2, pieceMap, suitMap, 0, { shares });
+  return { ...built, finals: res.finals, calibrated: true };
 }
 
 // ───────── 스킬 SP · 팀 로테이션 ─────────
@@ -1333,7 +1374,7 @@ const simCache = new Map<string, { r: SimResult; order: string[] } | undefined>(
 export function teamSim(ids: string[], party?: PartyBuild, o: { rollout?: boolean } = {}): SimResult | undefined {
   // 파티 빌드는 무기·장비 선택까지 키에 (같은 4명도 빌드가 다르면 다른 결과)
   const key =
-    (party ? `P|${party.members.map((m) => `${m.id}:${m.weapon?.id ?? ""}:${m.gear.pieces.map((p) => p.id).join("/")}`).sort().join(",")}` : keyOf(ids)) +
+    (party ? `P|${party.members.map((m) => `${m.id}:${m.weapon?.id ?? ""}:${m.gear.pieces.map((p) => p.id).join("/")}`).sort().join(",")}${party.calibrated ? "|cal" : ""}` : keyOf(ids)) +
     (o.rollout === false ? "|nr" : "");
   let hit = simCache.get(key);
   if (!simCache.has(key)) {

@@ -278,6 +278,8 @@ export interface Ctx {
   othersNeed: (state: string) => boolean;
   /** 조작 캐릭터의 스킬이 일반 공격 1세트(강력한 일격 포함)를 대신했을 때 — 일반 공격 주기를 처음부터 (티프로스 공중 공격) */
   resetChain: () => void;
+  /** 스킬 도중 본인 연계 스킬을 바로 사용 (쿨타임이 끝났을 때만, 사용했으면 true) — 티프로스 공중 연계 */
+  useCombo: () => boolean;
 }
 
 export interface HitOpt {
@@ -399,9 +401,9 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
     },
     unmark: (k) => void c.marks.delete(k),
     spRecover: (x) => {
-      const add = Math.min(SIM.maxSp - c.sp, x);
-      c.sp += add;
-      spGain += add;
+      // 스킬로 회복 (무기 "자신의 스킬로 스킬 게이지를 회복한 후" 조건)
+      if (x > 0) note(c.me, "스킬 게이지");
+      gainSp(x);
     },
     spReturn: (x) => {
       c.sp = Math.min(SIM.maxSp, c.sp + x);
@@ -411,7 +413,10 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
       const i = who ?? c.me;
       rt[i].energy += x * (1 + members[i].stats.ultGain + (rt[i].s.ultGainAdd ?? 0));
     },
-    link: (x) => void (link = Math.min(4, link + x)),
+    link: (x) => {
+      if (x > 0) note(c.me, "연타");
+      link = Math.min(4, link + x);
+    },
     takeLink: () => {
       const l = link;
       link = 0;
@@ -428,6 +433,13 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
     emit,
     isControl: () => c.me === c.control,
     resetChain: () => {},
+    useCombo: () => {
+      if (c.t < rt[c.me].comboReadyAt) return false;
+      const me0 = c.me;
+      castCombo(me0);
+      c.me = me0;
+      return true;
+    },
     othersNeed: (x) => {
       for (let j = 0; j < n; j++) {
         if (j === c.me) continue;
@@ -546,7 +558,6 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
     c.reactions[r] = { until: Math.max(c.t + d, keep && prev ? prev.until : 0), level: lvl, by: c.me, start };
     if (r === "부식" && c.marks.has(`부식배율원:${c.me}`)) c.marks.set("부식배율", { until: c.t + d, by: c.me, v: 1.1 });
     count(r);
-    applied[c.me][r] = (applied[c.me][r] ?? 0) + 1;
     emit({ type: "reactionApplied", reaction: r, level: lvl });
   }
 
@@ -613,7 +624,6 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
       c.breach = { until: c.t + BREACH_DUR(Math.max(1, v)), level: Math.max(1, v), by: c.me, start: c.t };
       c.vuln.stacks = 0;
       count("갑옷 파괴");
-      applied[c.me]["갑옷 파괴"] = (applied[c.me]["갑옷 파괴"] ?? 0) + 1;
       emit({ type: "vulnConsumed", stacks: v, via: a });
     }
     count(a);
@@ -623,6 +633,11 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
 
   function mod(key: string, m: Omit<Mod, "src" | "until"> & { dur: number }) {
     const enemy = m.kind === "susc" || m.kind === "taken" || m.kind === "res";
+    if (m.kind === "susc" || m.kind === "taken") note(c.me, "취약");
+    if (m.kind === "amp") {
+      note(c.me, "증폭");
+      for (const el of m.elems ?? []) if (el !== "아츠") note(c.me, `${el} 증폭`);
+    }
     const full: Mod = { ...m, src: c.me, until: c.t + m.dur };
     const k = `${c.me}:${key}`;
     (enemy ? enemyMods : teamMods).set(k, full);
@@ -645,8 +660,56 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
   // ── 이벤트 ──
   const queue: SimEvent[] = [];
   let dispatching = false;
+  /** 멤버별 사건 횟수 (무기·세트 조건 빈도 · 시너지 판정) */
+  function note(i: number, key: string, k = 1) {
+    applied[i][key] = (applied[i][key] ?? 0) + k;
+  }
+  function gainSp(x: number) {
+    const add = Math.min(SIM.maxSp - c.sp, x);
+    c.sp += add;
+    spGain += add;
+  }
+  function noteEvent(e: SimEvent) {
+    const i = e.by;
+    switch (e.type) {
+      case "inflApplied":
+        if (e.elem) note(i, `${e.elem} 부착`);
+        note(i, "아츠 부착");
+        note(i, `부착스택:${Math.min(4, e.stacks ?? 1)}`);
+        break;
+      case "artsBurst":
+        note(i, "아츠 폭발");
+        if (e.elem) note(i, `${e.elem} 폭발`);
+        break;
+      case "reactionApplied":
+        if (e.reaction) note(i, e.reaction);
+        note(i, "아츠 이상");
+        break;
+      case "reactionConsumed":
+        if (e.reaction) note(i, `${e.reaction} 소모`);
+        note(i, "아츠 이상 소모");
+        break;
+      case "physAnomaly":
+        if (e.via) note(i, e.via);
+        note(i, "물리 이상");
+        break;
+      case "vulnAdded":
+        note(i, "방어 불능");
+        break;
+      case "vulnConsumed":
+        note(i, "방어 불능 소모");
+        break;
+      case "heatConsumed":
+        note(i, "열기 부착 소모");
+        break;
+      case "finalStrike":
+        note(i, "강력한 일격");
+        break;
+    }
+  }
   function emit(e: Omit<SimEvent, "by"> & { by?: number }) {
     queue.push({ ...e, by: e.by ?? c.me });
+    noteEvent(queue[queue.length - 1]);
     if (dispatching) return;
     dispatching = true;
     const me0 = c.me;
@@ -754,7 +817,7 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
     c.me = i;
     const chain = mode ? mode.chain : k.basic.chain;
     hit(chain, { kind: mode ? "ultMode" : "basic" });
-    c.spRecover(mode?.fsSp ?? k.basic.fsSp);
+    gainSp(mode?.fsSp ?? k.basic.fsSp);
     addPoise(k.basic.fsPoise);
     const sn = snap();
     for (let j = 0; j < n; j++) {
@@ -789,7 +852,7 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
   function step(s: number) {
     c.t = s * SIM.dt;
     // 자연 회복
-    c.spRecover(8 * SIM.dt);
+    gainSp(8 * SIM.dt);
     // 모드 종료 → 조작 캐릭터 복귀
     if (c.control !== baseControl && rt[c.control].modeUntil <= c.t) c.control = baseControl;
     if (c.t >= nextHit) {
