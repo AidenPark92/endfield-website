@@ -254,11 +254,16 @@ const antal: Factory = (T) =>
     },
   });
 
-/** 리노: 배틀(SP 25) = 라이브 모드 60초(팀 공격력) / 연계(아츠 이상 부여·소모) / 궁극기 = 전기·자연 증폭 + 강제 감전 */
+/**
+ * 리노: 배틀(SP 25) = 라이브 모드 60초(팀 공격력) / 연계(라이브 모드 중 아츠 이상 부여·소모) / 궁극기 = 보컬 모드(전기·자연 증폭) + 강제 감전
+ * 보컬 모드는 "라이브 모드를 대체" ✅ → 궁극기를 쓰면 라이브 모드(추가 공격 포함)가 끝나고, 연계 조건("라이브 모드의 지속 시간 동안")도 꺼진다.
+ *   다시 연계를 쓰려면 배틀 스킬로 라이브 모드에 재진입해야 함 (2026-10-09 이전: 궁극기 뒤에도 라이브 모드가 유지돼 연계·궁극기 회전이 과대)
+ */
 const liino: Factory = (T) =>
   base(T, 0.3, {
     battle: {
-      pri: (c) => (c.markOn("라이브") ? 0 : 3),
+      // 라이브·보컬 모드 중에는 배틀 스킬이 "모드 중단"으로 바뀜 → 쓰지 않음
+      pri: (c) => (c.markOn("라이브") || c.markOn("보컬") ? 0 : 3),
       cast: (c) => {
         c.hit(T.v(B, "초회 피해 배율"), { kind: "battle", linkable: true });
         const d = T.v(B, "라이브 모드 지속 시간(초)");
@@ -277,8 +282,12 @@ const liino: Factory = (T) =>
     ult: {
       cast: (c) => {
         const d = T.v(U, "보컬 모드 지속 시간(초)");
-        c.mod("공격력", { kind: "atk", value: T.v(U, "공격력 증가"), dur: Math.max(d, (c.markOn("라이브") ? 0 : d)), text: "리노 보컬 모드: 팀 공격력" });
+        // 보컬 모드가 라이브 모드를 대체 — 라이브 모드와 그 추가 공격 종료
+        c.unmark("라이브");
+        c.unmark(`dot:전기:${c.me}`);
+        c.mod("공격력", { kind: "atk", value: T.v(U, "공격력 증가"), dur: d, text: "리노 보컬 모드: 팀 공격력" });
         const will = c.members[c.me].stats.attrs.의지;
+        c.mark("보컬", d);
         c.mod("보컬", { kind: "amp", value: Math.min(T.v(U, "의지 증가 증폭 최대치"), will * T.v(U, "의지 1포인트마다 증가하는 증폭 효과")), elems: ["전기", "자연"], dur: d, text: "리노 보컬 모드: 전기·자연 증폭" });
         const songs = d / (T.v(U, "노랫소리 간격(초)") || 1.5);
         c.hit(T.v(U, "무대 위 특수 효과 피해 배율") + T.v(U, "노랫소리 1회 피해 배율") * (songs + 3) + T.v(U, "클라이맥스 피해 배율"), { kind: "ult", linkable: true });

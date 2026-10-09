@@ -17,7 +17,7 @@ import { addBag, rates, score, synergy, talentBag, gearBag, suitBag, SP_REGEN_IN
 import { splitTerms } from "@/lib/glossary";
 import type { Blackboard, CombatCharacter, SkillForm, SkillGroup } from "@/types/combat";
 import { optimizeParty, receiveTeamLines, lineKey, weaponLineKey, type KeyedLine, type PartyCandidate, type PartyMember, type PartyWeapon } from "@/lib/calc/party";
-import { memberStats, simulateBest, SIM, type Elem, type Kit, type SimMember, type SimResult } from "@/lib/calc/teamsim";
+import { memberStats, simulate, simulateBest, SIM, type Elem, type Kit, type SimMember, type SimResult } from "@/lib/calc/teamsim";
 import { buildKit as buildKitSim, type KitTable } from "@/lib/calc/kits";
 import { damageWeight, evaluateSuitEffect, evaluateWeapon, GEAR_SEARCH, rankGearByValue, rankWeaponsByValue, ROLE_WEIGHT, STAGGER_UPTIME, type DealerRef, type OperatorKit, type RoleWeight, type TeamPool, type WeaponValueRank } from "@/lib/calc/weapon-value";
 import { comboRequirement, rankTeams, type ComboRequirement, type TeamCandidate, type TeamEval } from "@/lib/calc/team";
@@ -1402,6 +1402,16 @@ export function teamSim(ids: string[], party?: PartyBuild, o: { rollout?: boolea
     uptime: Object.fromEntries(Object.entries(r.uptime).map(([k, u]) => [k, { ...u, src: remap(u.src), to: u.to?.map(remap) }])),
     forms: r.forms ? back.map((j) => r.forms![j]) : undefined,
   };
+}
+
+/** 디버그: teamSim 이 고른 운영(메인 딜러·SP 정책)을 로그와 함께 다시 돌림 (화면·순위에는 안 씀) */
+export function teamSimLog(ids: string[], party?: PartyBuild): string[] {
+  const r = teamSim(ids, party);
+  const ms = simMembers(ids, party)?.sort((a, b) => b.kit.carry - a.kit.carry || Number(a.id) - Number(b.id));
+  if (!r || !ms) return [];
+  const log: string[] = ms.map((m) => `0 ${m.id} 능력치 ${JSON.stringify(m.stats.attrs)} 공격력 ${Math.round((m.stats.atkBase * (1 + m.stats.atkPct) + m.stats.flatAtk) * m.stats.attrBonus)} 아츠강도 ${m.stats.artsIntensity} 치명 ${m.stats.critRate.toFixed(2)}/${m.stats.critDmg.toFixed(2)}`);
+  simulate(ms, { sink: ms.findIndex((m) => m.id === ids[r.sink]), share: r.share, log });
+  return log;
 }
 
 /** 시뮬레이션 결과 → 화면용 로테이션 요약 */

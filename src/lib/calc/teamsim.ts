@@ -825,6 +825,7 @@ export function simulate(members: SimMember[], o: { sink: number; control?: numb
       members[j].kit.onFinalStrike?.(c, i);
     }
     c.me = i;
+    o.log?.push(`${c.t.toFixed(1)} ${members[i].id} 강력한 일격 (부착 ${sn.infl ?? "-"}${sn.stacks || ""} · 방어 불능 ${sn.vuln} · ${sn.reactions.join("/") || "이상 없음"}) SP${c.sp.toFixed(0)}`);
     emit({ type: "finalStrike", snap: sn });
   }
 

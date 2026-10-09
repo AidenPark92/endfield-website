@@ -1,6 +1,7 @@
 // 팀 전투 시뮬레이터: 게임 시스템(아츠 부착·이상, 물리 이상, SP·에너지, 연계 조건) 단위 검증
 import { describe, expect, it } from "vitest";
 import { simulate, simulateBest, type Kit, type MemberStats, type SimMember, type Ctx } from "./teamsim";
+import { buildKit, type KitTable } from "./kits";
 
 const stats = (): MemberStats => ({
   atkBase: 1000,
@@ -170,5 +171,48 @@ describe("SP 배분 롤아웃 정책", () => {
     const roll = simulate(ms, { sink: 0, share: 7, rolloutBase: 3, duration: 60 });
     expect(roll.members[1].casts.battle).toBeGreaterThan(0);
     expect(roll.total).toBeGreaterThanOrEqual(greedy.total * 1.5);
+  });
+});
+
+/** 스킬 표 대신 쓰는 최소 KitTable (라벨 → 값) */
+const table = (id: string, elem: Kit["elem"], vals: Record<string, number>, o: { cost?: Record<string, number>; cd?: Record<string, number> } = {}): KitTable => ({
+  id,
+  elem,
+  v: (type, label) => vals[`${type}|${typeof label === "string" ? label : label.source}`] ?? 0,
+  cost: (type) => o.cost?.[type] ?? 0,
+  cd: (type) => o.cd?.[type] ?? 0,
+  poise: () => 0,
+  basic: { chain: 1, fsSp: 0, fsPoise: 0 },
+  comboEnergy: vals["연계 스킬|획득하는 궁극기 에너지"] ?? 10,
+});
+
+describe("리노 보컬 모드", () => {
+  it("궁극기(보컬 모드)가 라이브 모드를 대체 → 배틀 스킬로 다시 들어가기 전에는 연계(아츠 이상 조건)가 안 나옴", () => {
+    const liino = buildKit(
+      table("1041", "전기", {
+        "배틀 스킬|라이브 모드 지속 시간(초)": 60,
+        "배틀 스킬|추가 공격 간격(초)": 10,
+        "배틀 스킬|추가 공격 피해 배율": 1,
+        "연계 스킬|피해 배율": 1,
+        "연계 스킬|획득하는 궁극기 에너지": 20,
+        "궁극기|보컬 모드 지속 시간(초)": 15,
+        "궁극기|노랫소리 간격(초)": 1.5,
+      }, { cost: { "배틀 스킬": 25, 궁극기: 40 }, cd: { "연계 스킬": 8, 궁극기: 20 } }),
+    )!;
+    // 동료: 2초마다 강제 감전 (아츠 이상 부여 → 리노 연계 조건)
+    const shock = kit("s", "전기", () => {}, { carry: 0, battle: { cost: 999, poise: 0, pri: () => 0, cast: () => {} }, init: (c) => void (c.rt[c.me].s.n = 0), onEvent: () => {} });
+    shock.onFinalStrike = (c) => c.forced("감전");
+    const log: string[] = [];
+    simulate([{ id: "1041", kit: liino, stats: stats() }, member(shock)], { sink: 1, control: 1, duration: 90, log });
+    const ev = log.map((l) => l.split(" ")).filter((x) => x[1] === "1041").map((x) => ({ t: Number(x[0]), what: x[2] }));
+    const ults = ev.filter((e) => e.what === "궁극기");
+    expect(ults.length).toBeGreaterThan(0);
+    for (const u of ults) {
+      // 궁극기 뒤 첫 배틀 스킬(라이브 모드 재진입) 전에는 연계 없음
+      const nextBattle = ev.find((e) => e.t > u.t && e.what.startsWith("배틀"))?.t ?? Infinity;
+      expect(ev.filter((e) => e.what === "연계" && e.t > u.t && e.t < nextBattle)).toEqual([]);
+      // 보컬 모드(15초) 중에는 배틀 스킬(= 모드 중단)을 쓰지 않음
+      expect(nextBattle).toBeGreaterThanOrEqual(u.t + 15);
+    }
   });
 });
